@@ -1,0 +1,5104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Statify — Spotify Data Analyzer</title>
+  <link rel="icon" type="image/svg+xml"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%23080808' stroke='%231DB954' stroke-width='4'/%3E%3Ccircle cx='50' cy='50' r='8' fill='%231DB954'/%3E%3Ccircle cx='50' cy='50' r='20' fill='none' stroke='%231DB954' stroke-width='3'/%3E%3C/svg%3E">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1DB954">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description"
+    content="Analyze your Spotify & YouTube Music listening data. 100% local, private, and beautiful.">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+    :root {
+      --g: #1DB954;
+      --g2: #1ed760;
+      --bg: #080808;
+      --s1: #111;
+      --s2: #161616;
+      --s3: #1e1e1e;
+      --border: #242424;
+      --border2: #2e2e2e;
+      --text: #f0f0f0;
+      --text2: #aaa;
+      --muted: #666;
+      --muted2: #3a3a3a;
+      --red: #e05555;
+      --blue: #5b9cf6;
+      --amber: #f5a623;
+      --font: 'Plus Jakarta Sans', sans-serif;
+      --mono: 'Space Mono', monospace;
+      --r: 6px
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      min-height: 100vh;
+      overflow-x: hidden
+    }
+
+    /* ═══════════ YOUTUBE THEME ═══════════ */
+    body.yt-theme {
+      --g: #FF0000;
+      --g2: #ff2222;
+      --bg: #0a0a0a;
+      --s1: #111010;
+      --s2: #181414;
+      --s3: #201c1c;
+      --border: #2a2020;
+      --border2: #362828;
+      --text: #f5f0f0;
+      --text2: #b8a8a8;
+      --muted: #705050;
+      --muted2: #3e2e2e
+    }
+
+    /* ═══════════ GLOBAL TRANSITIONS ═══════════ */
+    body,
+    header,
+    .panel,
+    .sc,
+    .pc,
+    .dc,
+    .ac,
+    .pi,
+    .ri,
+    .waveform,
+    .logo-text,
+    .hmc,
+    .bf,
+    .dna-fill,
+    .rc-n,
+    .sc-val,
+    .ms-v,
+    .amst-v,
+    .ap span,
+    .sort-btn.act,
+    .wtab.act,
+    .ftag,
+    .demo-btn,
+    .sbtn,
+    .hbtn-g,
+    .exp-btn,
+    .rc,
+    .df,
+    #dropzone,
+    .drop-icon svg circle,
+    .drop-icon svg path,
+    .logo-pulse {
+      transition: background .55s, border-color .55s, color .55s, box-shadow .55s, stroke .55s
+    }
+
+    /* ═══════════ OVERLAY ═══════════ */
+    #theme-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      pointer-events: none;
+      overflow: hidden
+    }
+
+    /* ═══════════ HEADER ═══════════ */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 40px;
+      background: rgba(8, 8, 8, .92);
+      backdrop-filter: blur(24px);
+      border-bottom: 1px solid var(--border);
+      transition: border-color .55s
+    }
+
+    /* ═══════════ LOGO ═══════════ */
+    .logo-wrap {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      cursor: pointer;
+      user-select: none
+    }
+
+    .logo-wrap:hover .logo-text {
+      opacity: .75
+    }
+
+    .logo-pulse {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--g);
+      position: relative;
+      flex-shrink: 0;
+      transition: background .55s, border-radius .4s
+    }
+
+    .logo-pulse::before,
+    .logo-pulse::after {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      border: 1.5px solid var(--g);
+      opacity: 0;
+      animation: pulse-ring 2.2s ease-out infinite;
+      transition: border-color .55s
+    }
+
+    .logo-pulse::after {
+      animation-delay: .75s
+    }
+
+    @keyframes pulse-ring {
+      0% {
+        transform: scale(.6);
+        opacity: .8
+      }
+
+      100% {
+        transform: scale(2.4);
+        opacity: 0
+      }
+    }
+
+    /* YT: pulse dot → play triangle */
+    body.yt-theme .logo-pulse {
+      background: #FF0000;
+      border-radius: 3px;
+      transform: rotate(0deg)
+    }
+
+    body.yt-theme .logo-pulse::before,
+    body.yt-theme .logo-pulse::after {
+      border-color: #FF0000
+    }
+
+    .logo-text {
+      font-family: var(--mono);
+      font-size: .95rem;
+      letter-spacing: .1em;
+      color: var(--g);
+      transition: color .55s, opacity .2s
+    }
+
+    body.yt-theme .logo-text {
+      color: #FF0000
+    }
+
+    /* YT BADGE — subscript "YT" + play icon */
+    .logo-yt-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      margin-left: 4px;
+      opacity: 0;
+      transform: translateX(-6px) translateY(2px);
+      transition: none;
+      pointer-events: none
+    }
+
+    body.yt-theme .logo-yt-badge {
+      transition: opacity .4s .1s, transform .4s .1s cubic-bezier(.34, 1.56, .64, 1);
+      opacity: 1;
+      transform: translateX(0) translateY(2px)
+    }
+
+    .logo-yt-badge-icon {
+      font-size: .52rem;
+      line-height: 1;
+      color: #FF0000
+    }
+
+    .logo-yt-badge-text {
+      font-family: var(--mono);
+      font-size: .52rem;
+      font-weight: 700;
+      color: #FF0000;
+      letter-spacing: .06em;
+      line-height: 1
+    }
+
+    /* ═══════════ HEADER RIGHT ═══════════ */
+    .hdr {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px
+    }
+
+    .hdr-tag {
+      font-family: var(--mono);
+      font-size: .6rem;
+      color: var(--muted);
+      letter-spacing: .04em
+    }
+
+    .hbtn {
+      font-family: var(--mono);
+      font-size: .6rem;
+      padding: 5px 12px;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: all .2s;
+      letter-spacing: .06em;
+      border: none
+    }
+
+    .hbtn-g {
+      background: var(--g);
+      color: #000;
+      font-weight: 700
+    }
+
+    .hbtn-g:hover {
+      background: var(--g2)
+    }
+
+    body.yt-theme .hbtn-g {
+      background: #FF0000;
+      color: #fff
+    }
+
+    body.yt-theme .hbtn-g:hover {
+      background: #ff2222
+    }
+
+    .hbtn-o {
+      background: none;
+      border: 1px solid var(--border2);
+      color: var(--muted)
+    }
+
+    .hbtn-o:hover {
+      border-color: var(--g);
+      color: var(--g)
+    }
+
+    body.yt-theme .hbtn-o:hover {
+      border-color: #FF0000;
+      color: #FF0000
+    }
+
+    /* ═══════════ THEME TOGGLE ═══════════ */
+    .theme-toggle {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 12px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all .25s, opacity .3s;
+      letter-spacing: .04em;
+      border: 1px solid var(--border2);
+      background: none;
+      position: relative
+    }
+
+    .theme-toggle:hover:not(:disabled) {
+      border-color: var(--g);
+      background: rgba(255, 255, 255, .04)
+    }
+
+    body.yt-theme .theme-toggle:hover:not(:disabled) {
+      border-color: #FF0000
+    }
+
+    .theme-toggle:disabled {
+      opacity: .3;
+      cursor: not-allowed
+    }
+
+    .theme-toggle-track {
+      width: 28px;
+      height: 16px;
+      border-radius: 8px;
+      background: var(--s3);
+      border: 1px solid var(--border2);
+      position: relative;
+      transition: background .4s, border-color .4s;
+      flex-shrink: 0
+    }
+
+    .theme-toggle-thumb {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--g);
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      transition: transform .35s cubic-bezier(.34, 1.56, .64, 1), background .4s
+    }
+
+    body.yt-theme .theme-toggle-thumb {
+      transform: translateX(12px);
+      background: #FF0000
+    }
+
+    body.yt-theme .theme-toggle-track {
+      background: rgba(255, 0, 0, .15);
+      border-color: rgba(255, 0, 0, .3)
+    }
+
+    .toggle-icon {
+      font-size: .72rem;
+      width: 16px;
+      text-align: center;
+      transition: opacity .3s
+    }
+
+    .toggle-spotify {
+      opacity: 1
+    }
+
+    .toggle-yt {
+      opacity: .35
+    }
+
+    body.yt-theme .toggle-spotify {
+      opacity: .35
+    }
+
+    body.yt-theme .toggle-yt {
+      opacity: 1
+    }
+
+    .theme-toggle-label {
+      font-family: var(--mono);
+      font-size: .58rem;
+      color: var(--muted);
+      transition: color .3s;
+      white-space: nowrap
+    }
+
+    body.yt-theme .theme-toggle-label {
+      color: #FF0000
+    }
+
+    /* Lock tooltip */
+    .toggle-locked-tip {
+      position: absolute;
+      bottom: -28px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: var(--mono);
+      font-size: .52rem;
+      color: var(--muted2);
+      background: var(--s2);
+      border: 1px solid var(--border);
+      padding: 2px 8px;
+      border-radius: 3px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s;
+      z-index: 50
+    }
+
+    .theme-toggle:disabled:hover .toggle-locked-tip {
+      opacity: 1
+    }
+
+    /* ═══════════ DROPZONE ═══════════ */
+    #dropzone {
+      position: relative;
+      z-index: 10;
+      max-width: 560px;
+      margin: 70px auto 0;
+      border: 1.5px dashed var(--border2);
+      border-radius: var(--r);
+      padding: 56px 36px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .3s, background .3s
+    }
+
+    #dropzone:hover,
+    #dropzone.drag {
+      border-color: var(--g);
+      background: rgba(29, 185, 84, .03)
+    }
+
+    body.yt-theme #dropzone:hover,
+    body.yt-theme #dropzone.drag {
+      border-color: #FF0000;
+      background: rgba(255, 0, 0, .03)
+    }
+
+    #dropzone input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%
+    }
+
+    .drop-icon svg {
+      animation: float 3s ease-in-out infinite;
+      margin-bottom: 20px
+    }
+
+    @keyframes float {
+
+      0%,
+      100% {
+        transform: translateY(0)
+      }
+
+      50% {
+        transform: translateY(-8px)
+      }
+    }
+
+    #dropzone h2 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 9px
+    }
+
+    #dropzone p {
+      font-size: .83rem;
+      color: var(--muted);
+      line-height: 1.7
+    }
+
+    .ftags {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 5px;
+      margin-top: 16px
+    }
+
+    .ftag {
+      font-family: var(--mono);
+      font-size: .58rem;
+      color: var(--g);
+      background: rgba(29, 185, 84, .07);
+      border: 1px solid rgba(29, 185, 84, .2);
+      padding: 3px 9px;
+      border-radius: 2px;
+      transition: color .55s, background .55s, border-color .55s
+    }
+
+    body.yt-theme .ftag {
+      color: #FF0000;
+      background: rgba(255, 0, 0, .07);
+      border-color: rgba(255, 0, 0, .2)
+    }
+
+    .or-div {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 24px 0
+    }
+
+    .or-div::before,
+    .or-div::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border)
+    }
+
+    .or-div span {
+      font-family: var(--mono);
+      font-size: .62rem;
+      color: var(--muted2)
+    }
+
+    .demo-btn {
+      width: 100%;
+      padding: 13px;
+      background: var(--g);
+      color: #000;
+      border: none;
+      border-radius: 3px;
+      font-family: var(--font);
+      font-size: .88rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .55s, transform .1s, color .55s
+    }
+
+    .demo-btn:hover {
+      background: var(--g2)
+    }
+
+    .demo-btn:active {
+      transform: scale(.98)
+    }
+
+    body.yt-theme .demo-btn {
+      background: #FF0000;
+      color: #fff
+    }
+
+    body.yt-theme .demo-btn:hover {
+      background: #ff2222
+    }
+
+    .drop-hint {
+      margin-top: 16px;
+      font-size: .7rem;
+      color: var(--muted2)
+    }
+
+    /* ═══════════ LOADER ═══════════ */
+    #loader {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: rgba(8, 8, 8, .96);
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px
+    }
+
+    .lring {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 2px solid var(--border2);
+      border-top-color: var(--g);
+      animation: spin .8s linear infinite
+    }
+
+    body.yt-theme .lring {
+      border-top-color: #FF0000
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg)
+      }
+    }
+
+    .ltxt {
+      font-family: var(--mono);
+      font-size: .72rem;
+      color: var(--muted);
+      letter-spacing: .12em
+    }
+
+    .lprog {
+      width: 180px;
+      height: 2px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden
+    }
+
+    .lbar {
+      height: 100%;
+      background: var(--g);
+      animation: lbara 1.3s ease-in-out infinite
+    }
+
+    body.yt-theme .lbar {
+      background: #FF0000
+    }
+
+    @keyframes lbara {
+      0% {
+        width: 0%;
+        margin-left: 0
+      }
+
+      50% {
+        width: 60%
+      }
+
+      100% {
+        width: 0%;
+        margin-left: 100%
+      }
+    }
+
+    /* ═══════════ BG ═══════════ */
+    #bg-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      opacity: .3
+    }
+
+    /* ═══════════ DASHBOARD ═══════════ */
+    #dashboard {
+      display: none;
+      position: relative;
+      z-index: 10;
+      padding: 0 40px 100px;
+      max-width: 1200px;
+      margin: 0 auto
+    }
+
+    /* ═══════════ YT MODE TABS (Watch / Music) ═══════════ */
+    #yt-mode-tabs {
+      display: none;
+      gap: 0;
+      margin: 32px 0 40px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0
+    }
+
+    body.yt-theme #yt-mode-tabs {
+      display: flex
+    }
+
+    .yt-mtab {
+      font-family: var(--mono);
+      font-size: .68rem;
+      padding: 10px 22px;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--muted);
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      letter-spacing: .1em;
+      transition: color .2s, border-color .2s
+    }
+
+    .yt-mtab:hover {
+      color: var(--text)
+    }
+
+    .yt-mtab.act {
+      color: #FF0000;
+      border-bottom-color: #FF0000
+    }
+
+    #yt-watch-dash {
+      display: block
+    }
+
+    #yt-music-dash {
+      display: none
+    }
+
+    /* ═══════════ HERO ═══════════ */
+    .hero {
+      padding: 48px 0 36px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 52px
+    }
+
+    .hero-badge {
+      font-family: var(--mono);
+      font-size: .62rem;
+      color: var(--g);
+      letter-spacing: .15em;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: color .55s
+    }
+
+    body.yt-theme .hero-badge {
+      color: #FF0000
+    }
+
+    .hero-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: var(--g);
+      animation: blink 1.8s ease-in-out infinite;
+      transition: background .55s
+    }
+
+    body.yt-theme .hero-dot {
+      background: #FF0000
+    }
+
+    @keyframes blink {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: .2
+      }
+    }
+
+    .hero-title {
+      font-size: clamp(2rem, 5vw, 3.6rem);
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -.02em
+    }
+
+    .hero-title .g {
+      color: var(--g);
+      transition: color .55s
+    }
+
+    body.yt-theme .hero-title .g {
+      color: #FF0000
+    }
+
+    .hero-sub {
+      font-size: .85rem;
+      color: var(--muted);
+      margin-top: 10px;
+      font-family: var(--mono)
+    }
+
+    .waveform {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      margin-top: 22px;
+      height: 36px
+    }
+
+    .wb {
+      width: 3px;
+      border-radius: 2px;
+      background: var(--g);
+      animation: wd 1.2s ease-in-out infinite;
+      transition: background .55s
+    }
+
+    body.yt-theme .wb {
+      background: #FF0000
+    }
+
+    @keyframes wd {
+
+      0%,
+      100% {
+        transform: scaleY(.15)
+      }
+
+      50% {
+        transform: scaleY(1)
+      }
+    }
+
+    /* ═══════════ SECTION LABEL ═══════════ */
+    .sl {
+      font-family: var(--mono);
+      font-size: .62rem;
+      letter-spacing: .18em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px
+    }
+
+    .sl::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+      transition: background .55s
+    }
+
+    /* ═══════════ STAT GRID ═══════════ */
+    .sg {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
+      gap: 10px;
+      margin-bottom: 48px
+    }
+
+    .sc {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 20px 18px;
+      position: relative;
+      overflow: hidden;
+      transition: transform .25s, border-color .25s, background .55s;
+      cursor: default
+    }
+
+    .sc:hover {
+      transform: translateY(-3px);
+      border-color: var(--border2)
+    }
+
+    .sc::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--g);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform .4s ease, background .55s
+    }
+
+    body.yt-theme .sc::after {
+      background: #FF0000
+    }
+
+    .sc:hover::after {
+      transform: scaleX(1)
+    }
+
+    .sc-lbl {
+      font-family: var(--mono);
+      font-size: .58rem;
+      color: var(--muted);
+      letter-spacing: .08em;
+      margin-bottom: 10px
+    }
+
+    .sc-val {
+      font-size: 1.9rem;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -.02em
+    }
+
+    .sc-ico {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      font-size: 1.6rem;
+      opacity: .06
+    }
+
+    /* ═══════════ COLS ═══════════ */
+    .tc {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-bottom: 40px
+    }
+
+    .thc {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 18px;
+      margin-bottom: 40px
+    }
+
+    @media(max-width:768px) {
+
+      .tc,
+      .thc {
+        grid-template-columns: 1fr
+      }
+    }
+
+    .mb40 {
+      margin-bottom: 40px
+    }
+
+    /* ═══════════ PANEL ═══════════ */
+    .panel {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 22px;
+      overflow: hidden;
+      transition: background .55s, border-color .55s
+    }
+
+    .pt {
+      font-size: .88rem;
+      font-weight: 600;
+      margin-bottom: 18px
+    }
+
+    .ps {
+      font-size: .72rem;
+      color: var(--muted);
+      margin-top: -12px;
+      margin-bottom: 18px;
+      font-family: var(--mono)
+    }
+
+    /* ═══════════ RANK LIST ═══════════ */
+    .rl {
+      display: flex;
+      flex-direction: column
+    }
+
+    .ri {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      transition: background .15s, border-color .55s;
+      cursor: default
+    }
+
+    .ri:last-child {
+      border-bottom: none
+    }
+
+    .ri:hover {
+      background: rgba(255, 255, 255, .02)
+    }
+
+    .rn {
+      font-family: var(--mono);
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--muted2);
+      width: 34px;
+      flex-shrink: 0;
+      line-height: 1;
+      letter-spacing: -.04em
+    }
+
+    .rn.t3 {
+      color: var(--g);
+      opacity: .7;
+      transition: color .55s
+    }
+
+    body.yt-theme .rn.t3 {
+      color: #FF0000
+    }
+
+    .ri-info {
+      flex: 1;
+      overflow: hidden
+    }
+
+    .ri-name {
+      font-size: .88rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis
+    }
+
+    .ri-sub {
+      font-size: .7rem;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 1px
+    }
+
+    .rc {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      flex-shrink: 0;
+      padding-left: 12px;
+      border-left: 2px solid rgba(29, 185, 84, .22);
+      transition: border-color .55s
+    }
+
+    body.yt-theme .rc {
+      border-left-color: rgba(255, 0, 0, .22)
+    }
+
+    .rc-n {
+      font-family: var(--mono);
+      font-size: .95rem;
+      font-weight: 700;
+      color: var(--g);
+      line-height: 1;
+      transition: color .55s
+    }
+
+    body.yt-theme .rc-n {
+      color: #FF0000
+    }
+
+    .rc-l {
+      font-family: var(--mono);
+      font-size: .5rem;
+      color: var(--muted);
+      letter-spacing: .06em;
+      margin-top: 2px
+    }
+
+    .rc-b {
+      border-left-color: rgba(91, 156, 246, .28) !important
+    }
+
+    .rc-b .rc-n {
+      color: var(--blue) !important
+    }
+
+    /* ═══════════ BARS ═══════════ */
+    .bc {
+      display: flex;
+      flex-direction: column;
+      gap: 10px
+    }
+
+    .br {
+      display: flex;
+      align-items: center;
+      gap: 10px
+    }
+
+    .bl {
+      font-family: var(--mono);
+      font-size: .6rem;
+      color: var(--muted);
+      width: 30px;
+      text-align: right;
+      flex-shrink: 0
+    }
+
+    .bt {
+      flex: 1;
+      height: 7px;
+      background: var(--s3);
+      border-radius: 2px;
+      overflow: hidden
+    }
+
+    .bf {
+      height: 100%;
+      background: var(--g);
+      border-radius: 2px;
+      width: 0%;
+      transition: width 1.3s cubic-bezier(.22, 1, .36, 1), background .55s
+    }
+
+    body.yt-theme .bf {
+      background: #FF0000
+    }
+
+    .bv {
+      font-family: var(--mono);
+      font-size: .6rem;
+      color: var(--muted);
+      width: 40px;
+      flex-shrink: 0
+    }
+
+    /* ═══════════ HEATMAP ═══════════ */
+    .hml {
+      display: grid;
+      grid-template-columns: repeat(24, 1fr);
+      gap: 2px;
+      margin-bottom: 4px
+    }
+
+    .hmlb {
+      font-family: var(--mono);
+      font-size: .4rem;
+      color: var(--muted2);
+      text-align: center
+    }
+
+    .hmg {
+      display: grid;
+      grid-template-columns: repeat(24, 1fr);
+      gap: 2px
+    }
+
+    .hmc {
+      aspect-ratio: 1;
+      border-radius: 1px;
+      background: var(--s3);
+      transition: transform .2s
+    }
+
+    .hmc:hover {
+      transform: scale(1.4);
+      z-index: 10;
+      position: relative
+    }
+
+    /* ═══════════ CHART ═══════════ */
+    .cw {
+      position: relative;
+      height: 200px
+    }
+
+    /* ═══════════ TOOLTIP ═══════════ */
+    #tooltip {
+      position: fixed;
+      background: var(--s3);
+      border: 1px solid var(--border2);
+      padding: 6px 10px;
+      border-radius: 3px;
+      font-family: var(--mono);
+      font-size: .62rem;
+      pointer-events: none;
+      z-index: 999;
+      display: none;
+      color: var(--text);
+      white-space: nowrap;
+      line-height: 1.5
+    }
+
+    /* ═══════════ TOP 50 ═══════════ */
+    #top50 .ri:nth-child(n+11) {
+      display: none
+    }
+
+    #top50.exp .ri {
+      display: flex
+    }
+
+    .exp-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 14px;
+      margin-top: 1px;
+      background: rgba(29, 185, 84, .05);
+      border: 1px solid rgba(29, 185, 84, .15);
+      border-radius: 0 0 var(--r) var(--r);
+      color: var(--g);
+      font-family: var(--mono);
+      font-size: .68rem;
+      letter-spacing: .08em;
+      cursor: pointer;
+      transition: all .2s
+    }
+
+    .exp-btn:hover {
+      background: rgba(29, 185, 84, .1)
+    }
+
+    body.yt-theme .exp-btn {
+      background: rgba(255, 0, 0, .05);
+      border-color: rgba(255, 0, 0, .15);
+      color: #FF0000
+    }
+
+    body.yt-theme .exp-btn:hover {
+      background: rgba(255, 0, 0, .1)
+    }
+
+    .exp-btn svg {
+      transition: transform .3s
+    }
+
+    .exp-btn.open svg {
+      transform: rotate(180deg)
+    }
+
+    /* ═══════════ MONTHLY ═══════════ */
+    .mc {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 18px;
+      flex-wrap: wrap
+    }
+
+    .msel {
+      background: var(--s2);
+      border: 1px solid var(--border2);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: .68rem;
+      padding: 7px 12px;
+      border-radius: 3px;
+      cursor: pointer;
+      outline: none;
+      transition: border-color .2s
+    }
+
+    .msel:focus {
+      border-color: var(--g)
+    }
+
+    body.yt-theme .msel:focus {
+      border-color: #FF0000
+    }
+
+    .msel option {
+      background: var(--s2)
+    }
+
+    .msr {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px
+    }
+
+    .ms {
+      background: var(--s2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 12px 16px;
+      flex: 1
+    }
+
+    .ms-l {
+      font-family: var(--mono);
+      font-size: .55rem;
+      color: var(--muted);
+      margin-bottom: 5px;
+      letter-spacing: .06em
+    }
+
+    .ms-v {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--g);
+      font-family: var(--mono);
+      transition: color .55s
+    }
+
+    body.yt-theme .ms-v {
+      color: #FF0000
+    }
+
+    /* ═══════════ PERSONALITY ═══════════ */
+    .pg {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 40px
+    }
+
+    .pc {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+      transition: transform .2s, border-color .2s, background .55s
+    }
+
+    .pc:hover {
+      transform: translateY(-2px);
+      border-color: var(--border2)
+    }
+
+    .pc-ico {
+      font-size: 1.5rem;
+      margin-bottom: 12px
+    }
+
+    .pc-title {
+      font-size: .78rem;
+      font-weight: 700;
+      margin-bottom: 3px;
+      color: var(--text2)
+    }
+
+    .pc-lbl {
+      font-family: var(--mono);
+      font-size: .58rem;
+      color: var(--muted);
+      margin-bottom: 10px
+    }
+
+    .pc-val {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--g);
+      line-height: 1;
+      letter-spacing: -.02em;
+      transition: color .55s
+    }
+
+    body.yt-theme .pc-val {
+      color: #FF0000
+    }
+
+    .pc-desc {
+      font-size: .7rem;
+      color: var(--muted);
+      margin-top: 6px;
+      line-height: 1.5
+    }
+
+    .pbt {
+      height: 4px;
+      background: var(--s3);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 10px
+    }
+
+    .pbf {
+      height: 100%;
+      background: var(--g);
+      border-radius: 2px;
+      width: 0%;
+      transition: width 1.4s ease, background .55s
+    }
+
+    body.yt-theme .pbf {
+      background: #FF0000
+    }
+
+    /* ═══════════ DEEP ═══════════ */
+    .dg {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+      gap: 12px;
+      margin-bottom: 40px
+    }
+
+    .dc {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 20px;
+      transition: transform .2s, border-color .2s, background .55s
+    }
+
+    .dc:hover {
+      transform: translateY(-2px);
+      border-color: var(--border2)
+    }
+
+    .dc-ico {
+      width: 30px;
+      height: 30px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .95rem;
+      margin-bottom: 12px;
+      background: rgba(29, 185, 84, .1);
+      transition: background .55s
+    }
+
+    body.yt-theme .dc-ico {
+      background: rgba(255, 0, 0, .1)
+    }
+
+    .dc-lbl {
+      font-family: var(--mono);
+      font-size: .58rem;
+      color: var(--muted);
+      letter-spacing: .06em;
+      margin-bottom: 6px
+    }
+
+    .dc-val {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1;
+      letter-spacing: -.02em
+    }
+
+    .dc-sub {
+      font-size: .7rem;
+      color: var(--muted);
+      margin-top: 5px;
+      line-height: 1.5
+    }
+
+    /* ═══════════ ARTIST GRID ═══════════ */
+    .ag {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
+      gap: 10px;
+      margin-bottom: 40px
+    }
+
+    .ac {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 18px;
+      cursor: pointer;
+      transition: all .2s, background .55s;
+      position: relative;
+      overflow: hidden
+    }
+
+    .ac:hover {
+      border-color: var(--g);
+      background: rgba(29, 185, 84, .04);
+      transform: translateY(-2px)
+    }
+
+    body.yt-theme .ac:hover {
+      border-color: #FF0000;
+      background: rgba(255, 0, 0, .04)
+    }
+
+    .ac::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 80% 20%, rgba(29, 185, 84, .07), transparent 60%);
+      opacity: 0;
+      transition: opacity .3s
+    }
+
+    body.yt-theme .ac::before {
+      background: radial-gradient(circle at 80% 20%, rgba(255, 0, 0, .07), transparent 60%)
+    }
+
+    .ac:hover::before {
+      opacity: 1
+    }
+
+    .ai {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: rgba(29, 185, 84, .14);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--mono);
+      font-size: .72rem;
+      color: var(--g);
+      margin-bottom: 12px;
+      font-weight: 700;
+      transition: background .55s, color .55s
+    }
+
+    body.yt-theme .ai {
+      background: rgba(255, 0, 0, .14);
+      color: #FF0000
+    }
+
+    .an {
+      font-size: .88rem;
+      font-weight: 600;
+      margin-bottom: 3px
+    }
+
+    .ap {
+      font-family: var(--mono);
+      font-size: .65rem;
+      color: var(--muted)
+    }
+
+    .ap span {
+      color: var(--g);
+      transition: color .55s
+    }
+
+    body.yt-theme .ap span {
+      color: #FF0000
+    }
+
+    .ah {
+      font-family: var(--mono);
+      font-size: .52rem;
+      color: var(--muted2);
+      margin-top: 8px;
+      letter-spacing: .04em
+    }
+
+    /* ═══════════ MODAL ═══════════ */
+    #amodal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 300;
+      background: rgba(4, 4, 4, .92);
+      backdrop-filter: blur(16px);
+      align-items: center;
+      justify-content: center;
+      padding: 20px
+    }
+
+    #amodal.show {
+      display: flex
+    }
+
+    .ami {
+      background: var(--s1);
+      border: 1px solid var(--border2);
+      border-radius: 8px;
+      padding: 32px;
+      max-width: 620px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative
+    }
+
+    .amc {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: color .2s;
+      font-family: var(--mono)
+    }
+
+    .amc:hover {
+      color: var(--text)
+    }
+
+    .amh {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 22px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--border)
+    }
+
+    .amini {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: rgba(29, 185, 84, .14);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--mono);
+      font-size: .95rem;
+      color: var(--g);
+      font-weight: 700;
+      transition: background .55s, color .55s
+    }
+
+    body.yt-theme .amini {
+      background: rgba(255, 0, 0, .14);
+      color: #FF0000
+    }
+
+    .amn {
+      font-size: 1.4rem;
+      font-weight: 800
+    }
+
+    .ams {
+      font-family: var(--mono);
+      font-size: .62rem;
+      color: var(--muted);
+      margin-top: 3px
+    }
+
+    .amstats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 18px
+    }
+
+    .amst {
+      background: var(--s2);
+      border-radius: 4px;
+      padding: 14px
+    }
+
+    .amst-l {
+      font-family: var(--mono);
+      font-size: .54rem;
+      color: var(--muted);
+      margin-bottom: 5px;
+      letter-spacing: .05em
+    }
+
+    .amst-v {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--g);
+      font-family: var(--mono);
+      transition: color .55s
+    }
+
+    body.yt-theme .amst-v {
+      color: #FF0000
+    }
+
+    .amsec {
+      font-family: var(--mono);
+      font-size: .58rem;
+      color: var(--muted);
+      letter-spacing: .12em;
+      margin-bottom: 10px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border)
+    }
+
+    /* ═══════════ DECADE ═══════════ */
+    .dr {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border)
+    }
+
+    .dr:last-child {
+      border-bottom: none
+    }
+
+    .de {
+      font-family: var(--mono);
+      font-size: .75rem;
+      font-weight: 700;
+      color: var(--text);
+      width: 52px;
+      flex-shrink: 0
+    }
+
+    .dt {
+      flex: 1;
+      height: 8px;
+      background: var(--s3);
+      border-radius: 2px;
+      overflow: hidden
+    }
+
+    .df {
+      height: 100%;
+      border-radius: 2px;
+      width: 0%;
+      transition: width 1.3s ease
+    }
+
+    .dp {
+      font-family: var(--mono);
+      font-size: .62rem;
+      color: var(--muted);
+      width: 36px;
+      text-align: right
+    }
+
+    /* ═══════════ PLATFORM ═══════════ */
+    .pl {
+      display: flex;
+      flex-direction: column;
+      gap: 10px
+    }
+
+    .pi {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 16px;
+      background: var(--s2);
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      transition: border-color .2s, background .55s
+    }
+
+    .pi:hover {
+      border-color: var(--border2)
+    }
+
+    .pico {
+      width: 34px;
+      height: 34px;
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0
+    }
+
+    .pn {
+      font-size: .86rem;
+      font-weight: 600;
+      flex: 1
+    }
+
+    /* ═══════════ WRAPPED ═══════════ */
+    .wtabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap
+    }
+
+    .wtab {
+      font-family: var(--mono);
+      font-size: .62rem;
+      padding: 7px 16px;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: all .2s;
+      letter-spacing: .06em;
+      border: 1px solid var(--border);
+      background: none;
+      color: var(--muted)
+    }
+
+    .wtab.act,
+    .wtab:hover {
+      border-color: var(--g);
+      color: var(--g);
+      background: rgba(29, 185, 84, .07)
+    }
+
+    body.yt-theme .wtab.act,
+    body.yt-theme .wtab:hover {
+      border-color: #FF0000;
+      color: #FF0000;
+      background: rgba(255, 0, 0, .07)
+    }
+
+    #wcard {
+      background: linear-gradient(135deg, #0a1a0f 0%, #080808 40%, #0d0d1a 100%);
+      border: 1px solid rgba(29, 185, 84, .2);
+      border-radius: 12px;
+      padding: 40px;
+      max-width: 460px;
+      position: relative;
+      overflow: hidden;
+      transition: background .55s, border-color .55s
+    }
+
+    body.yt-theme #wcard {
+      background: linear-gradient(135deg, #1a0a0a 0%, #0a0a0a 40%, #1a0505 100%);
+      border-color: rgba(255, 0, 0, .2)
+    }
+
+    #wcard::before {
+      content: '';
+      position: absolute;
+      top: -60px;
+      right: -60px;
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, rgba(29, 185, 84, .1), transparent 70%);
+      pointer-events: none;
+      transition: background .55s
+    }
+
+    body.yt-theme #wcard::before {
+      background: radial-gradient(circle, rgba(255, 0, 0, .1), transparent 70%)
+    }
+
+    .wch {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 26px
+    }
+
+    .wcd {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--g);
+      transition: background .55s
+    }
+
+    body.yt-theme .wcd {
+      background: #FF0000
+    }
+
+    .wcl {
+      font-family: var(--mono);
+      font-size: .72rem;
+      color: var(--g);
+      letter-spacing: .1em;
+      transition: color .55s
+    }
+
+    body.yt-theme .wcl {
+      color: #FF0000
+    }
+
+    .wcp {
+      font-family: var(--mono);
+      font-size: .58rem;
+      color: var(--muted);
+      margin-left: auto
+    }
+
+    .wct {
+      font-size: .95rem;
+      font-weight: 300;
+      color: var(--text2);
+      margin-bottom: 5px
+    }
+
+    .wcb {
+      font-size: 2.7rem;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -.04em;
+      margin-bottom: 3px
+    }
+
+    .wcb .g {
+      color: var(--g);
+      transition: color .55s
+    }
+
+    body.yt-theme .wcb .g {
+      color: #FF0000
+    }
+
+    .wcdiv {
+      height: 1px;
+      background: rgba(255, 255, 255, .06);
+      margin: 22px 0
+    }
+
+    .wcrow {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 18px
+    }
+
+    .wcc {
+      flex: 1
+    }
+
+    .wcc-l {
+      font-family: var(--mono);
+      font-size: .53rem;
+      color: var(--muted);
+      letter-spacing: .08em;
+      margin-bottom: 5px
+    }
+
+    .wcc-v {
+      font-size: .95rem;
+      font-weight: 700
+    }
+
+    .wcc-s {
+      font-size: .7rem;
+      color: var(--muted);
+      margin-top: 2px
+    }
+
+    .wcbars {
+      display: flex;
+      align-items: flex-end;
+      gap: 3px;
+      height: 44px;
+      margin-top: 8px
+    }
+
+    .wcbar {
+      flex: 1;
+      background: rgba(29, 185, 84, .28);
+      border-radius: 2px 2px 0 0;
+      min-width: 3px;
+      transition: background .55s
+    }
+
+    body.yt-theme .wcbar {
+      background: rgba(255, 0, 0, .28)
+    }
+
+    .wcftr {
+      display: flex;
+      align-items: center;
+      margin-top: 22px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(255, 255, 255, .06)
+    }
+
+    .wcfl {
+      font-family: var(--mono);
+      font-size: .52rem;
+      color: var(--muted2)
+    }
+
+    .wcfr {
+      margin-left: auto;
+      font-family: var(--mono);
+      font-size: .52rem;
+      color: var(--muted2)
+    }
+
+    .sbtn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background: var(--g);
+      color: #000;
+      border: none;
+      border-radius: 3px;
+      font-family: var(--mono);
+      font-size: .68rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .55s, color .55s;
+      margin-top: 14px;
+      letter-spacing: .04em
+    }
+
+    .sbtn:hover {
+      background: var(--g2)
+    }
+
+    body.yt-theme .sbtn {
+      background: #FF0000;
+      color: #fff
+    }
+
+    body.yt-theme .sbtn:hover {
+      background: #ff2222
+    }
+
+    /* ═══════════ RESET BTN ═══════════ */
+    .rbtn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 40px;
+      padding: 10px 20px;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: .68rem;
+      cursor: pointer;
+      transition: all .2s
+    }
+
+    .rbtn:hover {
+      border-color: #555;
+      color: var(--text)
+    }
+
+    /* ═══════════ REVEAL ═══════════ */
+    .rv {
+      opacity: 0;
+      transform: translateY(20px)
+    }
+
+    /* ═══════════ DNA ═══════════ */
+    .dna-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border)
+    }
+
+    .dna-row:last-child {
+      border-bottom: none
+    }
+
+    .dna-label {
+      font-family: var(--mono);
+      font-size: .6rem;
+      color: var(--muted);
+      letter-spacing: .08em;
+      width: 130px;
+      flex-shrink: 0
+    }
+
+    .dna-bar {
+      flex: 1;
+      height: 6px;
+      background: var(--s3);
+      border-radius: 3px;
+      overflow: hidden
+    }
+
+    .dna-fill {
+      height: 100%;
+      border-radius: 3px;
+      width: 0%;
+      transition: width 1.4s ease
+    }
+
+    .dna-value {
+      font-family: var(--mono);
+      font-size: .68rem;
+      font-weight: 700;
+      color: var(--text2);
+      width: 48px;
+      text-align: right;
+      flex-shrink: 0
+    }
+
+    .dna-tag {
+      font-family: var(--mono);
+      font-size: .56rem;
+      color: var(--muted);
+      width: 90px;
+      flex-shrink: 0
+    }
+
+    /* ═══════════ SORT CONTROLS ═══════════ */
+    .sort-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap
+    }
+
+    .sort-lbl {
+      font-family: var(--mono);
+      font-size: .56rem;
+      color: var(--muted);
+      letter-spacing: .08em
+    }
+
+    .sort-btn {
+      font-family: var(--mono);
+      font-size: .58rem;
+      padding: 4px 10px;
+      border-radius: 3px;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: none;
+      color: var(--muted);
+      transition: all .18s;
+      letter-spacing: .04em
+    }
+
+    .sort-btn.act {
+      border-color: var(--g);
+      color: var(--g);
+      background: rgba(29, 185, 84, .07)
+    }
+
+    body.yt-theme .sort-btn.act {
+      border-color: #FF0000;
+      color: #FF0000;
+      background: rgba(255, 0, 0, .07)
+    }
+
+    .sort-btn:hover {
+      border-color: var(--border2);
+      color: var(--text2)
+    }
+
+    /* ═══════════ YT MUSIC LIBRARY SECTION ═══════════ */
+    .yt-lib-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 40px
+    }
+
+    .yt-lib-card {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 22px;
+      text-align: center;
+      transition: transform .2s, border-color .2s
+    }
+
+    .yt-lib-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--border2)
+    }
+
+    .yt-lib-num {
+      font-size: 2.4rem;
+      font-weight: 800;
+      color: #FF0000;
+      line-height: 1;
+      letter-spacing: -.03em;
+      font-family: var(--mono)
+    }
+
+    .yt-lib-lbl {
+      font-family: var(--mono);
+      font-size: .58rem;
+      color: var(--muted);
+      letter-spacing: .1em;
+      margin-top: 6px
+    }
+
+    .yt-lib-sub {
+      font-size: .72rem;
+      color: var(--muted);
+      margin-top: 4px
+    }
+
+    /* ═══════════ LIGHT MODE ═══════════ */
+    body.light-mode {
+      --bg: #f5f5f7;
+      --s1: #fff;
+      --s2: #f0f0f2;
+      --s3: #e8e8ec;
+      --border: #d8d8dc;
+      --border2: #ccccd0;
+      --text: #1a1a1a;
+      --text2: #444;
+      --muted: #777;
+      --muted2: #bbb
+    }
+
+    body.light-mode.yt-theme {
+      --bg: #faf5f5;
+      --s1: #fff;
+      --s2: #f5f0f0;
+      --s3: #ebe5e5;
+      --border: #ddd0d0;
+      --border2: #ccbcbc;
+      --text: #1a1010;
+      --text2: #4a3030;
+      --muted: #887070;
+      --muted2: #c0a8a8
+    }
+
+    body.light-mode header {
+      background: rgba(245, 245, 247, .94);
+      border-bottom-color: var(--border)
+    }
+
+    body.light-mode .sc,
+    body.light-mode .panel,
+    body.light-mode .pc,
+    body.light-mode .dc,
+    body.light-mode .ac,
+    body.light-mode .pi,
+    body.light-mode .ri {
+      box-shadow: 0 1px 3px rgba(0, 0, 0, .06)
+    }
+
+    body.light-mode .sc:hover,
+    body.light-mode .pc:hover,
+    body.light-mode .dc:hover,
+    body.light-mode .ac:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, .1)
+    }
+
+    body.light-mode #dropzone {
+      border-color: var(--border);
+      background: var(--s1)
+    }
+
+    body.light-mode #dropzone:hover {
+      background: rgba(29, 185, 84, .04)
+    }
+
+    body.light-mode.yt-theme #dropzone:hover {
+      background: rgba(255, 0, 0, .04)
+    }
+
+    body.light-mode .demo-btn {
+      color: #fff
+    }
+
+    body.light-mode.yt-theme .demo-btn {
+      color: #fff
+    }
+
+    body.light-mode .hbtn-g {
+      color: #fff
+    }
+
+    body.light-mode.yt-theme .hbtn-g {
+      color: #fff
+    }
+
+    body.light-mode .sbtn {
+      color: #fff
+    }
+
+    body.light-mode.yt-theme .sbtn {
+      color: #fff
+    }
+
+    body.light-mode #bg-canvas {
+      opacity: .08
+    }
+
+    body.light-mode #wcard {
+      background: linear-gradient(135deg, #f0f8f2 0%, #fff 40%, #f0f0fa 100%)
+    }
+
+    body.light-mode.yt-theme #wcard {
+      background: linear-gradient(135deg, #faf0f0 0%, #fff 40%, #faf5f5 100%)
+    }
+
+    body.light-mode #loader {
+      background: rgba(245, 245, 247, .96)
+    }
+
+    body.light-mode .msel {
+      background: var(--s1);
+      color: var(--text)
+    }
+
+    body.light-mode .msel option {
+      background: var(--s1)
+    }
+
+    body.light-mode #tooltip {
+      background: var(--s1);
+      border-color: var(--border);
+      color: var(--text)
+    }
+
+    body.light-mode .hmc:hover {
+      box-shadow: 0 0 0 2px var(--g)
+    }
+
+    body.light-mode .amst {
+      background: var(--s2)
+    }
+
+    body.light-mode .ami {
+      background: var(--s1);
+      border-color: var(--border)
+    }
+
+    body.light-mode #amodal {
+      background: rgba(0, 0, 0, .45)
+    }
+
+    body.light-mode .exp-btn {
+      background: rgba(29, 185, 84, .08)
+    }
+
+    body.light-mode.yt-theme .exp-btn {
+      background: rgba(255, 0, 0, .08)
+    }
+
+    /* ═══════════ LIGHT/DARK TOGGLE ═══════════ */
+    .mode-toggle {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 10px;
+      border-radius: 20px;
+      cursor: pointer;
+      border: 1px solid var(--border2);
+      background: none;
+      font-family: var(--mono);
+      font-size: .62rem;
+      color: var(--muted);
+      transition: all .25s;
+      letter-spacing: .03em
+    }
+
+    .mode-toggle:hover {
+      border-color: var(--g);
+      color: var(--text2)
+    }
+
+    body.yt-theme .mode-toggle:hover {
+      border-color: #FF0000
+    }
+
+    .mode-toggle-ico {
+      font-size: .8rem;
+      transition: transform .4s
+    }
+
+    body.light-mode .mode-toggle-ico {
+      transform: rotate(180deg)
+    }
+
+    /* ═══════════ SEARCH BAR (Top 50) ═══════════ */
+    .search-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px
+    }
+
+    .search-input {
+      flex: 1;
+      background: var(--s2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: .72rem;
+      padding: 9px 14px;
+      border-radius: 4px;
+      outline: none;
+      transition: border-color .2s, background .55s, color .55s
+    }
+
+    .search-input::placeholder {
+      color: var(--muted2)
+    }
+
+    .search-input:focus {
+      border-color: var(--g)
+    }
+
+    body.yt-theme .search-input:focus {
+      border-color: #FF0000
+    }
+
+    .search-count {
+      font-family: var(--mono);
+      font-size: .58rem;
+      color: var(--muted);
+      white-space: nowrap
+    }
+
+    .search-clear {
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: .8rem;
+      cursor: pointer;
+      padding: 4px 8px;
+      transition: color .2s
+    }
+
+    .search-clear:hover {
+      color: var(--text)
+    }
+
+    /* ═══════════ EXPORT BTN ═══════════ */
+    .hbtn-exp {
+      background: none;
+      border: 1px solid var(--border2);
+      color: var(--muted);
+      display: none
+    }
+
+    .hbtn-exp:hover {
+      border-color: var(--g);
+      color: var(--g)
+    }
+
+    body.yt-theme .hbtn-exp:hover {
+      border-color: #FF0000;
+      color: #FF0000
+    }
+
+    /* ═══════════ COLLAPSIBLE SECTIONS ═══════════ */
+    .coll-header {
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      user-select: none
+    }
+
+    .coll-header .sl {
+      margin-bottom: 0;
+      flex: 1
+    }
+
+    .coll-arrow {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .6rem;
+      color: var(--muted);
+      transition: transform .3s;
+      font-family: var(--mono)
+    }
+
+    .coll-header.collapsed .coll-arrow {
+      transform: rotate(-90deg)
+    }
+
+    .coll-body {
+      overflow: hidden;
+      transition: max-height .4s ease, opacity .3s ease;
+      max-height: 3000px;
+      opacity: 1
+    }
+
+    .coll-body.collapsed {
+      max-height: 0;
+      opacity: 0;
+      margin-bottom: 0;
+      pointer-events: none
+    }
+
+    /* ═══════════ STREAKS CALENDAR ═══════════ */
+    .cal-wrap {
+      margin-bottom: 40px
+    }
+
+    .cal-grid {
+      display: flex;
+      gap: 2px;
+      overflow-x: auto;
+      padding-bottom: 6px
+    }
+
+    .cal-week {
+      display: flex;
+      flex-direction: column;
+      gap: 2px
+    }
+
+    .cal-cell {
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+      background: var(--s2);
+      border: 1px solid var(--border);
+      transition: transform .15s, background .55s, border-color .55s
+    }
+
+    .cal-cell:hover {
+      transform: scale(1.6);
+      z-index: 10;
+      position: relative
+    }
+
+    .cal-labels {
+      display: flex;
+      gap: 2px;
+      margin-right: 6px;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 0 4px
+    }
+
+    .cal-lbl {
+      font-family: var(--mono);
+      font-size: .42rem;
+      color: var(--muted2);
+      height: 12px;
+      display: flex;
+      align-items: center
+    }
+
+    .cal-legend {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 10px;
+      justify-content: flex-end
+    }
+
+    .cal-legend-lbl {
+      font-family: var(--mono);
+      font-size: .48rem;
+      color: var(--muted)
+    }
+
+    .cal-legend-cell {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px
+    }
+
+    .cal-months {
+      display: flex;
+      gap: 2px;
+      margin-left: 24px;
+      margin-bottom: 4px
+    }
+
+    .cal-month-lbl {
+      font-family: var(--mono);
+      font-size: .44rem;
+      color: var(--muted2);
+      min-width: 12px;
+      text-align: center
+    }
+
+    /* ═══════════ GENRE CHART ═══════════ */
+    .genre-wrap {
+      position: relative;
+      height: 260px
+    }
+
+    .genre-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px
+    }
+
+    .genre-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-family: var(--mono);
+      font-size: .58rem;
+      color: var(--muted)
+    }
+
+    .genre-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0
+    }
+
+    /* ═══════════ YOUR DAY TIMELINE ═══════════ */
+    .day-tl {
+      position: relative;
+      padding-left: 32px;
+      max-height: 360px;
+      overflow-y: auto;
+      scroll-behavior: smooth
+    }
+
+    .day-tl::-webkit-scrollbar {
+      width: 4px
+    }
+
+    .day-tl::-webkit-scrollbar-track {
+      background: transparent
+    }
+
+    .day-tl::-webkit-scrollbar-thumb {
+      background: var(--border2);
+      border-radius: 2px
+    }
+
+    .day-tl::-webkit-scrollbar-thumb:hover {
+      background: var(--muted)
+    }
+
+    .day-tl::before {
+      content: '';
+      position: absolute;
+      left: 12px;
+      top: 0;
+      bottom: 0;
+      width: 1.5px;
+      background: var(--border)
+    }
+
+    .day-entry {
+      position: relative;
+      padding: 10px 0 10px 20px;
+      border-bottom: 1px solid var(--border);
+      opacity: 0;
+      animation: dayFadeIn .35s ease forwards
+    }
+
+    .day-entry:last-child {
+      border-bottom: none
+    }
+
+    .day-dot {
+      position: absolute;
+      left: -24px;
+      top: 14px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--g);
+      border: 2px solid var(--bg);
+      transition: background .55s, border-color .55s
+    }
+
+    body.yt-theme .day-dot {
+      background: #FF0000
+    }
+
+    body.light-mode .day-dot {
+      border-color: var(--s1)
+    }
+
+    .day-time {
+      font-family: var(--mono);
+      font-size: .62rem;
+      color: var(--g);
+      margin-bottom: 3px;
+      transition: color .55s
+    }
+
+    body.yt-theme .day-time {
+      color: #FF0000
+    }
+
+    .day-track {
+      font-size: .84rem;
+      font-weight: 600
+    }
+
+    .day-artist {
+      font-size: .7rem;
+      color: var(--muted)
+    }
+
+    .day-empty {
+      padding: 8px 0 8px 20px;
+      font-family: var(--mono);
+      font-size: .58rem;
+      color: var(--muted2);
+      font-style: italic
+    }
+
+    .day-fade {
+      position: relative
+    }
+
+    .day-fade::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 40px;
+      background: linear-gradient(transparent, var(--s1));
+      pointer-events: none;
+      border-radius: 0 0 var(--r) var(--r);
+      transition: background .55s
+    }
+
+    @keyframes dayFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(8px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    .day-picker {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px
+    }
+
+    .day-picker input[type=date] {
+      background: var(--s2);
+      border: 1px solid var(--border2);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: .72rem;
+      padding: 7px 12px;
+      border-radius: 3px;
+      outline: none;
+      transition: border-color .2s
+    }
+
+    .day-picker input[type=date]:focus {
+      border-color: var(--g)
+    }
+
+    body.yt-theme .day-picker input[type=date]:focus {
+      border-color: #FF0000
+    }
+
+    .day-picker input[type=date]::-webkit-calendar-picker-indicator {
+      filter: invert(1);
+      opacity: .5
+    }
+
+    body.light-mode .day-picker input[type=date]::-webkit-calendar-picker-indicator {
+      filter: none;
+      opacity: .7
+    }
+
+    .day-summary {
+      font-family: var(--mono);
+      font-size: .6rem;
+      color: var(--muted)
+    }
+
+    /* ═══════════ LISTENING JOURNEY ═══════════ */
+    .journey-scroll {
+      display: flex;
+      gap: 14px;
+      overflow-x: auto;
+      padding: 12px 0 16px;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch
+    }
+
+    .journey-card {
+      flex: 0 0 180px;
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 18px;
+      position: relative;
+      scroll-snap-align: start;
+      transition: transform .2s, border-color .2s, background .55s
+    }
+
+    .journey-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--border2)
+    }
+
+    .journey-card.highlight {
+      border-color: var(--g)
+    }
+
+    body.yt-theme .journey-card.highlight {
+      border-color: #FF0000
+    }
+
+    .journey-month {
+      font-family: var(--mono);
+      font-size: .58rem;
+      color: var(--muted);
+      letter-spacing: .1em;
+      margin-bottom: 10px
+    }
+
+    .journey-artist {
+      font-size: .82rem;
+      font-weight: 700;
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis
+    }
+
+    .journey-track {
+      font-size: .68rem;
+      color: var(--text2);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis
+    }
+
+    .journey-count {
+      font-family: var(--mono);
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--g);
+      margin-top: 10px;
+      transition: color .55s
+    }
+
+    body.yt-theme .journey-count {
+      color: #FF0000
+    }
+
+    .journey-bar {
+      height: 3px;
+      background: var(--s3);
+      border-radius: 2px;
+      margin-top: 8px;
+      overflow: hidden
+    }
+
+    .journey-bar-fill {
+      height: 100%;
+      background: var(--g);
+      border-radius: 2px;
+      transition: width 1s ease, background .55s
+    }
+
+    body.yt-theme .journey-bar-fill {
+      background: #FF0000
+    }
+
+    .journey-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: .5rem;
+      font-family: var(--mono);
+      color: var(--g);
+      background: rgba(29, 185, 84, .1);
+      border: 1px solid rgba(29, 185, 84, .2);
+      padding: 2px 6px;
+      border-radius: 2px;
+      transition: color .55s, background .55s, border-color .55s
+    }
+
+    body.yt-theme .journey-badge {
+      color: #FF0000;
+      background: rgba(255, 0, 0, .1);
+      border-color: rgba(255, 0, 0, .2)
+    }
+
+    /* ═══════════ COMPARE PERIODS ═══════════ */
+    .cmp-selectors {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap
+    }
+
+    .cmp-vs {
+      font-family: var(--mono);
+      font-size: .72rem;
+      color: var(--muted);
+      font-weight: 700
+    }
+
+    .cmp-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 20px
+    }
+
+    @media(max-width:600px) {
+      .cmp-grid {
+        grid-template-columns: 1fr
+      }
+    }
+
+    .cmp-card {
+      background: var(--s2);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 18px;
+      text-align: center;
+      transition: background .55s, border-color .55s
+    }
+
+    .cmp-label {
+      font-family: var(--mono);
+      font-size: .54rem;
+      color: var(--muted);
+      letter-spacing: .08em;
+      margin-bottom: 6px
+    }
+
+    .cmp-val {
+      font-size: 1.5rem;
+      font-weight: 800;
+      line-height: 1
+    }
+
+    .cmp-delta {
+      font-family: var(--mono);
+      font-size: .6rem;
+      margin-top: 4px;
+      font-weight: 700
+    }
+
+    .cmp-delta.up {
+      color: var(--g)
+    }
+
+    .cmp-delta.down {
+      color: var(--red)
+    }
+
+    body.yt-theme .cmp-delta.up {
+      color: #FF0000
+    }
+
+    .cmp-chart-wrap {
+      position: relative;
+      height: 180px
+    }
+
+    /* ═══════════ SHARE FORMATS ═══════════ */
+    .share-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+      flex-wrap: wrap
+    }
+
+    .share-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border: 1px solid var(--border);
+      background: var(--s2);
+      color: var(--text2);
+      border-radius: 3px;
+      font-family: var(--mono);
+      font-size: .62rem;
+      cursor: pointer;
+      transition: all .2s;
+      letter-spacing: .04em
+    }
+
+    .share-btn:hover {
+      border-color: var(--g);
+      color: var(--g)
+    }
+
+    body.yt-theme .share-btn:hover {
+      border-color: #FF0000;
+      color: #FF0000
+    }
+
+    /* ═══════════ SCROLL TO TOP ═══════════ */
+    .scroll-top {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: var(--g);
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(12px);
+      transition: opacity .3s, transform .3s, background .3s;
+      z-index: 999;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, .4)
+    }
+
+    .scroll-top.show {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0)
+    }
+
+    .scroll-top:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, .5)
+    }
+
+    body.yt-theme .scroll-top {
+      background: #FF0000
+    }
+
+    /* ═══════════ FOOTER ═══════════ */
+    .site-footer {
+      padding: 40px 24px 24px;
+      text-align: center;
+      font-family: var(--mono);
+      font-size: .56rem;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      margin-top: 60px;
+      transition: border-color .55s
+    }
+
+    .footer-brand {
+      font-family: var(--font);
+      font-weight: 800;
+      font-size: .9rem;
+      color: var(--text2);
+      letter-spacing: -.02em;
+      margin-bottom: 6px
+    }
+
+    .footer-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 8px;
+      flex-wrap: wrap
+    }
+
+    .footer-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: .5rem;
+      color: var(--muted);
+      transition: border-color .55s, color .55s
+    }
+
+    .footer-badge svg {
+      width: 10px;
+      height: 10px
+    }
+
+    .footer-link {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color .2s
+    }
+
+    .footer-link:hover {
+      color: var(--g)
+    }
+
+    body.yt-theme .footer-link:hover {
+      color: #FF0000
+    }
+
+    /* ═══════════ ACCENT PICKER ═══════════ */
+    .accent-btn {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      cursor: pointer;
+      border: 1px solid var(--border2);
+      background: none;
+      font-family: var(--mono);
+      font-size: .58rem;
+      color: var(--muted);
+      transition: all .25s
+    }
+
+    .accent-btn:hover {
+      border-color: var(--g);
+      color: var(--text2)
+    }
+
+    .accent-swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--g);
+      transition: background .3s
+    }
+
+    .accent-pop {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 12px;
+      display: none;
+      gap: 6px;
+      flex-wrap: wrap;
+      width: 180px;
+      z-index: 100;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, .4)
+    }
+
+    .accent-pop.show {
+      display: flex
+    }
+
+    .accent-opt {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform .15s, border-color .15s
+    }
+
+    .accent-opt:hover {
+      transform: scale(1.2)
+    }
+
+    .accent-opt.active {
+      border-color: #fff
+    }
+
+    /* ═══════════ MOBILE HAMBURGER ═══════════ */
+    .ham-btn {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 1.2rem;
+      cursor: pointer;
+      padding: 4px 8px
+    }
+
+    /* ═══════════ COMPREHENSIVE MOBILE ═══════════ */
+    @media(max-width:640px) {
+      header {
+        padding: 10px 12px
+      }
+
+      .logo-text {
+        font-size: .9rem
+      }
+
+      .hdr {
+        gap: 6px
+      }
+
+      .hdr-tag {
+        display: none
+      }
+
+      .hbtn {
+        font-size: .52rem;
+        padding: 6px 10px
+      }
+
+      .mode-toggle {
+        padding: 4px 7px;
+        font-size: .52rem
+      }
+
+      .mode-toggle #modeLbl {
+        display: none
+      }
+
+      .accent-btn span:last-child {
+        display: none
+      }
+
+      .theme-toggle-label {
+        display: none
+      }
+
+      .ham-btn {
+        display: block
+      }
+
+      .hdr-collapse {
+        display: none;
+        position: absolute;
+        top: 100%;
+        right: 0;
+        background: var(--s1);
+        border: 1px solid var(--border);
+        border-radius: var(--r);
+        padding: 8px;
+        gap: 6px;
+        flex-direction: column;
+        min-width: 140px;
+        z-index: 100;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, .5)
+      }
+
+      .hdr-collapse.show {
+        display: flex
+      }
+
+      body.light-mode .hdr-collapse {
+        background: var(--s1)
+      }
+
+      .hero-title {
+        font-size: 1.8rem !important
+      }
+
+      .hero-sub {
+        font-size: .68rem
+      }
+
+      .sg {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6px
+      }
+
+      .sc {
+        padding: 14px 12px
+      }
+
+      .sc-val {
+        font-size: 1.4rem
+      }
+
+      .sc-lbl {
+        font-size: .44rem
+      }
+
+      .tc {
+        grid-template-columns: 1fr;
+        gap: 14px
+      }
+
+      .sort-row {
+        gap: 4px
+      }
+
+      .sort-btn {
+        font-size: .48rem;
+        padding: 4px 8px
+      }
+
+      .panel {
+        padding: 14px
+      }
+
+      .sl {
+        font-size: .52rem
+      }
+
+      .ri {
+        padding: 10px 12px;
+        gap: 10px
+      }
+
+      .ri-rank {
+        font-size: .9rem;
+        min-width: 24px
+      }
+
+      .ri-count {
+        font-size: .82rem
+      }
+
+      .ri-time {
+        font-size: .62rem
+      }
+
+      .cal-cell {
+        width: 9px;
+        height: 9px
+      }
+
+      .cal-lbl {
+        font-size: .34rem
+      }
+
+      .cal-month-lbl {
+        font-size: .34rem
+      }
+
+      .journey-card {
+        flex: 0 0 150px;
+        padding: 14px
+      }
+
+      .journey-artist {
+        font-size: .72rem
+      }
+
+      .journey-count {
+        font-size: .9rem
+      }
+
+      .cmp-grid {
+        grid-template-columns: 1fr
+      }
+
+      .cmp-val {
+        font-size: 1.2rem
+      }
+
+      .wtabs {
+        flex-wrap: wrap
+      }
+
+      .wtab {
+        font-size: .5rem;
+        padding: 6px 12px
+      }
+
+      .search-input {
+        font-size: .64rem;
+        padding: 7px 10px
+      }
+
+      .dg {
+        grid-template-columns: 1fr
+      }
+
+      .pg {
+        flex-direction: column
+      }
+
+      .pi {
+        flex-direction: column;
+        text-align: center
+      }
+
+      .ag {
+        grid-template-columns: repeat(2, 1fr)
+      }
+
+      .msr {
+        grid-template-columns: 1fr 1fr
+      }
+
+      .coll-header .sl {
+        font-size: .48rem
+      }
+
+      .scroll-top {
+        bottom: 16px;
+        right: 16px;
+        width: 36px;
+        height: 36px;
+        font-size: .85rem
+      }
+
+      .site-footer {
+        padding: 24px 12px 16px
+      }
+
+      .day-tl {
+        max-height: 280px
+      }
+
+      #dropzone {
+        padding: 40px 16px
+      }
+
+      .drop-icon svg {
+        width: 36px;
+        height: 36px
+      }
+
+      #dzTitle {
+        font-size: 1rem
+      }
+
+      #dzDesc {
+        font-size: .68rem
+      }
+
+      .ftags {
+        gap: 6px
+      }
+
+      .ftag {
+        font-size: .5rem;
+        padding: 4px 10px
+      }
+
+      .demo-btn {
+        font-size: .7rem;
+        padding: 10px 24px
+      }
+    }
+
+    @media(max-width:400px) {
+      .sg {
+        grid-template-columns: 1fr 1fr;
+        gap: 4px
+      }
+
+      .sc-val {
+        font-size: 1.2rem
+      }
+
+      .hero-title {
+        font-size: 1.5rem !important
+      }
+
+      .ag {
+        grid-template-columns: 1fr
+      }
+
+      .journey-card {
+        flex: 0 0 130px;
+        padding: 10px
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="bg-canvas"></canvas>
+  <div id="theme-overlay"></div>
+
+  <header>
+    <div class="logo-wrap" onclick="goHome()" title="Go home">
+      <div class="logo-pulse" id="logoPulse"></div>
+      <span class="logo-text" id="logoText">Statify</span>
+      <span class="logo-yt-badge" id="logoYtBadge">
+        <span class="logo-yt-badge-icon">▶</span>
+        <span class="logo-yt-badge-text">YT</span>
+      </span>
+    </div>
+    <div class="hdr" style="position:relative">
+      <span class="hdr-tag">Local · Private · Yours</span>
+      <button class="theme-toggle" id="themeToggleBtn" onclick="toggleTheme(event)" title="Switch platform">
+        <span class="toggle-icon toggle-spotify">🎵</span>
+        <div class="theme-toggle-track">
+          <div class="theme-toggle-thumb"></div>
+        </div>
+        <span class="toggle-icon toggle-yt">▶</span>
+        <span class="theme-toggle-label" id="themeLbl">SPOTIFY</span>
+        <span class="toggle-locked-tip">Go home to switch</span>
+      </button>
+      <button class="hbtn hbtn-o" id="uploadBtn" onclick="triggerUpload()">Upload Files</button>
+      <button class="hbtn hbtn-o hbtn-exp" id="exportBtn" onclick="exportDashboard()" title="Export dashboard">📸
+        Export</button>
+      <button class="mode-toggle" id="modeToggle" onclick="toggleMode()" title="Toggle light/dark mode">
+        <span class="mode-toggle-ico" id="modeIco">🌙</span>
+        <span id="modeLbl">DARK</span>
+      </button>
+      <button class="accent-btn" id="accentBtn" onclick="toggleAccentPicker()" title="Accent color">
+        <div class="accent-swatch" id="accentSwatch"></div>
+        <span>Color</span>
+        <div class="accent-pop" id="accentPop"></div>
+      </button>
+      <button class="hbtn hbtn-g" onclick="loadDemo()">▶ Demo</button>
+    </div>
+  </header>
+
+  <!-- Spotify file input -->
+  <input type="file" id="fi" multiple accept=".json" style="display:none"
+    onchange="handleFiles(this.files);this.value=''">
+  <!-- YouTube file input -->
+  <input type="file" id="fi-yt" multiple accept=".html,.csv" style="display:none"
+    onchange="handleYTFiles(this.files);this.value=''">
+
+  <!-- ══════════ HOME / DROPZONE ══════════ -->
+  <div id="dropzone" onclick="triggerUpload()">
+    <div class="drop-icon" id="dropIcon">
+      <svg id="dropSvgSpotify" width="50" height="50" viewBox="0 0 50 50" fill="none">
+        <circle cx="25" cy="25" r="24" stroke="#1DB954" stroke-width="1.5" stroke-dasharray="4 3" />
+        <path d="M25 33V17M17 25l8-8 8 8" stroke="#1DB954" stroke-width="1.8" stroke-linecap="round"
+          stroke-linejoin="round" />
+      </svg>
+      <svg id="dropSvgYT" width="50" height="50" viewBox="0 0 50 50" fill="none"
+        style="display:none;position:absolute;top:0;left:0">
+        <circle cx="25" cy="25" r="24" stroke="#FF0000" stroke-width="1.5" stroke-dasharray="4 3" />
+        <path d="M20 17l16 8-16 8V17z" fill="#FF0000" opacity=".8" />
+      </svg>
+    </div>
+    <h2 id="dzTitle">Drop your Spotify JSON files</h2>
+    <p id="dzDesc">All processing happens locally in your browser.<br>Nothing is uploaded or stored anywhere.</p>
+    <div class="ftags" id="dzTags">
+      <span class="ftag">StreamingHistory_music_0.json</span>
+      <span class="ftag">StreamingHistory_music_1.json</span>
+      <span class="ftag">YourLibrary.json</span>
+    </div>
+    <div class="or-div"><span>OR</span></div>
+    <button class="demo-btn" id="demoBtn" onclick="event.stopPropagation();loadDemo()">▶&nbsp;Try with demo
+      data</button>
+    <p class="drop-hint" id="dzHint">Request data: Spotify → Account → Privacy Settings → Download your data</p>
+  </div>
+
+  <div id="loader">
+    <div class="lring"></div>
+    <div class="ltxt" id="lmsg">CRUNCHING DATA...</div>
+    <div class="lprog">
+      <div class="lbar"></div>
+    </div>
+  </div>
+
+  <!-- ══════════ DASHBOARD ══════════ -->
+  <div id="dashboard">
+
+    <!-- YT Mode tabs (Watch / Music) — only visible in YT theme -->
+    <div id="yt-mode-tabs">
+      <button class="yt-mtab act" id="ytTabWatch" onclick="switchYTTab('watch')">📺 WATCH HISTORY</button>
+      <button class="yt-mtab" id="ytTabMusic" onclick="switchYTTab('music')">🎵 MUSIC LIBRARY</button>
+    </div>
+
+    <!-- ── WATCH / SPOTIFY DASHBOARD ── -->
+    <div id="yt-watch-dash">
+      <div class="hero">
+        <div class="hero-badge">
+          <div class="hero-dot"></div><span id="hbadge"></span>
+        </div>
+        <h1 class="hero-title" id="htitle"></h1>
+        <p class="hero-sub" id="hsub"></p>
+        <div class="waveform" id="wf"></div>
+      </div>
+      <div class="sl rv">Overview</div>
+      <div class="sg" id="statGrid"></div>
+      <div class="sl rv" id="top50Label">Your Top 50 Tracks</div>
+      <div class="sort-row rv"><span class="sort-lbl">SORT BY</span><button class="sort-btn s50-btn act"
+          data-sort="streams" onclick="setSort50('streams',this)">STREAMS</button><button class="sort-btn s50-btn"
+          data-sort="time" onclick="setSort50('time',this)">TIME</button></div>
+      <div class="search-wrap rv">
+        <input class="search-input" id="top50Search" type="text" placeholder="Search tracks or artists..."
+          oninput="filterTop50()">
+        <span class="search-count" id="top50Count"></span>
+        <button class="search-clear" id="top50Clear" onclick="clearTop50Search()" style="display:none">✕</button>
+      </div>
+      <div class="panel mb40 rv" style="padding:0">
+        <div id="top50" class="rl"></div><button class="exp-btn" id="exp50btn" onclick="toggle50()"><span
+            id="exp50lbl">SEE ALL 50</span><svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          </svg></button>
+      </div>
+      <div class="tc">
+        <div class="rv">
+          <div class="sl" id="topArtistLabel">Top Artists</div>
+          <div class="sort-row"><span class="sort-lbl">SORT BY</span><button class="sort-btn sart-btn act"
+              data-sort="streams" onclick="setSort('art','streams',this)">STREAMS</button><button
+              class="sort-btn sart-btn" data-sort="time" onclick="setSort('art','time',this)">TIME</button></div>
+          <div class="panel" style="padding:0">
+            <div class="rl" id="topArtists"></div>
+          </div>
+        </div>
+        <div class="rv">
+          <div class="sl" id="heatmapLabel">Hour & Day Patterns</div>
+          <div class="panel">
+            <p class="pt" id="heatmapTitle">When do you listen most?</p>
+            <div class="hml" id="hmlb"></div>
+            <div class="hmg" id="hmg"></div>
+            <div style="margin-top:18px">
+              <div class="bc" id="dayBars"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="sl rv">Monthly Explorer</div>
+      <div class="panel mb40 rv">
+        <div
+          style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px">
+          <div>
+            <p class="pt" style="margin:0">Deep dive by period</p>
+            <p style="font-size:.72rem;color:var(--muted);font-family:var(--mono);margin-top:4px">Pick any month to see
+              your breakdown</p>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+            <div class="mc"><select class="msel" id="mysel" onchange="renderMonthly()"></select><select class="msel"
+                id="mmsel" onchange="renderMonthly()">
+                <option value="">All year</option>
+                <option value="01">Jan</option>
+                <option value="02">Feb</option>
+                <option value="03">Mar</option>
+                <option value="04">Apr</option>
+                <option value="05">May</option>
+                <option value="06">Jun</option>
+                <option value="07">Jul</option>
+                <option value="08">Aug</option>
+                <option value="09">Sep</option>
+                <option value="10">Oct</option>
+                <option value="11">Nov</option>
+                <option value="12">Dec</option>
+              </select></div>
+            <div class="sort-row" style="margin-bottom:0"><span class="sort-lbl">SORT BY</span><button
+                class="sort-btn smon-btn" data-sort="streams"
+                onclick="setSort('mon','streams',this)">STREAMS</button><button class="sort-btn smon-btn act"
+                data-sort="time" onclick="setSort('mon','time',this)">TIME</button></div>
+          </div>
+        </div>
+        <div class="msr" id="mstats"></div>
+        <div class="rl" id="mtracks" style="border:1px solid var(--border);border-radius:4px;margin-bottom:16px"></div>
+        <div class="cw"><canvas id="mchart"></canvas></div>
+      </div>
+      <div class="sl rv">Personality</div>
+      <div class="pg rv" id="pg"></div>
+      <div class="sl rv">Deep Stats</div>
+      <div class="dg rv" id="dg"></div>
+      <div class="sl rv" id="artistDiveLabel">Artist Deep Dive</div>
+      <p style="font-size:.78rem;color:var(--muted);margin-bottom:14px;font-family:var(--mono)" class="rv"
+        id="artistDiveHint">Click any artist for your personal stats with them</p>
+      <div class="ag rv" id="ag"></div>
+      <div class="tc" id="decPlatSection">
+        <div class="rv">
+          <div class="sl">Decade Breakdown</div>
+          <div class="panel">
+            <p class="pt">Era of your music</p>
+            <div id="decChart"></div>
+          </div>
+        </div>
+        <div class="rv">
+          <div class="sl">Platform Breakdown</div>
+          <div class="panel">
+            <p class="pt">Where you listen</p>
+            <div class="pl" id="platList"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sl rv">Your Statify Card</div>
+      <div class="rv">
+        <p style="font-size:.78rem;color:var(--muted);margin-bottom:14px;font-family:var(--mono)">A shareable snapshot
+          of your identity.</p>
+        <div class="wtabs"><button class="wtab act" onclick="setWrapped('alltime',this)">ALL TIME</button><button
+            class="wtab" onclick="setWrapped('year',this)">THIS YEAR</button><button class="wtab"
+            onclick="setWrapped('month',this)">THIS MONTH</button></div>
+        <div id="wcard"></div>
+        <button class="sbtn" onclick="saveCard()">⬇ Save as Image</button>
+        <div class="share-row">
+          <button class="share-btn" onclick="shareCard('story')">📱 Instagram Story (9:16)</button>
+          <button class="share-btn" onclick="shareCard('twitter')">🐦 Twitter/X (16:9)</button>
+        </div>
+      </div>
+      <div class="sl rv">Fun Facts</div>
+      <div class="dg rv" id="funfacts"></div>
+      <div class="sl rv">Listening DNA</div>
+      <div class="panel rv mb40" id="dnaPanel" style="padding:28px">
+        <p class="pt" style="margin-bottom:6px">Your fingerprint</p>
+        <p style="font-size:.72rem;color:var(--muted);font-family:var(--mono);margin-bottom:20px">A breakdown of what
+          makes your taste uniquely yours</p>
+        <div id="dnaRows"></div>
+      </div>
+
+      <!-- ═══════ STREAKS CALENDAR ═══════ -->
+      <div class="coll-header rv" onclick="toggleColl(this)">
+        <div class="sl">Activity Calendar</div>
+        <div class="coll-arrow">▼</div>
+      </div>
+      <div class="coll-body">
+        <div class="panel rv mb40 cal-wrap" id="calendarPanel" style="padding:24px">
+          <p class="pt" style="margin-bottom:4px">Your listening streaks</p>
+          <p style="font-size:.72rem;color:var(--muted);font-family:var(--mono);margin-bottom:14px">Daily activity over
+            the past year — the brighter, the more active</p>
+          <div id="calMonths" class="cal-months"></div>
+          <div style="display:flex">
+            <div class="cal-labels" id="calLabels"></div>
+            <div class="cal-grid" id="calGrid"></div>
+          </div>
+          <div class="cal-legend" id="calLegend"></div>
+        </div>
+      </div>
+
+      <!-- ═══════ GENRE BREAKDOWN ═══════ -->
+      <div class="coll-header rv" onclick="toggleColl(this)">
+        <div class="sl">Genre & Your Day</div>
+        <div class="coll-arrow">▼</div>
+      </div>
+      <div class="coll-body">
+        <div class="tc">
+          <div class="rv">
+            <div class="sl">Genre Breakdown</div>
+            <div class="panel" style="padding:24px">
+              <p class="pt" style="margin-bottom:12px">Your taste spectrum</p>
+              <div class="genre-wrap"><canvas id="genreChart"></canvas></div>
+              <div class="genre-legend" id="genreLegend"></div>
+            </div>
+          </div>
+          <div class="rv">
+            <div class="sl">Your Day</div>
+            <div class="panel day-fade" style="padding:24px">
+              <p class="pt" style="margin-bottom:4px">What did you listen to?</p>
+              <p style="font-size:.72rem;color:var(--muted);font-family:var(--mono);margin-bottom:14px">Pick a date to
+                see your hour-by-hour timeline</p>
+              <div class="day-picker">
+                <input type="date" id="dayDate" onchange="renderYourDay()">
+                <span class="day-summary" id="daySummary"></span>
+              </div>
+              <div class="day-tl" id="dayTimeline"></div>
+            </div>
+          </div>
+        </div>
+      </div><!-- end genre+day collapsible -->
+
+      <!-- ═══════ LISTENING JOURNEY ═══════ -->
+      <div class="coll-header rv" onclick="toggleColl(this)">
+        <div class="sl">Listening Journey</div>
+        <div class="coll-arrow">▼</div>
+      </div>
+      <div class="coll-body">
+        <div class="panel rv mb40" style="padding:24px">
+          <p class="pt" style="margin-bottom:4px">How your taste evolved</p>
+          <p style="font-size:.72rem;color:var(--muted);font-family:var(--mono);margin-bottom:4px">Scroll through your
+            month-by-month story</p>
+          <div class="journey-scroll" id="journeyScroll"></div>
+        </div>
+      </div><!-- end journey collapsible -->
+
+      <!-- ═══════ COMPARE PERIODS ═══════ -->
+      <div class="coll-header rv" onclick="toggleColl(this)">
+        <div class="sl">Compare Periods</div>
+        <div class="coll-arrow">▼</div>
+      </div>
+      <div class="coll-body">
+        <div class="panel rv mb40" style="padding:24px" id="comparePanel">
+          <p class="pt" style="margin-bottom:4px">Side-by-side comparison</p>
+          <p style="font-size:.72rem;color:var(--muted);font-family:var(--mono);margin-bottom:14px">Compare two periods
+            to see how your habits changed</p>
+          <div class="cmp-selectors">
+            <select class="msel" id="cmpA" onchange="renderCompare()"></select>
+            <span class="cmp-vs">VS</span>
+            <select class="msel" id="cmpB" onchange="renderCompare()"></select>
+          </div>
+          <div class="cmp-grid" id="cmpGrid"></div>
+          <div class="cmp-chart-wrap"><canvas id="cmpChart"></canvas></div>
+        </div>
+      </div><!-- end compare collapsible -->
+
+      <div><button class="rbtn" onclick="goHome()">↩ Load different files</button></div>
+    </div><!-- end yt-watch-dash -->
+
+    <!-- ── YT MUSIC LIBRARY DASHBOARD ── -->
+    <div id="yt-music-dash">
+      <div class="hero">
+        <div class="hero-badge">
+          <div class="hero-dot"></div><span>YOUTUBE MUSIC LIBRARY</span>
+        </div>
+        <h1 class="hero-title"><span style="color:#FF0000" id="ytMusicCount">—</span> songs saved</h1>
+        <p class="hero-sub" id="ytMusicSub">Your complete YouTube Music library snapshot</p>
+        <div class="waveform" id="wfMusic"></div>
+      </div>
+      <div class="sl rv">Library Overview</div>
+      <div class="yt-lib-grid rv" id="ytLibGrid"></div>
+      <div class="sl rv">Top Saved Artists</div>
+      <div class="panel rv" style="padding:0">
+        <div class="rl" id="ytTopSavedArtists"></div>
+      </div>
+      <div style="margin-top:40px"><button class="rbtn" onclick="goHome()">↩ Load different files</button></div>
+    </div><!-- end yt-music-dash -->
+
+  </div><!-- end dashboard -->
+
+  <div id="amodal" onclick="if(event.target.id==='amodal')document.getElementById('amodal').classList.remove('show')">
+    <div class="ami"><button class="amc" onclick="document.getElementById('amodal').classList.remove('show')">✕</button>
+      <div id="ambody"></div>
+    </div>
+  </div>
+  <div id="tooltip"></div>
+  <button class="scroll-top" id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})"
+    title="Back to top">↑</button>
+
+  <!-- ═══════ FOOTER ═══════ -->
+  <footer class="site-footer" id="siteFooter">
+    <div class="footer-brand">Statify</div>
+    <div class="footer-row">
+      <span class="footer-badge"><svg viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 12.5a5.5 5.5 0 110-11 5.5 5.5 0 010 11z" />
+          <path
+            d="M8 4a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 018 4zm0 7a.75.75 0 100-1.5.75.75 0 000 1.5z" />
+        </svg> All data stays on your device</span>
+    </div>
+    <div class="footer-row">
+      <a class="footer-link" href="https://github.com" target="_blank">GitHub</a>
+      <span>·</span>
+      <span>v4.0</span>
+      <span>·</span>
+      <span>Built with ♥</span>
+    </div>
+  </footer>
+
+  <script>
+    /* ═══════════════════════════════════════
+       BG CANVAS
+    ═══════════════════════════════════════ */
+    const bgC = document.getElementById('bg-canvas'), bgX = bgC.getContext('2d'); let pts = [];
+    function rbg() { bgC.width = window.innerWidth; bgC.height = window.innerHeight }
+    rbg(); window.addEventListener('resize', rbg);
+    for (let i = 0; i < 55; i++)pts.push({ x: Math.random() * window.innerWidth, y: Math.random() * window.innerHeight, r: Math.random() * 1.4 + .3, vx: (Math.random() - .5) * .25, vy: (Math.random() - .5) * .25, a: Math.random() * .4 + .08 });
+    (function ab() { bgX.clearRect(0, 0, bgC.width, bgC.height); const yt = document.body.classList.contains('yt-theme'); pts.forEach(p => { p.x += p.vx; p.y += p.vy; if (p.x < 0) p.x = bgC.width; if (p.x > bgC.width) p.x = 0; if (p.y < 0) p.y = bgC.height; if (p.y > bgC.height) p.y = 0; bgX.beginPath(); bgX.arc(p.x, p.y, p.r, 0, Math.PI * 2); bgX.fillStyle = yt ? `rgba(255,0,0,${p.a})` : `rgba(29,185,84,${p.a})`; bgX.fill() }); requestAnimationFrame(ab) })();
+
+    /* ═══════════════════════════════════════
+       DND
+    ═══════════════════════════════════════ */
+    const dz = document.getElementById('dropzone');
+    dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag') });
+    dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+    dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag'); isYT ? handleYTFiles(e.dataTransfer.files) : handleFiles(e.dataTransfer.files) });
+
+    /* ═══════════════════════════════════════
+       TOOLTIP
+    ═══════════════════════════════════════ */
+    const tip = document.getElementById('tooltip');
+    function showTip(e, t) { tip.style.display = 'block'; tip.innerHTML = t; tip.style.left = (e.clientX + 14) + 'px'; tip.style.top = (e.clientY - 36) + 'px' }
+    function hideTip() { tip.style.display = 'none' }
+    document.addEventListener('mousemove', e => { if (tip.style.display === 'block') { tip.style.left = (e.clientX + 14) + 'px'; tip.style.top = (e.clientY - 36) + 'px' } });
+
+    /* ═══════════════════════════════════════
+       STATE
+    ═══════════════════════════════════════ */
+    let S = [], lib = null, mci = null, wmode = 'alltime', tkMap = {}, top50open = false, sort50 = 'streams', sortArt = 'streams', sortMon = 'time';
+    let isYT = false;          // current platform mode
+    let dashboardOpen = false; // is dashboard showing?
+    let ytMusicData = [];      // parsed music library CSV rows
+    let ytWatchData = [];      // parsed watch history events
+    let genreCI = null;        // genre chart instance
+    let cmpCI = null;          // compare chart instance
+
+    /* ═══════════════════════════════════════
+       UPLOAD ROUTING
+    ═══════════════════════════════════════ */
+    function triggerUpload() {
+      if (isYT) document.getElementById('fi-yt').click();
+      else document.getElementById('fi').click();
+    }
+
+    /* ═══════════════════════════════════════
+       SPOTIFY DEMO DATA
+    ═══════════════════════════════════════ */
+    function genDemo() {
+      const arts = [['The Weeknd', ['Blinding Lights', 'Save Your Tears', 'Starboy', 'Die For You', 'After Hours', 'Heartless']], ['Drake', ["God's Plan", 'One Dance', 'Hotline Bling', 'Rich Flex', 'Forever']], ['Kendrick Lamar', ['HUMBLE.', 'DNA.', 'Swimming Pools', 'Alright', 'Money Trees']], ['Taylor Swift', ['Anti-Hero', 'Shake It Off', 'Blank Space', 'Cruel Summer', 'cardigan']], ['Billie Eilish', ['bad guy', 'Happier Than Ever', 'Ocean Eyes', 'Therefore I Am', 'lovely']], ['Post Malone', ['Rockstar', 'Sunflower', 'Circles', 'Better Now', 'Psycho']], ['Travis Scott', ['SICKO MODE', 'goosebumps', 'HIGHEST IN THE ROOM', 'Antidote', 'WAKE UP']], ['Juice WRLD', ['Lucid Dreams', 'All Girls Are the Same', 'Wishing Well', 'Robbery', 'Come & Go']], ['Doja Cat', ['Say So', 'Kiss Me More', 'Need to Know', 'Streets', 'Woman']], ['SZA', ['Kill Bill', 'Good Days', 'Shirt', 'I Hate U', 'Nobody Gets Me']]];
+      const plats = ['iOS', 'Android', 'Windows', 'Web Player', 'macOS'], pw = [40, 25, 20, 10, 5];
+      const now = new Date(), strms = [];
+      for (let i = 0; i < 365; i++) {
+        const date = new Date(now - i * 86400000);
+        const isWE = date.getDay() === 0 || date.getDay() === 6;
+        const n = isWE ? Math.floor(Math.random() * 32) + 18 : Math.floor(Math.random() * 22) + 9;
+        for (let j = 0; j < n; j++) {
+          const [artist, tracks] = arts[Math.floor(Math.random() * arts.length)];
+          const track = tracks[Math.floor(Math.random() * tracks.length)];
+          const hw = [.3, .2, .1, .1, .1, .2, .4, .7, 1, 1.1, 1, .9, .8, .75, .75, .85, 1, 1.25, 1.4, 1.55, 1.5, 1.3, .9, .5];
+          let hour = 0, rand = Math.random() * hw.reduce((a, b) => a + b, 0), cum = 0;
+          for (let h = 0; h < 24; h++) { cum += hw[h]; if (rand < cum) { hour = h; break } }
+          const ts = new Date(date); ts.setHours(hour, Math.floor(Math.random() * 60), 0, 0);
+          const fullMs = Math.floor(Math.random() * 90000) + 150000;
+          const skC = track === 'bad guy' || track === 'DNA.' || track === 'Shake It Off' ? .38 : .1;
+          const sk = Math.random() < skC;
+          const ms = sk ? Math.floor(Math.random() * 18000) + 4000 : fullMs;
+          let pr = Math.random() * 100, pc = 0, platform = 'iOS';
+          for (let p = 0; p < plats.length; p++) { pc += pw[p]; if (pr < pc) { platform = plats[p]; break } }
+          strms.push({ ts: ts.toISOString(), artist, track, ms, skipped: sk, platform, fullMs });
+        }
+      }
+      lib = { tracks: Array(847).fill(0), albums: Array(93).fill(0), artists: Array(214).fill(0), shows: Array(12).fill(0) };
+      return strms.sort((a, b) => new Date(a.ts) - new Date(b.ts));
+    }
+
+    /* ═══════════════════════════════════════
+       YOUTUBE DEMO DATA
+    ═══════════════════════════════════════ */
+    function genYTDemo() {
+      const channelData = {
+        'MrBeast': ['I Spent 50 Hours Buried Alive', '$456,000 Squid Game In Real Life', 'I Built 100 Houses And Gave Them Away', 'Ages 1-100 Decide Who Wins $250,000', 'Would You Rather Have $100,000 OR This Mystery Gift', 'I Survived 7 Days In An Abandoned City', 'Last To Leave Circle Wins $500,000', 'I Ate The Worlds Largest Slice Of Pizza', 'Lamborghini vs Shredder', 'I Opened A Free Car Dealership', 'Press This Button To Win $100,000', 'Going Through The Worlds Largest Maze', 'I Bought Everything In A Store'],
+        'Veritasium': ['The Simplest Math Problem No One Can Solve', 'How Electricity Actually Works', 'Why No One Has Measured The Speed Of Light', 'The Biggest Misconception About Electricity', 'How One Line in the Oldest Math Text Hinted at Hidden Universes', 'Parallel Worlds Probably Exist', 'Math Has a Fatal Flaw', 'Why Gravity Is NOT A Force', 'The Discovery That Changed Physics', 'How Were the Pyramids Built', 'Why Machines That Break the Laws of Physics Actually Work'],
+        'MKBHD': ['iPhone 16 Pro Max Review: The REAL Deal', 'Galaxy S25 Ultra: The Full Picture', 'The Best Smartphones of 2025', 'Tesla Cybertruck Review: The HARSH Truth', 'Why Everyone is Wrong About EVs', 'Apple Vision Pro Review: Tomorrow is Here', 'The Pixel 9 Pro is Unreal', 'This $200 Phone Changed My Mind', 'M4 MacBook Pro vs M3: Worth the Upgrade?', 'AirPods Pro 3: The Best Yet', 'Best Tech Under $100 in 2025', 'My Favorite Camera Gear Right Now'],
+        'Kurzgesagt': ['The Egg - A Short Story', 'What If We Detonated All Nuclear Bombs at Once', 'The Last Human - A Glimpse Into The Far Future', 'Why Black Holes Could Delete The Universe', 'What Happens If The Sun Goes Out', 'You Are Not Where You Think You Are', 'The Most Dangerous Stuff in the Universe', 'How to Make a Kurzgesagt Video in 1200 Hours', 'Is Reality Real? The Simulation Argument', 'What Happened Before History: Human Origins', 'The Most Illegal Thing in the Universe'],
+        'Linus Tech Tips': ['We BUILT a Mass Production PC Factory!', 'The REAL Reason Intel is Different Now', 'I Bought a $2,000 Amazon Returns Pallet', 'Why I Still Use This 10 Year Old Phone', 'This Changes EVERYTHING About Gaming PCs', 'Is 8K Worth It Yet in 2025?', 'Building a Home Server for $500', 'RTX 5080 vs 4090: Worth the Wait?', 'The Truth About PC Building in 2025', 'Why SSDs Are Getting Cheaper', 'This Keyboard Changed How I Work', 'Building the ULTIMATE Setup'],
+        'PewDiePie': ['I Made My Own Movie in 24 Hours', 'Reacting to My First YouTube Video', 'Minecraft Hardcore Day 1000', 'The Internet Has Changed Forever', 'I Finally Beat the Hardest Game', 'This Fan-Made Game Blew My Mind', '6 YouTubers vs 1 Secret Impostor', 'Rating Every Meme of 2025', 'LWIAY Returns: Your Best Memes', 'Cooking Japanese Food Like a Pro', 'My Studio Tour 2025', 'Reading Terrible Mobile Game Ads'],
+        'Mark Rober': ['Egg Drop From Space', 'Worlds Largest Nerf Blaster', 'Glitter Bomb Trap Catches Porch Pirate', 'Shark Attack vs Crocodile Attack Comparison', 'Building a REAL Lightsaber', 'Worlds Largest Jello Pool', 'Testing if Sharks Can Smell a Drop of Blood', 'Feeding Bill Gates a Fake Burger', 'Rocket Powered Golf Club at 100,000 RPM', 'Underwater Suction Cup Challenge', 'How to Beat Every Carnival Game'],
+        '3Blue1Brown': ['But what is a neural network? Chapter 1', 'The Beauty of Bézier Curves', 'Why is pi here? And why is it squared?', 'Essence of Linear Algebra Ep.1', 'But How Does Bitcoin Actually Work?', 'Exponential Growth Is Not That Impressive', 'The Most Unexpected Answer to a Counting Puzzle', 'Visualizing Quaternions', 'A Visual Guide to Bayesian Thinking', 'The Hardest Problem on the Hardest Test', 'Simulating an Epidemic', 'How Do You Find Primes?'],
+        'Tom Scott': ['The Infinite Pattern That Never Repeats', 'Why Roundabouts Are Everywhere Now', 'I Mass-Produced My Own PCB', 'The Worlds Most Dangerous Hiking Trail', 'Why Traffic Lights Are Red Yellow and Green', 'I Flew Over Every Country On Earth', 'This Video Has 98,342,129 Views', 'The Map That Changed The World', 'Why You Cant Trust Your Own Memory', 'The Artificial Gravity Lab That NASA Built', 'The Lake That Exploded and Killed 1,800 People'],
+        'Wendover Productions': ['The Electric Vehicle Charging Problem', 'Why South Africa is Still So Segregated', 'The Logistics of the US Census', 'How Airlines Quietlyستgogle Billions', 'Why Trains Suck in America', 'The Economics of Private Jets', 'How Container Ships Changed the World', 'The Failed Promise of Nuclear Cars', 'Why City Design is Important', 'Hawaiis Water Crisis Explained', 'The Most Satisfying Video About Trains'],
+        'CGP Grey': ['Rules for Rulers', 'The Trouble with Tumbleweeds', 'This Video Will Make You Angry', 'Humans Need Not Apply', 'You Are Two', 'The Simple Solution to Traffic', 'Death and Dynasties', 'Hexagons are the Bestagons', 'The Race to Win Staten Island', 'How to become Pope', 'Who Owns The Statue of Liberty'],
+        'Vsauce': ['What If Everyone JUMPED At Once?', 'Is Your Red The Same as My Red?', 'What Is The Speed of Dark?', 'How Much Does a Shadow Weigh?', 'What If The Moon Was a Disco Ball?', 'Which Way Is Down?', 'Is Anything Real?', 'What Color Is a Mirror?', 'How Hot Can It Get?', 'The Brachistochrone', 'Fixed Points', 'The Zipf Mystery'],
+        'Corridor Crew': ['VFX Artists React to Bad CGI 47', 'We Made Squid Game in Real Life', 'Stuntmen React to Bad Hollywood Stunts', 'How to Film a Car Chase on Zero Budget', 'We Made a Marvel-Level Action Scene', 'Animators vs Their Own Animations', 'Why CGI Looks Bad in New Movies', 'Making the Impossible Camera Move', 'Real Explosions vs Movie Explosions', 'We Fixed the Worst CGI in Movie History', '$1 vs $10,000,000 Movie Set'],
+        'Nile Red': ['Making transparent wood', 'Making aerogel', 'Making superconductors', 'Making uranium glass', 'I made the worlds clearest ice', 'Making cotton candy from dryer lint', 'Making a mirror that reflects everything', 'I turned plastic gloves into hot sauce', 'Making stinky perfume from scratch', 'Dissolving a car with chemicals', 'The most satisfying chemical reactions'],
+        'Practical Engineering': ['How Does a Hydroelectric Dam Work', 'The Genius of Sewer Design', 'The Problem with Trying to Build a Road', 'Why Tunnels Dont Collapse', 'How Water Towers Work', 'Why Most Bridges Are Not Suspension Bridges', 'The Hidden Infrastructure of Modern Cities', 'What Makes a Good Foundation', 'Why Americas Power Grid is So Fragile', 'How Does a Water Treatment Plant Work', 'Earthquake Engineering Explained']
+      };
+      const channels = Object.keys(channelData);
+      const now = new Date();
+      const events = [];
+      /* Weighted channel popularity: MrBeast & MKBHD watched more */
+      const chWeights = [16, 12, 14, 10, 13, 8, 9, 7, 8, 6, 5, 9, 8, 7, 6];
+      const chCum = []; let cc = 0; chWeights.forEach(w => { cc += w; chCum.push(cc) });
+      function pickChannel() { const r = Math.random() * cc; for (let i = 0; i < chCum.length; i++) { if (r < chCum[i]) return channels[i] } return channels[0] }
+      for (let i = 0; i < 365; i++) {
+        const date = new Date(now - i * 86400000);
+        const isWE = date.getDay() === 0 || date.getDay() === 6;
+        /* Seasonal variation: more watching in winter months */
+        const month = date.getMonth();
+        const seasonal = [1.2, 1.15, 1.0, .9, .85, .8, .75, .8, .9, 1.0, 1.1, 1.3][month];
+        const baseN = isWE ? Math.floor(Math.random() * 16) + 8 : Math.floor(Math.random() * 10) + 4;
+        const n = Math.round(baseN * seasonal);
+        for (let j = 0; j < n; j++) {
+          const ch = pickChannel();
+          const vids = channelData[ch];
+          const vid = vids[Math.floor(Math.random() * vids.length)];
+          /* Realistic hour-of-day weighting: peak evenings, dip at night */
+          const hw = [.15, .08, .05, .04, .03, .05, .12, .35, .55, .7, .75, .8, .85, .78, .72, .7, .78, .95, 1.2, 1.45, 1.5, 1.35, 1.0, .5];
+          let hour = 0, r = Math.random() * hw.reduce((a, b) => a + b, 0), cum = 0;
+          for (let h = 0; h < 24; h++) { cum += hw[h]; if (r < cum) { hour = h; break } }
+          const ts = new Date(date); ts.setHours(hour, Math.floor(Math.random() * 60), Math.floor(Math.random() * 60), 0);
+          events.push({ ts: ts.toISOString(), channel: ch, title: vid, artist: ch, track: vid, ms: 0, skipped: false, platform: '', fullMs: 0 });
+        }
+      }
+      /* Demo music library with realistic song/album names */
+      const musicLib = [
+        { artist: 'Taylor Swift', songs: ['Anti-Hero', 'Cruel Summer', 'Blank Space', 'Shake It Off', 'Love Story', 'Cardigan', 'All Too Well', 'Lavender Haze', 'Midnight Rain', 'Style', 'Wildest Dreams', 'Enchanted'], albums: ['Midnights', '1989', 'Folklore', 'Evermore', 'Red', 'Lover'] },
+        { artist: 'Drake', songs: ['Gods Plan', 'One Dance', 'Hotline Bling', 'Rich Flex', 'Started From The Bottom', 'In My Feelings', 'Nice For What', 'Passionfruit', 'Hold On Were Going Home', 'Headlines'], albums: ['Certified Lover Boy', 'Scorpion', 'Views', 'Her Loss', 'Take Care'] },
+        { artist: 'The Weeknd', songs: ['Blinding Lights', 'Save Your Tears', 'Starboy', 'Die For You', 'After Hours', 'Heartless', 'I Feel It Coming', 'The Hills', 'Cant Feel My Face', 'Call Out My Name'], albums: ['After Hours', 'Dawn FM', 'Starboy', 'Beauty Behind the Madness', 'Kiss Land'] },
+        { artist: 'Billie Eilish', songs: ['bad guy', 'Happier Than Ever', 'Ocean Eyes', 'Therefore I Am', 'Lovely', 'Everything I Wanted', 'When The Partys Over', 'Birds of a Feather', 'Lunch', 'NDA'], albums: ['When We All Fall Asleep', 'Happier Than Ever', 'Hit Me Hard and Soft'] },
+        { artist: 'Kendrick Lamar', songs: ['HUMBLE', 'DNA', 'Swimming Pools', 'Alright', 'Money Trees', 'Not Like Us', 'United in Grief', 'LOVE', 'Bitch Dont Kill My Vibe', 'King Kunta'], albums: ['DAMN', 'Mr Morale', 'good kid m.A.A.d city', 'To Pimp a Butterfly'] },
+        { artist: 'Doja Cat', songs: ['Say So', 'Kiss Me More', 'Need to Know', 'Streets', 'Woman', 'Paint The Town Red', 'Get Into It Yuh', 'Boss Bitch', 'You Right', 'Agora Hills'], albums: ['Planet Her', 'Hot Pink', 'Scarlet'] },
+        { artist: 'SZA', songs: ['Kill Bill', 'Good Days', 'Shirt', 'I Hate U', 'Nobody Gets Me', 'Snooze', 'Kiss Me More', 'Love Galore', 'Garden', 'Broken Clocks'], albums: ['SOS', 'Ctrl', 'Lana'] },
+        { artist: 'Bad Bunny', songs: ['Titi Me Pregunto', 'Me Porto Bonito', 'Dakiti', 'Yonaguni', 'Callaita', 'Moscow Mule', 'Ojitos Lindos', 'Efecto', 'WHERE SHE GOES', 'Monaco'], albums: ['Un Verano Sin Ti', 'YHLQMDLG', 'El Ultimo Tour Del Mundo', 'Nadie Sabe Lo Que Va a Pasar'] },
+        { artist: 'Harry Styles', songs: ['As It Was', 'Watermelon Sugar', 'Adore You', 'Sign of the Times', 'Late Night Talking', 'Golden', 'Falling', 'Kiwi', 'Lights Up', 'Matilda'], albums: ['Harrys House', 'Fine Line', 'Harry Styles'] },
+        { artist: 'Olivia Rodrigo', songs: ['drivers license', 'good 4 u', 'vampire', 'deja vu', 'brutal', 'traitor', 'happier', 'All-American Bitch', 'get him back!', 'obsessed'], albums: ['SOUR', 'GUTS'] },
+        { artist: 'Ariana Grande', songs: ['thank u next', '7 rings', 'positions', 'no tears left to cry', 'Into You', 'yes and?', 'we cant be friends', 'Side To Side', 'Break Free', 'Problem'], albums: ['thank u next', 'Positions', 'eternal sunshine', 'Sweetener'] },
+        { artist: 'BTS', songs: ['Dynamite', 'Butter', 'Boy With Luv', 'Fake Love', 'Spring Day', 'DNA', 'IDOL', 'MIC Drop', 'Black Swan', 'Life Goes On'], albums: ['BE', 'Map of the Soul: 7', 'Love Yourself: Tear', 'Wings'] },
+        { artist: 'Ed Sheeran', songs: ['Shape of You', 'Perfect', 'Photograph', 'Thinking Out Loud', 'Bad Habits', 'Castle on the Hill', 'Shivers', 'Eyes Closed', 'Galway Girl', 'Happier'], albums: ['Divide', 'Equals', 'Subtract', 'Multiply'] },
+        { artist: 'Dua Lipa', songs: ['Levitating', 'Dont Start Now', 'New Rules', 'Physical', 'One Kiss', 'Break My Heart', 'Love Again', 'Training Season', 'Illusion', 'Houdini'], albums: ['Future Nostalgia', 'Radical Optimism', 'Dua Lipa'] },
+        { artist: 'Post Malone', songs: ['Rockstar', 'Sunflower', 'Circles', 'Better Now', 'Psycho', 'Congratulations', 'I Like You', 'Chemical', 'White Iverson', 'Mourning'], albums: ['Beerbongs', 'Hollywoods Bleeding', 'Austin', 'Twelve Carat Toothache'] }
+      ];
+      ytMusicData = [];
+      musicLib.forEach(({ artist, songs, albums }) => {
+        /* Each artist gets a weighted random number of saved songs */
+        const count = Math.floor(Math.random() * 40) + 20;
+        for (let i = 0; i < count; i++) {
+          const song = songs[Math.floor(Math.random() * songs.length)];
+          const album = albums[Math.floor(Math.random() * albums.length)];
+          ytMusicData.push({ title: song, artist, album });
+        }
+      });
+      /* Shuffle music library */
+      for (let i = ytMusicData.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1));[ytMusicData[i], ytMusicData[j]] = [ytMusicData[j], ytMusicData[i]] }
+      return events.sort((a, b) => new Date(a.ts) - new Date(b.ts));
+    }
+
+    /* ═══════════════════════════════════════
+       FILE HANDLING — SPOTIFY
+    ═══════════════════════════════════════ */
+    function handleFiles(f) {
+      if (!f.length) return;
+      showLoader('READING FILES...');
+      const r = [];
+      for (const fi of f) r.push(new Promise(res => { const rd = new FileReader(); rd.onload = () => res({ name: fi.name, content: rd.result }); rd.readAsText(fi) }));
+      Promise.all(r).then(res => { showLoader('PARSING...'); setTimeout(() => { parseFiles(res); showDash(false) }, 600) });
+    }
+    function parseFiles(res) {
+      S = []; lib = null;
+      for (const { name, content } of res) {
+        try {
+          const d = JSON.parse(content), ln = name.toLowerCase();
+          if (ln.includes('streaminghistory') || ln.includes('streaming_history')) { if (Array.isArray(d)) S.push(...d) }
+          else if (ln.includes('yourlibrary') || ln.includes('your_library')) { lib = d }
+          else if (Array.isArray(d) && d[0] && (d[0].endTime || d[0].ts)) { S.push(...d) }
+        } catch (e) { }
+      }
+      S = S.map(s => ({ ts: s.endTime || s.ts || '', artist: s.artistName || s.master_metadata_album_artist_name || 'Unknown', track: s.trackName || s.master_metadata_track_name || 'Unknown', ms: s.msPlayed || s.ms_played || 0, skipped: s.skipped || false, platform: s.platform || '', fullMs: s.fullMs || 0 }));
+    }
+
+    /* ═══════════════════════════════════════
+       FILE HANDLING — YOUTUBE
+    ═══════════════════════════════════════ */
+    function handleYTFiles(f) {
+      if (!f.length) return;
+      showLoader('READING YT FILES...');
+      const r = [];
+      for (const fi of f) r.push(new Promise(res => { const rd = new FileReader(); rd.onload = () => res({ name: fi.name, content: rd.result, type: fi.name.split('.').pop().toLowerCase() }); rd.readAsText(fi) }));
+      Promise.all(r).then(res => { showLoader('PARSING...'); setTimeout(() => { parseYTFiles(res); showYTDash(false) }, 600) });
+    }
+    function parseYTFiles(files) {
+      S = []; ytMusicData = [];
+      for (const { name, content, type } of files) {
+        const ln = name.toLowerCase();
+        if (type === 'html' && ln.includes('watch')) {
+          // Parse watch-history.html
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(content, 'text/html');
+          const items = doc.querySelectorAll('.content-cell:first-child');
+          items.forEach(item => {
+            const links = item.querySelectorAll('a');
+            const title = links[0]?.textContent?.trim() || 'Unknown';
+            const channel = links[1]?.textContent?.trim() || 'Unknown';
+            const timeText = item.textContent;
+            const timeMatch = timeText.match(/(\w+ \d+, \d{4}.*?(?:AM|PM))/);
+            if (timeMatch) {
+              const ts = new Date(timeMatch[1]);
+              if (!isNaN(ts)) S.push({ ts: ts.toISOString(), artist: channel, track: title, channel, ms: 0, skipped: false, platform: '', fullMs: 0 });
+            }
+          });
+          // Fallback: try div.outer-cell structure
+          if (!S.length) {
+            const cells = doc.querySelectorAll('div');
+            cells.forEach(d => {
+              if (d.className && d.className.includes && d.className.includes('content-cell')) {
+                const a = d.querySelectorAll('a');
+                const title = a[0]?.textContent?.trim();
+                const ch = a[1]?.textContent?.trim();
+                const txt = d.textContent;
+                const m = txt.match(/(\w{3} \d{1,2}, \d{4},? \d{1,2}:\d{2}:\d{2} [AP]M)/);
+                if (title && ch && m) { const ts = new Date(m[1]); if (!isNaN(ts)) S.push({ ts: ts.toISOString(), artist: ch, track: title, channel: ch, ms: 0, skipped: false, platform: '', fullMs: 0 }); }
+              }
+            });
+          }
+        } else if (type === 'csv' && (ln.includes('music-library') || ln.includes('music_library'))) {
+          // Parse music-library-songs.csv
+          const lines = content.split('\n');
+          const header = lines[0]?.split(',').map(h => h.trim().toLowerCase().replace(/"/g, ''));
+          for (let i = 1; i < lines.length; i++) {
+            const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+            if (cols.length < 2) continue;
+            const row = {};
+            header.forEach((h, idx) => { row[h] = cols[idx] || '' });
+            if (row.title || row['song title'] || row['track title']) {
+              ytMusicData.push({
+                title: row.title || row['song title'] || row['track title'] || 'Unknown',
+                artist: row.artist || row['artist name'] || 'Unknown',
+                album: row.album || row['album title'] || ''
+              });
+            }
+          }
+        }
+      }
+      ytWatchData = [...S];
+    }
+
+    /* ═══════════════════════════════════════
+       SHOW / HIDE
+    ═══════════════════════════════════════ */
+    function loadDemo() {
+      showLoader('GENERATING DEMO...');
+      if (isYT) {
+        setTimeout(() => { S = genYTDemo(); showYTDash(true) }, 700);
+      } else {
+        setTimeout(() => { S = genDemo(); showDash(true) }, 700);
+      }
+    }
+    function showLoader(m) {
+      document.getElementById('dropzone').style.display = 'none';
+      document.getElementById('loader').style.display = 'flex';
+      document.getElementById('lmsg').textContent = m;
+    }
+    function showDash(d) {
+      setTimeout(() => {
+        document.getElementById('loader').style.display = 'none';
+        render(d);
+        document.getElementById('dashboard').style.display = 'block';
+        document.getElementById('yt-watch-dash').style.display = 'block';
+        document.getElementById('yt-music-dash').style.display = 'none';
+        document.getElementById('decPlatSection').style.display = '';
+        dashboardOpen = true;
+        lockToggle(true);
+        document.getElementById('exportBtn').style.display = '';
+        initAnim();
+      }, 400);
+    }
+    function showYTDash(d) {
+      setTimeout(() => {
+        document.getElementById('loader').style.display = 'none';
+        // Default to watch tab if we have watch data, else music
+        if (S.length) {
+          renderYTWatch(d);
+          switchYTTab('watch');
+        } else if (ytMusicData.length) {
+          switchYTTab('music');
+        }
+        document.getElementById('dashboard').style.display = 'block';
+        dashboardOpen = true;
+        lockToggle(true);
+        document.getElementById('exportBtn').style.display = '';
+        initAnim();
+      }, 400);
+    }
+
+    /* ═══════════════════════════════════════
+       LOCK / UNLOCK TOGGLE
+    ═══════════════════════════════════════ */
+    function lockToggle(lock) {
+      const btn = document.getElementById('themeToggleBtn');
+      btn.disabled = lock;
+    }
+
+    /* ═══════════════════════════════════════
+       GO HOME
+    ═══════════════════════════════════════ */
+    function goHome() {
+      if (dashboardOpen) {
+        // Animate dashboard out
+        gsap.to('#dashboard', {
+          opacity: 0, y: -18, duration: .3, onComplete: () => {
+            document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('dashboard').style.opacity = '';
+            document.getElementById('dashboard').style.transform = '';
+          }
+        });
+      }
+      S = []; lib = null; tkMap = {}; top50open = false; ytMusicData = []; ytWatchData = [];
+      if (mci) { mci.destroy(); mci = null }
+      if (typeof genreCI !== 'undefined' && genreCI) { genreCI.destroy(); genreCI = null }
+      if (typeof cmpCI !== 'undefined' && cmpCI) { cmpCI.destroy(); cmpCI = null }
+      if (typeof ScrollTrigger !== 'undefined') ScrollTrigger.getAll().forEach(t => t.kill());
+      document.getElementById('dropzone').style.display = 'block';
+      document.getElementById('loader').style.display = 'none';
+      document.getElementById('exportBtn').style.display = 'none';
+      dashboardOpen = false;
+      lockToggle(false);
+      // Animate dropzone back in
+      gsap.fromTo('#dropzone', { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: .4, delay: .1, ease: 'power2.out' });
+    }
+
+    /* ═══════════════════════════════════════
+       YT TAB SWITCHER
+    ═══════════════════════════════════════ */
+    function switchYTTab(tab) {
+      document.getElementById('ytTabWatch').classList.toggle('act', tab === 'watch');
+      document.getElementById('ytTabMusic').classList.toggle('act', tab === 'music');
+      const wd = document.getElementById('yt-watch-dash');
+      const md = document.getElementById('yt-music-dash');
+      if (tab === 'watch') {
+        wd.style.display = 'block';
+        md.style.display = 'none';
+        gsap.fromTo(wd, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: .3, ease: 'power2.out' });
+        if (!S.length && ytWatchData.length) { S = [...ytWatchData]; renderYTWatch(false); }
+      } else {
+        wd.style.display = 'none';
+        md.style.display = 'block';
+        gsap.fromTo(md, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: .3, ease: 'power2.out' });
+        renderYTMusic();
+      }
+    }
+
+    /* ═══════════════════════════════════════
+       RENDER YT WATCH HISTORY
+    ═══════════════════════════════════════ */
+    function renderYTWatch(demo) {
+      // Adapt labels for YT context
+      document.getElementById('top50Label').textContent = 'Your Top 50 Videos';
+      document.getElementById('topArtistLabel').textContent = 'Top Channels';
+      document.getElementById('heatmapTitle').textContent = 'When do you watch most?';
+      document.getElementById('heatmapLabel').textContent = 'Hour & Day Patterns';
+      document.getElementById('artistDiveLabel').textContent = 'Channel Deep Dive';
+      document.getElementById('artistDiveHint').textContent = 'Click any channel for your stats with them';
+      document.getElementById('decPlatSection').style.display = 'none';
+      render(demo);
+      document.getElementById('hbadge').textContent = demo ? 'DEMO MODE — SAMPLE YOUTUBE DATA' : 'YOUR YOUTUBE WATCH HISTORY';
+    }
+
+    /* ═══════════════════════════════════════
+       RENDER YT MUSIC LIBRARY
+    ═══════════════════════════════════════ */
+    function renderYTMusic() {
+      if (!ytMusicData.length) {
+        document.getElementById('ytLibGrid').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;font-family:var(--mono);font-size:.72rem;color:var(--muted)">Upload your music-library-songs.csv to see your library stats</div>';
+        document.getElementById('ytTopSavedArtists').innerHTML = '';
+        return;
+      }
+      const total = ytMusicData.length;
+      const artistMap = {};
+      const albumSet = new Set();
+      ytMusicData.forEach(s => {
+        if (s.artist && s.artist !== 'Unknown') { artistMap[s.artist] = (artistMap[s.artist] || 0) + 1; }
+        if (s.album) albumSet.add(s.album);
+      });
+      const topArtist = Object.entries(artistMap).sort((a, b) => b[1] - a[1])[0];
+      const uniqueArtists = Object.keys(artistMap).length;
+      document.getElementById('ytMusicCount').textContent = fN(total);
+      document.getElementById('ytMusicSub').textContent = `${uniqueArtists} artists · ${albumSet.size} albums in your YouTube Music library`;
+      // Waveform
+      const wfm = document.getElementById('wfMusic'); wfm.innerHTML = '';
+      for (let i = 0; i < 30; i++) { const b = document.createElement('div'); b.className = 'wb'; b.style.cssText = `height:${Math.random() * 100}%;animation-delay:${(i * .065).toFixed(2)}s;animation-duration:${(.8 + Math.random() * .9).toFixed(2)}s`; wfm.appendChild(b) }
+      // Overview cards
+      const avgPerArtist = uniqueArtists ? Math.round(total / uniqueArtists) : 0;
+      const topArtistShare = topArtist ? Math.round((topArtist[1] / total) * 100) : 0;
+      document.getElementById('ytLibGrid').innerHTML = [
+        { n: fN(total), l: 'SONGS SAVED', s: 'in your library' },
+        { n: fN(uniqueArtists), l: 'UNIQUE ARTISTS', s: 'you follow' },
+        { n: fN(albumSet.size), l: 'ALBUMS', s: 'in your collection' },
+        { n: avgPerArtist, l: 'AVG SONGS', s: 'per artist' },
+        { n: topArtistShare + '%', l: 'TOP ARTIST SHARE', s: topArtist ? topArtist[0] : '—' },
+        { n: Object.values(artistMap).filter(c => c >= 5).length, l: 'CORE ARTISTS', s: '5+ songs saved' },
+      ].map(c => `<div class="yt-lib-card rv"><div class="yt-lib-num">${c.n}</div><div class="yt-lib-lbl">${c.l}</div><div class="yt-lib-sub">${c.s}</div></div>`).join('');
+      // Top saved artists
+      const topSaved = Object.entries(artistMap).sort((a, b) => b[1] - a[1]).slice(0, 15);
+      document.getElementById('ytTopSavedArtists').innerHTML = topSaved.map(([a, c], i) => `
+    <div class="ri"><span class="rn ${i < 3 ? 't3' : ''}">${String(i + 1).padStart(2, '0')}</span>
+    <div class="ri-info"><div class="ri-name">${a}</div><div class="ri-sub">${c} song${c > 1 ? 's' : ''} saved</div></div>
+    <div class="rc"><div class="rc-n">${c}</div><div class="rc-l">SONGS</div></div></div>`).join('');
+      // Animate
+      setTimeout(() => {
+        document.querySelectorAll('#yt-music-dash .rv').forEach(el => {
+          gsap.to(el, { opacity: 1, y: 0, duration: .4, ease: 'power2.out' });
+        });
+        document.querySelectorAll('#yt-music-dash .yt-lib-card').forEach((el, i) => {
+          gsap.fromTo(el, { opacity: 0, y: 18, scale: .96 }, { opacity: 1, y: 0, scale: 1, duration: .38, delay: .05 + i * .06, ease: 'back.out(1.4)' });
+        });
+      }, 80);
+    }
+
+    /* ═══════════════════════════════════════
+       UTILS
+    ═══════════════════════════════════════ */
+    function fmt(ms) { const h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000); if (h >= 1000) return Math.round(h / 24) + 'd'; if (h > 0) return h + 'h ' + m + 'm'; return m + 'm' }
+    function fN(n) { return n >= 10000 ? (n / 1000).toFixed(1) + 'k' : n.toLocaleString() }
+    function accentColor() { return isYT ? '#FF0000' : '#1DB954' }
+    function accentRgb() { return isYT ? '255,0,0' : '29,185,84' }
+
+    /* ═══════════════════════════════════════
+       MAIN RENDER (Spotify + YT Watch)
+    ═══════════════════════════════════════ */
+    function render(demo) {
+      if (!S.length) return;
+      const tot = S.reduce((a, x) => a + x.ms, 0), n = S.length;
+      const uT = new Set(S.map(x => x.track + '||' + x.artist)).size, uA = new Set(S.map(x => x.artist)).size;
+      const sk = S.filter(x => x.skipped).length;
+      const dates = S.map(x => x.ts).filter(Boolean).sort();
+      const d0 = dates[0]?.slice(0, 10) || '—', d1 = dates[dates.length - 1]?.slice(0, 10) || '—';
+      const span = dates.length > 1 ? Math.max(1, Math.round((new Date(d1) - new Date(d0)) / 86400000)) : 1;
+      const ac = accentColor(), ar = accentRgb();
+      /* HERO */
+      if (!isYT) document.getElementById('hbadge').textContent = demo ? 'DEMO MODE — SAMPLE DATA' : 'YOUR SPOTIFY DATA';
+      document.getElementById('htitle').innerHTML = `<span class="g">${fN(n)}</span> ${isYT ? 'videos watched' : 'streams'} · <span class="g">${isYT ? '' : fmt(tot)}</span>`;
+      if (isYT) document.getElementById('htitle').innerHTML = `<span class="g">${fN(n)}</span> videos watched`;
+      document.getElementById('hsub').textContent = `${d0} → ${d1} · ${span} days`;
+      const wf = document.getElementById('wf'); wf.innerHTML = '';
+      for (let i = 0; i < 30; i++) { const b = document.createElement('div'); b.className = 'wb'; b.style.cssText = `height:${Math.random() * 100}%;animation-delay:${(i * .065).toFixed(2)}s;animation-duration:${(.8 + Math.random() * .9).toFixed(2)}s`; wf.appendChild(b) }
+      /* STATS */
+      const timeLabel = isYT ? 'VIDEOS WATCHED' : 'TOTAL STREAMS';
+      const cards = [
+        { l: timeLabel, v: fN(n), i: '♫' },
+        { l: isYT ? 'DAYS ACTIVE' : 'LISTENING TIME', v: isYT ? fN(new Set(S.map(x => x.ts?.slice(0, 10)).filter(Boolean)).size) : fmt(tot), i: '◷' },
+        { l: 'DAILY AVERAGE', v: isYT ? Math.round(n / span) + '/day' : fmt(tot / span), i: '⏤' },
+        { l: isYT ? 'UNIQUE VIDEOS' : 'UNIQUE TRACKS', v: fN(uT), i: '♪' },
+        { l: isYT ? 'CHANNELS' : 'UNIQUE ARTISTS', v: fN(uA), i: '◉' },
+        { l: 'SKIP RATE', v: isYT ? '—' : ((sk / n) * 100).toFixed(1) + '%', i: '»' },
+        { l: 'DAYS TRACKED', v: span, i: '▦' },
+        { l: 'LIBRARY', v: lib ? fN((lib.tracks || []).length) : (isYT && ytMusicData.length ? fN(ytMusicData.length) : '—'), i: '♥' }
+      ];
+      document.getElementById('statGrid').innerHTML = cards.map(c => `<div class="sc"><div class="sc-lbl">${c.l}</div><div class="sc-val" data-count="${c.v}">${c.v}</div><div class="sc-ico">${c.i}</div></div>`).join('');
+      animateCountUp();
+      /* TOP 50 */
+      tkMap = {}; S.forEach(x => { const k = x.track + '||' + x.artist; if (!tkMap[k]) tkMap[k] = { count: 0, ms: 0 }; tkMap[k].count++; tkMap[k].ms += x.ms });
+      renderTop50();
+      /* TOP ARTISTS */
+      const aMap = {}; S.forEach(x => { if (!aMap[x.artist]) aMap[x.artist] = { count: 0, ms: 0 }; aMap[x.artist].count++; aMap[x.artist].ms += x.ms });
+      renderTopArtists(aMap);
+      /* HEATMAP */
+      const hC = new Array(24).fill(0); S.forEach(x => { if (!x.ts) return; const d = new Date(x.ts); if (!isNaN(d)) hC[d.getHours()]++ });
+      const mxH = Math.max(...hC);
+      document.getElementById('hmlb').innerHTML = Array.from({ length: 24 }, (_, i) => `<div class="hmlb">${i.toString().padStart(2, '0')}</div>`).join('');
+      document.getElementById('hmg').innerHTML = hC.map((c, h) => { const al = mxH ? c / mxH : 0; const bg = al < .02 ? 'var(--s3)' : `rgba(${ar},${(.08 + al * .92).toFixed(2)})`; return `<div class="hmc" style="background:${bg}" onmouseenter="showTip(event,'${h}:00<br>${c} ${isYT ? 'videos' : 'streams'}')" onmouseleave="hideTip()"></div>` }).join('');
+      /* DAY BARS */
+      const dN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], dC = new Array(7).fill(0);
+      S.forEach(x => { if (!x.ts) return; const d = new Date(x.ts); if (!isNaN(d)) dC[d.getDay()]++ });
+      const mxD = Math.max(...dC);
+      document.getElementById('dayBars').innerHTML = dC.map((c, i) => `<div class="br"><div class="bl">${dN[i]}</div><div class="bt"><div class="bf" data-target="${mxD ? (c / mxD * 100) : 0}"></div></div><div class="bv">${c}</div></div>`).join('');
+      /* MONTHLY */
+      const years = [...new Set(S.map(x => x.ts.slice(0, 4)).filter(Boolean))].sort();
+      const ys = document.getElementById('mysel'); ys.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join(''); ys.value = years[years.length - 1] || '';
+      renderMonthly(); renderMonthChart();
+      /* SECTIONS */
+      renderPersonality(span, tot); renderDeep(span);
+      const aMap2 = {}; S.forEach(x => { if (!aMap2[x.artist]) aMap2[x.artist] = { count: 0, ms: 0 }; aMap2[x.artist].count++; aMap2[x.artist].ms += x.ms });
+      const topA2 = Object.entries(aMap2).sort((a, b) => b[1].count - a[1].count).slice(0, 12);
+      renderArtistGrid(topA2);
+      if (!isYT) { renderDecade(); renderPlatform(); }
+      renderWrapped('alltime'); renderFunFacts(); renderDNA();
+      /* NEW SECTIONS */
+      renderCalendar(); renderGenre(); renderJourney(); renderCompare();
+      /* Set date picker to most active day */
+      const dC2 = {}; S.forEach(x => { if (!x.ts) return; const d = x.ts.slice(0, 10); dC2[d] = (dC2[d] || 0) + 1 });
+      const topDay2 = Object.entries(dC2).sort((a, b) => b[1] - a[1])[0];
+      if (topDay2) document.getElementById('dayDate').value = topDay2[0];
+      renderYourDay();
+    }
+
+    /* ═══════════════════════════════════════
+       MONTHLY
+    ═══════════════════════════════════════ */
+    function renderMonthly() {
+      const yr = document.getElementById('mysel').value, mo = document.getElementById('mmsel').value;
+      const pf = mo ? `${yr}-${mo}` : yr;
+      const fl = S.filter(x => x.ts && x.ts.startsWith(pf));
+      const tm = fl.reduce((a, x) => a + x.ms, 0);
+      const label = isYT ? 'VIDEOS' : 'STREAMS';
+      document.getElementById('mstats').innerHTML = `<div class="ms"><div class="ms-l">${label}</div><div class="ms-v">${fN(fl.length)}</div></div><div class="ms"><div class="ms-l">${isYT ? 'UNIQUE VIDEOS' : 'LISTEN TIME'}</div><div class="ms-v">${isYT ? fN(new Set(fl.map(x => x.track)).size) : fmt(tm)}</div></div><div class="ms"><div class="ms-l">${isYT ? 'CHANNELS' : 'UNIQUE TRACKS'}</div><div class="ms-v">${fN(new Set(fl.map(x => isYT ? x.artist : x.track)).size)}</div></div>`;
+      const tm2 = {}; fl.forEach(x => { const k = x.track + '||' + x.artist; if (!tm2[k]) tm2[k] = { count: 0, ms: 0 }; tm2[k].count++; tm2[k].ms += x.ms });
+      const top = Object.entries(tm2).sort((a, b) => sortMon === 'time' ? b[1].ms - a[1].ms : b[1].count - a[1].count).slice(0, 8);
+      document.getElementById('mtracks').innerHTML = top.length ? top.map(([k, v], i) => { const [t, a] = k.split('||'); return `<div class="ri"><span class="rn ${i < 3 ? 't3' : ''}">${String(i + 1).padStart(2, '0')}</span><div class="ri-info"><div class="ri-name">${t}</div><div class="ri-sub">${a}</div></div><div class="rc"><div class="rc-n">${v.count}</div><div class="rc-l">${isYT ? 'WATCHES' : 'STREAMS'}</div></div>${!isYT ? `<div style="width:6px"></div><div class="rc rc-b"><div class="rc-n">${fmt(v.ms)}</div><div class="rc-l">TIME</div></div>` : ''}</div>` }).join('') : '<div style="padding:18px;text-align:center;font-family:var(--mono);font-size:.72rem;color:var(--muted)">No data for this period</div>';
+    }
+    function renderMonthChart() {
+      const mM = {}; S.forEach(x => { if (!x.ts) return; const m = x.ts.slice(0, 7); if (m) mM[m] = (mM[m] || 0) + 1 });
+      const mE = Object.entries(mM).sort((a, b) => a[0].localeCompare(b[0]));
+      if (mci) mci.destroy();
+      const ac = accentColor();
+      const ctx = document.getElementById('mchart').getContext('2d');
+      mci = new Chart(ctx, { type: 'line', data: { labels: mE.map(([m]) => m.slice(2)), datasets: [{ data: mE.map(([, c]) => c), borderColor: ac, borderWidth: 2, fill: true, backgroundColor: ac + '12', tension: .4, pointBackgroundColor: ac, pointRadius: 3, pointHoverRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, animation: { duration: 1400, easing: 'easeInOutQuart' }, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#666', font: { family: 'Space Mono', size: 10 } }, grid: { color: '#1a1a1a' } }, y: { ticks: { color: '#666', font: { family: 'Space Mono', size: 10 } }, grid: { color: '#1a1a1a' }, beginAtZero: true } } } });
+    }
+
+    /* ═══════════════════════════════════════
+       PERSONALITY
+    ═══════════════════════════════════════ */
+    function renderPersonality(span, tot) {
+      const hC = new Array(24).fill(0); S.forEach(x => { if (!x.ts) return; const d = new Date(x.ts); if (!isNaN(d)) hC[d.getHours()]++ });
+      const ns = (hC.slice(22).concat(hC.slice(0, 6))).reduce((a, b) => a + b, 0);
+      const ms = hC.slice(6, 12).reduce((a, b) => a + b, 0);
+      const np = Math.round((ns / S.length) * 100), mp = Math.round((ms / S.length) * 100);
+      const isNO = np > mp;
+      const aM = {}; S.forEach(x => { aM[x.artist] = (aM[x.artist] || 0) + 1 });
+      const loy = Math.round((Object.values(aM).filter(c => c > 5).reduce((a, b) => a + b, 0) / S.length) * 100);
+      const disc = Math.round((Object.values(aM).filter(c => c === 1).length / Object.keys(aM).length) * 100);
+      const skpct = S.filter(x => x.skipped).length ? Math.round((S.filter(x => x.skipped).length / S.length) * 100) : 0;
+      const sorted = S.filter(x => x.ts).sort((a, b) => new Date(a.ts) - new Date(b.ts));
+      let lng = 0, cur = 0, last = null;
+      sorted.forEach(x => { const t = new Date(x.ts).getTime(); if (last && t - last < 30 * 60 * 1000) cur++; else cur = 1; if (cur > lng) lng = cur; last = t });
+      const avgD = Math.round(S.length / Math.max(1, span));
+      const topTk = Object.entries(tkMap).sort((a, b) => b[1].count - a[1].count)[0];
+      const repS = topTk ? Math.round((topTk[1].count / S.length) * 100) : 0;
+      const unitLabel = isYT ? 'watches' : 'streams';
+      const cards = [
+        { i: '🌙', title: isNO ? 'Night Owl' : 'Early Bird', lbl: 'CHRONOTYPE', val: (isNO ? np : mp) + '%', desc: isNO ? `${np}% of ${unitLabel} happen after 10pm` : `${mp}% of ${unitLabel} are in the morning`, bar: isNO ? np : mp },
+        { i: '♥', title: isYT ? 'Channel Loyalty' : 'Artist Loyalty', lbl: 'LOYALTY SCORE', val: loy + '%', desc: `${loy}% of ${unitLabel} are established favourites`, bar: loy },
+        { i: '🔍', title: 'Explorer', lbl: 'DISCOVERY RATE', val: disc + '%', desc: `${disc}% of ${isYT ? 'channels' : 'artists'} only visited once`, bar: disc },
+        { i: '⏭', title: isYT ? 'Rewatcher' : 'Replay Addict', lbl: isYT ? 'REWATCH SHARE' : 'TOP TRACK SHARE', val: repS + '%', desc: `Top ${isYT ? 'video' : 'track'} is ${repS}% of all ${unitLabel}`, bar: Math.min(repS * 4, 100) },
+        { i: '📅', title: 'Consistent Viewer', lbl: 'CONSISTENCY', val: avgD + '/day', desc: `Average ${avgD} ${unitLabel} per day`, bar: Math.min(avgD * 4, 100) },
+        { i: '🎯', title: lng > 50 ? 'Binge Master' : lng > 20 ? 'Long Sessions' : 'Short Bursts', lbl: 'SESSION STYLE', val: lng + ' in a row', desc: `Longest ${lng} consecutive ${unitLabel}`, bar: Math.min(lng, 100) },
+        { i: '⚡', title: 'Variety Index', lbl: isYT ? 'CHANNELS EXPLORED' : 'ARTISTS EXPLORED', val: Object.keys(aM).length, desc: `${Object.keys(aM).length} distinct ${isYT ? 'channels' : 'artists'} in your history`, bar: Math.min(Object.keys(aM).length / 1.5, 100) },
+      ];
+      if (!isYT) cards.splice(3, 0, { i: '⏭', title: skpct > 25 ? 'The Curator' : skpct > 12 ? 'Selective' : 'Casual', lbl: 'SKIP PERSONALITY', val: skpct + '%', desc: `You skip ${skpct}% of tracks`, bar: Math.min(skpct * 2, 100) });
+      document.getElementById('pg').innerHTML = cards.map(c => `<div class="pc"><div class="pc-ico">${c.i}</div><div class="pc-title">${c.title}</div><div class="pc-lbl">${c.lbl}</div><div class="pc-val">${c.val}</div><div class="pc-desc">${c.desc}</div><div class="pbt"><div class="pbf" data-target="${Math.min(Math.max(c.bar || 0, 0), 100)}"></div></div></div>`).join('');
+    }
+
+    /* ═══════════════════════════════════════
+       DEEP STATS
+    ═══════════════════════════════════════ */
+    function renderDeep(span) {
+      const sorted = S.filter(x => x.ts).sort((a, b) => new Date(a.ts) - new Date(b.ts));
+      let sess = [], cs = 1, ls = 0, last = null, tc = 0, sc = 0;
+      sorted.forEach(x => { const t = new Date(x.ts).getTime(); if (last && t - last < 20 * 60 * 1000) cs++; else { if (cs > 1) { sess.push(cs); if (cs > ls) ls = cs; tc += cs; sc++ } cs = 1 } last = t });
+      const avgSL = sc ? Math.round(tc / sc) : 0;
+      const days = new Set(S.map(x => x.ts?.slice(0, 10)).filter(Boolean));
+      const dl = [...days].sort(); let cStr = 1, mStr = 1;
+      for (let i = 1; i < dl.length; i++) { const df = (new Date(dl[i]) - new Date(dl[i - 1])) / 86400000; if (df === 1) cStr++; else { if (cStr > mStr) mStr = cStr; cStr = 1 } }
+      if (cStr > mStr) mStr = cStr;
+      let curStr = 0, cd = new Date();
+      while (days.has(cd.toISOString().slice(0, 10))) { curStr++; cd.setDate(cd.getDate() - 1) }
+      const hC = new Array(24).fill(0); S.forEach(x => { if (!x.ts) return; const d = new Date(x.ts); if (!isNaN(d)) hC[d.getHours()]++ });
+      const pH = hC.indexOf(Math.max(...hC));
+      const pAP = pH < 12 ? `${pH === 0 ? 12 : pH}am` : `${pH === 12 ? 12 : pH - 12}pm`;
+      const mid = S.filter(x => { if (!x.ts) return false; const h = new Date(x.ts).getHours(); return h >= 0 && h < 4 }).length;
+      const dC2 = {}; S.forEach(x => { if (!x.ts) return; const d = x.ts.slice(0, 10); dC2[d] = (dC2[d] || 0) + 1 });
+      const topDay = Object.entries(dC2).sort((a, b) => b[1] - a[1])[0];
+      const topTk = Object.entries(tkMap).sort((a, b) => b[1].count - a[1].count)[0];
+      const unit = isYT ? 'watches' : 'streams';
+      const dc = [
+        { i: '🔥', l: 'LONGEST BINGE', v: ls + ' ' + unit, s: 'consecutive without pause' },
+        { i: '🗓', l: 'LONGEST STREAK', v: mStr + ' days', s: 'in a row' },
+        { i: '⚡', l: 'CURRENT STREAK', v: curStr + ' days', s: 'keep it going' },
+        { i: '⏰', l: 'PEAK HOUR', v: pAP, s: `most active at ${pH}:00` },
+        { i: '♻', l: 'AVG SESSION', v: avgSL + ' ' + unit, s: 'per session' },
+        { i: '🌑', l: 'MIDNIGHT VIEWER', v: Math.round((mid / S.length) * 100) + '%', s: `${unit} after midnight` },
+        { i: '📅', l: 'BEST DAY EVER', v: topDay ? topDay[1] + ' ' + unit : '—', s: topDay ? topDay[0] : 'no data' },
+        { i: '🏆', l: 'MOST REWATCHED', v: topTk ? topTk[1].count + '×' : '—', s: topTk ? topTk[0].split('||')[0] : '' },
+      ];
+      document.getElementById('dg').innerHTML = dc.map(c => `<div class="dc"><div class="dc-ico">${c.i}</div><div class="dc-lbl">${c.l}</div><div class="dc-val">${c.v}</div><div class="dc-sub">${c.s}</div></div>`).join('');
+    }
+
+    /* ═══════════════════════════════════════
+       ARTIST / CHANNEL GRID
+    ═══════════════════════════════════════ */
+    function renderArtistGrid(topA) {
+      const label = isYT ? 'EXPLORE CHANNEL →' : 'TAP TO EXPLORE →';
+      document.getElementById('ag').innerHTML = topA.slice(0, 12).map(([a, v]) => {
+        const ini = a.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+        return `<div class="ac" onclick="openModal('${a.replace(/'/g, "\\'")}')"><div class="ai">${ini}</div><div class="an">${a}</div><div class="ap"><span>${v.count}</span> ${isYT ? 'watches' : 'streams'}${!isYT ? ' · ' + fmt(v.ms) : ''}</div><div class="ah">${label}</div></div>`;
+      }).join('');
+    }
+    function openModal(artist) {
+      const fl = S.filter(x => x.artist === artist); if (!fl.length) return;
+      const tm = fl.reduce((a, x) => a + x.ms, 0);
+      const dates = fl.map(x => x.ts).filter(Boolean).sort();
+      const tM = {}; fl.forEach(x => { tM[x.track] = (tM[x.track] || 0) + 1 });
+      const top = Object.entries(tM).sort((a, b) => b[1] - a[1]).slice(0, 5);
+      const skp = Math.round((fl.filter(x => x.skipped).length / fl.length) * 100);
+      const hC2 = new Array(24).fill(0); fl.forEach(x => { if (!x.ts) return; const d = new Date(x.ts); if (!isNaN(d)) hC2[d.getHours()]++ });
+      const pH = hC2.indexOf(Math.max(...hC2));
+      const ini = artist.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+      const mMap = {}; fl.forEach(x => { if (!x.ts) return; const m = x.ts.slice(0, 7); mMap[m] = (mMap[m] || 0) + 1 });
+      const peakMonth = Object.entries(mMap).sort((a, b) => b[1] - a[1])[0];
+      const unit = isYT ? 'watches' : 'streams';
+      document.getElementById('ambody').innerHTML = `
+    <div class="amh"><div class="amini">${ini}</div><div><div class="amn">${artist}</div><div class="ams">Your personal stats</div></div></div>
+    <div class="amstats">
+      <div class="amst"><div class="amst-l">TOTAL ${unit.toUpperCase()}</div><div class="amst-v">${fN(fl.length)}</div></div>
+      <div class="amst"><div class="amst-l">${isYT ? 'FIRST WATCHED' : 'TIME SPENT'}</div><div class="amst-v">${isYT ? dates[0]?.slice(0, 7) || '—' : fmt(tm)}</div></div>
+      <div class="amst"><div class="amst-l">${isYT ? 'LAST WATCHED' : 'SKIP RATE'}</div><div class="amst-v">${isYT ? dates[dates.length - 1]?.slice(0, 7) || '—' : skp + '%'}</div></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:16px">
+      <div class="amst" style="flex:1"><div class="amst-l">FIRST</div><div style="font-family:var(--mono);font-size:.78rem;color:var(--text2)">${dates[0]?.slice(0, 10) || '—'}</div></div>
+      <div class="amst" style="flex:1"><div class="amst-l">PEAK HOUR</div><div style="font-family:var(--mono);font-size:.78rem;color:var(--text2)">${pH}:00</div></div>
+      <div class="amst" style="flex:1"><div class="amst-l">BEST MONTH</div><div style="font-family:var(--mono);font-size:.78rem;color:var(--text2)">${peakMonth ? peakMonth[0] : '—'}</div></div>
+    </div>
+    <div class="amsec">TOP ${isYT ? 'VIDEOS FROM' : 'TRACKS FROM'} ${artist.toUpperCase()}</div>
+    <div class="rl" style="border:1px solid var(--border);border-radius:4px">${top.map(([t, c], i) => `<div class="ri"><span class="rn ${i < 3 ? 't3' : ''}">${String(i + 1).padStart(2, '0')}</span><div class="ri-info"><div class="ri-name">${t}</div></div><div class="rc"><div class="rc-n">${c}</div><div class="rc-l">PLAYS</div></div></div>`).join('')}</div>`;
+      const mod = document.getElementById('amodal'); mod.classList.add('show');
+      gsap.fromTo('.ami', { opacity: 0, scale: .95, y: 18 }, { opacity: 1, scale: 1, y: 0, duration: .32, ease: 'back.out(1.5)' });
+    }
+
+    /* ═══════════════════════════════════════
+       DECADE / PLATFORM (Spotify only)
+    ═══════════════════════════════════════ */
+    function renderDecade() {
+      const adec = { 'The Weeknd': '2010s', 'Drake': '2010s', 'Kendrick Lamar': '2010s', 'Taylor Swift': '2010s', 'Billie Eilish': '2010s', 'Post Malone': '2010s', 'Travis Scott': '2010s' };
+      const dm = { '2020s': 0, '2010s': 0, '2000s': 0, '90s': 0, '80s': 0 };
+      S.forEach(x => { const d = adec[x.artist] || (Math.random() < .6 ? '2010s' : Math.random() < .7 ? '2020s' : '2000s'); dm[d] = (dm[d] || 0) + 1 });
+      const tot = Object.values(dm).reduce((a, b) => a + b, 0);
+      const cols = ['#1DB954', '#5b9cf6', '#f5a623', '#e05555', '#888'];
+      document.getElementById('decChart').innerHTML = Object.entries(dm).map(([e, c], i) => { const p = tot ? Math.round((c / tot) * 100) : 0; return `<div class="dr"><div class="de">${e}</div><div class="dt"><div class="df" data-target="${p}" style="background:${cols[i]}"></div></div><div class="dp">${p}%</div></div>` }).join('');
+    }
+    function renderPlatform() {
+      const pM = {}; S.forEach(x => { const p = x.platform || 'Unknown'; if (!pM[p]) pM[p] = { count: 0, ms: 0 }; pM[p].count++; pM[p].ms += x.ms });
+      const sorted = Object.entries(pM).sort((a, b) => b[1].count - a[1].count);
+      const tot = S.length;
+      const icos = { 'iOS': '📱', 'Android': '📱', 'Windows': '💻', 'Web Player': '🌐', 'macOS': '💻', 'Unknown': '❓' };
+      const cols = { 'iOS': 'rgba(91,156,246,.18)', 'Android': 'rgba(29,185,84,.14)', 'Windows': 'rgba(91,156,246,.12)', 'Web Player': 'rgba(245,166,35,.14)', 'macOS': 'rgba(91,156,246,.12)' };
+      document.getElementById('platList').innerHTML = sorted.map(([p, v]) => {
+        const pct = Math.round((v.count / tot) * 100);
+        return `<div class="pi"><div class="pico" style="background:${cols[p] || 'var(--s3)'}">${icos[p] || '🎵'}</div><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px"><span class="pn">${p}</span><span style="font-family:var(--mono);font-size:.68rem;color:var(--g);font-weight:700">${pct}%</span></div><div style="height:3px;background:var(--s3);border-radius:2px;overflow:hidden"><div style="height:100%;background:var(--g);width:0%;border-radius:2px;transition:width 1.3s ease" data-target="${pct}"></div></div><div style="font-family:var(--mono);font-size:.58rem;color:var(--muted);margin-top:5px">${fN(v.count)} streams · ${fmt(v.ms)}</div></div></div>`;
+      }).join('');
+    }
+
+    /* ═══════════════════════════════════════
+       WRAPPED CARD
+    ═══════════════════════════════════════ */
+    function setWrapped(m, btn) { wmode = m; document.querySelectorAll('.wtab').forEach(t => t.classList.remove('act')); btn.classList.add('act'); renderWrapped(m) }
+    function renderWrapped(mode) {
+      let fl = S, label = 'All Time', period = 'Since the beginning';
+      const now = new Date();
+      if (mode === 'year') { const y = now.getFullYear().toString(); fl = S.filter(x => x.ts && x.ts.startsWith(y)); label = y; period = `Jan – Dec ${y}` }
+      else if (mode === 'month') { const ym = now.toISOString().slice(0, 7); fl = S.filter(x => x.ts && x.ts.startsWith(ym)); const mn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']; label = mn[now.getMonth()] + ' ' + now.getFullYear(); period = 'This month' }
+      const tm = fl.reduce((a, x) => a + x.ms, 0);
+      const aM = {}; fl.forEach(x => { aM[x.artist] = (aM[x.artist] || 0) + 1 });
+      const tA = Object.entries(aM).sort((a, b) => b[1] - a[1])[0];
+      const tM = {}; fl.forEach(x => { tM[x.track] = (tM[x.track] || 0) + 1 });
+      const tT = Object.entries(tM).sort((a, b) => b[1] - a[1])[0];
+      const mC = {}; fl.forEach(x => { if (!x.ts) return; const m = x.ts.slice(0, 7); mC[m] = (mC[m] || 0) + 1 });
+      const bars = Object.values(mC).slice(-12); const mxB = Math.max(...bars, 1);
+      const uA = Object.keys(aM).length, uT = new Set(fl.map(x => x.track)).size;
+      const sk = Math.round((fl.filter(x => x.skipped).length / Math.max(fl.length, 1)) * 100);
+      const hC3 = new Array(24).fill(0); fl.forEach(x => { if (!x.ts) return; const h = new Date(x.ts).getHours(); if (!isNaN(h)) hC3[h]++ });
+      const peakH = hC3.indexOf(Math.max(...hC3));
+      const peakHlbl = peakH < 12 ? (peakH === 0 ? '12am' : `${peakH}am`) : (peakH === 12 ? '12pm' : `${peakH - 12}pm`);
+      const top3A = Object.entries(aM).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([a]) => a);
+      const unit = isYT ? 'videos' : 'streams';
+      const ac = accentColor(), ar = accentRgb();
+      document.getElementById('wcard').innerHTML = `
+    <div class="wch"><div class="wcd"></div><span class="wcl">STATIFY</span><span class="wcp">${period}</span></div>
+    <div class="wct">Your ${label} in ${isYT ? 'watch history' : 'music'}</div>
+    <div class="wcb"><span class="g">${fN(fl.length)}</span> ${unit}</div>
+    <div style="font-family:var(--mono);font-size:.62rem;color:var(--muted);margin-top:3px">${isYT ? `${uA} channels · ${uT} unique videos` : `${fmt(tm)} of listening time · ${uA} artists`}</div>
+    <div class="wcbars">${bars.map(b => `<div class="wcbar" style="height:${Math.round((b / mxB) * 100)}%"></div>`).join('')}</div>
+    <div class="wcdiv"></div>
+    <div class="wcrow"><div class="wcc"><div class="wcc-l">TOP ${isYT ? 'CHANNEL' : 'ARTIST'}</div><div class="wcc-v">${tA ? tA[0] : '—'}</div><div class="wcc-s">${tA ? tA[1] + ' ' + unit : ''}</div></div><div class="wcc" style="text-align:right"><div class="wcc-l">TOP ${isYT ? 'VIDEO' : 'TRACK'}</div><div class="wcc-v" style="font-size:.82rem">${tT ? tT[0].split('||')[0] : '—'}</div><div class="wcc-s">${tT ? tT[1] + ' plays' : ''}</div></div></div>
+    <div class="wcrow"><div class="wcc"><div class="wcc-l">UNIQUE ${isYT ? 'VIDEOS' : 'TRACKS'}</div><div class="wcc-v">${fN(uT)}</div></div><div class="wcc" style="text-align:center"><div class="wcc-l">${isYT ? 'CHANNELS' : 'SKIP RATE'}</div><div class="wcc-v">${isYT ? fN(uA) : sk + '%'}</div></div><div class="wcc" style="text-align:right"><div class="wcc-l">PEAK HOUR</div><div class="wcc-v">${peakHlbl}</div></div></div>
+    ${top3A.length ? `<div style="margin-bottom:10px"><div class="wcc-l" style="margin-bottom:6px">TOP 3 ${isYT ? 'CHANNELS' : 'ARTISTS'}</div><div style="display:flex;gap:6px;flex-wrap:wrap">${top3A.map((a, i) => `<span style="font-family:var(--mono);font-size:.62rem;padding:3px 9px;border-radius:2px;background:rgba(${ar},.1);border:1px solid rgba(${ar},.2);color:${ac}">${i + 1}. ${a}</span>`).join('')}</div></div>` : ''}
+    <div class="wcftr"><span class="wcfl">statify · ${new Date().toLocaleDateString()}</span><span class="wcfr">Your data, your story</span></div>`;
+      gsap.fromTo('#wcard', { opacity: 0, y: 12, scale: .98 }, { opacity: 1, y: 0, scale: 1, duration: .4, ease: 'power2.out' });
+    }
+
+    /* ═══════════════════════════════════════
+       SAVE CARD
+    ═══════════════════════════════════════ */
+    function saveCard() {
+      const card = document.getElementById('wcard');
+      if (!card || !window.html2canvas) { alert('Save failed — try screenshot.'); return }
+      const sbtn = document.querySelector('.sbtn'); sbtn.textContent = '⏳ Generating...'; sbtn.disabled = true;
+      html2canvas(card, { backgroundColor: '#080808', scale: 2, useCORS: true, logging: false }).then(canvas => {
+        const a = document.createElement('a'); a.download = 'statify-card.png'; a.href = canvas.toDataURL('image/png'); a.click();
+        sbtn.textContent = '⬇ Save as Image'; sbtn.disabled = false;
+      }).catch(() => { sbtn.textContent = '⬇ Save as Image'; sbtn.disabled = false; alert('Export failed — try right-click → Save Image.') });
+    }
+
+    /* ═══════════════════════════════════════
+       TOP 50
+    ═══════════════════════════════════════ */
+    function renderTop50() {
+      const t50 = Object.entries(tkMap).sort((a, b) => sort50 === 'time' ? b[1].ms - a[1].ms : b[1].count - a[1].count).slice(0, 50);
+      const unit = isYT ? 'WATCHES' : 'STREAMS';
+      document.getElementById('top50').innerHTML = t50.map(([k, v], i) => { const [t, a] = k.split('||'); return `<div class="ri"><span class="rn ${i < 3 ? 't3' : ''}">${String(i + 1).padStart(2, '0')}</span><div class="ri-info"><div class="ri-name">${t}</div><div class="ri-sub">${a}</div></div><div class="rc"><div class="rc-n">${v.count}</div><div class="rc-l">${unit}</div></div>${!isYT ? `<div style="width:6px"></div><div class="rc rc-b"><div class="rc-n">${fmt(v.ms)}</div><div class="rc-l">TIME</div></div>` : ''}</div>` }).join('');
+      document.querySelectorAll('.s50-btn').forEach(b => b.classList.toggle('act', b.dataset.sort === sort50));
+    }
+    function setSort50(s, el) { sort50 = s; renderTop50(); document.querySelectorAll('.s50-btn').forEach(b => b.classList.toggle('act', b.dataset.sort === s)) }
+    function toggle50() {
+      top50open = !top50open;
+      const el = document.getElementById('top50'), btn = document.getElementById('exp50btn'), lbl = document.getElementById('exp50lbl');
+      if (top50open) { el.classList.add('exp'); const hidden = el.querySelectorAll('.ri:nth-child(n+11)'); gsap.fromTo(hidden, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: .3, stagger: .02, ease: 'power2.out' }); lbl.textContent = 'SHOW LESS'; btn.classList.add('open') }
+      else { el.classList.remove('exp'); lbl.textContent = 'SEE ALL 50'; btn.classList.remove('open'); document.getElementById('top50').scrollIntoView({ behavior: 'smooth', block: 'start' }) }
+    }
+
+    /* ═══════════════════════════════════════
+       TOP ARTISTS
+    ═══════════════════════════════════════ */
+    function renderTopArtists(aMap) {
+      if (!aMap) { aMap = {}; S.forEach(x => { if (!aMap[x.artist]) aMap[x.artist] = { count: 0, ms: 0 }; aMap[x.artist].count++; aMap[x.artist].ms += x.ms }) }
+      const topAList = Object.entries(aMap).sort((a, b) => sortArt === 'time' ? b[1].ms - a[1].ms : b[1].count - a[1].count).slice(0, 12);
+      const unit = isYT ? 'WATCHES' : 'PLAYS';
+      document.getElementById('topArtists').innerHTML = topAList.map(([a, v], i) => `<div class="ri"><span class="rn ${i < 3 ? 't3' : ''}">${String(i + 1).padStart(2, '0')}</span><div class="ri-info"><div class="ri-name">${a}</div><div class="ri-sub">${isYT ? v.count + ' videos watched' : fmt(v.ms) + ' total'}</div></div><div class="rc"><div class="rc-n">${v.count}</div><div class="rc-l">${unit}</div></div>${!isYT ? `<div style="width:6px"></div><div class="rc rc-b"><div class="rc-n">${fmt(v.ms)}</div><div class="rc-l">TIME</div></div>` : ''}</div>`).join('');
+      document.querySelectorAll('.sart-btn').forEach(b => b.classList.toggle('act', b.dataset.sort === sortArt));
+    }
+    function setSort(type, s, el) {
+      if (type === 'art') { sortArt = s; const aM = {}; S.forEach(x => { if (!aM[x.artist]) aM[x.artist] = { count: 0, ms: 0 }; aM[x.artist].count++; aM[x.artist].ms += x.ms }); renderTopArtists(aM) }
+      else if (type === 'mon') { sortMon = s; renderMonthly(); document.querySelectorAll('.smon-btn').forEach(b => b.classList.toggle('act', b.dataset.sort === s)) }
+    }
+
+    /* ═══════════════════════════════════════
+       FUN FACTS
+    ═══════════════════════════════════════ */
+    function renderFunFacts() {
+      const tot = S.reduce((a, x) => a + x.ms, 0);
+      const totH = tot / 3600000;
+      const aM = {}; S.forEach(x => { aM[x.artist] = (aM[x.artist] || 0) + 1 });
+      const topA = Object.entries(aM).sort((a, b) => b[1] - a[1])[0];
+      const tkM = {}; S.forEach(x => { const k = x.track + '||' + x.artist; tkM[k] = (tkM[k] || 0) + 1 });
+      const topT = Object.entries(tkM).sort((a, b) => b[1] - a[1])[0];
+      const span = S.filter(x => x.ts).length > 1 ? (Math.round((new Date(S.map(x => x.ts).filter(Boolean).sort().at(-1)) - new Date(S.map(x => x.ts).filter(Boolean).sort()[0])) / 86400000)) : 1;
+      const nightStreams = S.filter(x => { if (!x.ts) return false; const h = new Date(x.ts).getHours(); return h >= 0 && h < 4 }).length;
+      const wknd = S.filter(x => { if (!x.ts) return false; const d = new Date(x.ts).getDay(); return d === 0 || d === 6 }).length;
+      const unit = isYT ? 'videos' : 'streams';
+      const facts = [
+        { i: '🌍', l: isYT ? 'DAYS OF CONTENT' : 'TIME EQUIVALENT', v: isYT ? fN(S.length) + ' vids' : Math.round(totH / 24) + ' days', s: isYT ? 'total watch history events' : 'of your life spent listening' },
+        { i: '🚗', l: 'ROAD TRIP', v: isYT ? fN(S.length * 15) + ' km' : Math.round(totH * 100) + ' km', s: isYT ? 'if each video were 15 mins of highway' : 'you could drive non-stop at 100 km/h' },
+        { i: '🏆', l: `TOP ${isYT ? 'VIDEO' : 'TRACK'} PLAYS`, v: topT ? topT[1] + '×' : '—', s: topT ? `"${topT[0].split('||')[0]}" watched ${topT[1]} times` : '' },
+        { i: '🌙', l: 'LATE NIGHT', v: fN(nightStreams), s: `${unit} between midnight and 4am` },
+        { i: '📅', l: 'WEEKEND WARRIOR', v: Math.round((wknd / S.length) * 100) + '%', s: `of your ${unit} happen on weekends` },
+        { i: '🎤', l: `${isYT ? 'CHANNEL' : 'ARTIST'} DEVOTION`, v: topA ? topA[1] + ' ' + unit : '—', s: topA ? `${topA[0]} owns ${Math.round((topA[1] / S.length) * 100)}% of your history` : '' },
+      ];
+      document.getElementById('funfacts').innerHTML = facts.map(c => `<div class="dc"><div class="dc-ico">${c.i}</div><div class="dc-lbl">${c.l}</div><div class="dc-val">${c.v}</div><div class="dc-sub">${c.s}</div></div>`).join('');
+    }
+
+    /* ═══════════════════════════════════════
+       LISTENING DNA
+    ═══════════════════════════════════════ */
+    function renderDNA() {
+      const tot = S.length; if (!tot) return;
+      const hC = new Array(24).fill(0); S.forEach(x => { if (!x.ts) return; const h = new Date(x.ts).getHours(); if (!isNaN(h)) hC[h]++ });
+      const night = (hC.slice(22).concat(hC.slice(0, 6))).reduce((a, b) => a + b, 0);
+      const morn = hC.slice(6, 12).reduce((a, b) => a + b, 0);
+      const aft = hC.slice(12, 18).reduce((a, b) => a + b, 0);
+      const eve = hC.slice(18, 22).reduce((a, b) => a + b, 0);
+      const aM = {}; S.forEach(x => { aM[x.artist] = (aM[x.artist] || 0) + 1 });
+      const topACount = Object.values(aM).sort((a, b) => b - a)[0] || 0;
+      const loyalty = Math.round((topACount / tot) * 100);
+      const discovery = Math.round((Object.values(aM).filter(c => c === 1).length / Object.keys(aM).length) * 100);
+      const skpct = Math.round((S.filter(x => x.skipped).length / tot) * 100);
+      const daysMap = {}; S.forEach(x => { if (!x.ts) return; const d = new Date(x.ts).getDay(); daysMap[d] = (daysMap[d] || 0) + 1 });
+      const wknd = (((daysMap[0] || 0) + (daysMap[6] || 0)) / tot) * 100;
+      const ac = accentColor();
+      const rows = [
+        { label: 'MORNING', val: Math.round((morn / tot) * 100), color: '#f5a623', tag: '6am–12pm' },
+        { label: 'AFTERNOON', val: Math.round((aft / tot) * 100), color: '#5b9cf6', tag: '12pm–6pm' },
+        { label: 'EVENING', val: Math.round((eve / tot) * 100), color: ac, tag: '6pm–10pm' },
+        { label: 'NIGHT OWL', val: Math.round((night / tot) * 100), color: '#e05555', tag: '10pm–6am' },
+        { label: isYT ? 'CHANNEL LOYALTY' : 'ARTIST LOYALTY', val: loyalty, color: ac, tag: 'top channel share' },
+        { label: 'DISCOVERY', val: discovery, color: '#5b9cf6', tag: 'one-time visits' },
+        { label: isYT ? 'REWATCH RATE' : 'SKIP TENDENCY', val: skpct, color: '#e05555', tag: isYT ? 'revisited content' : 'tracks skipped' },
+        { label: 'WEEKEND SHARE', val: Math.round(wknd), color: '#f5a623', tag: 'sat & sun activity' },
+      ];
+      document.getElementById('dnaRows').innerHTML = rows.map(r => `<div class="dna-row"><div class="dna-label">${r.label}</div><div class="dna-bar"><div class="dna-fill" data-target="${r.val}" style="background:${r.color}"></div></div><div class="dna-value">${r.val}%</div><div class="dna-tag">${r.tag}</div></div>`).join('');
+    }
+
+    /* ═══════════════════════════════════════
+       ANIMATIONS
+    ═══════════════════════════════════════ */
+    function initAnim() {
+      gsap.registerPlugin(ScrollTrigger);
+      /* Kill old triggers to prevent stacking on re-render */
+      ScrollTrigger.getAll().forEach(t => t.kill());
+      gsap.from('.hero-badge', { opacity: 0, y: 16, duration: .5, delay: .1 });
+      gsap.from('.hero-title', { opacity: 0, y: 28, duration: .7, delay: .2, ease: 'power3.out' });
+      gsap.from('.hero-sub', { opacity: 0, y: 14, duration: .5, delay: .32 });
+      gsap.from('.waveform', { opacity: 0, duration: .6, delay: .44 });
+      gsap.fromTo('.sc', { opacity: 0, y: 22, scale: .96 }, { opacity: 1, y: 0, scale: 1, duration: .42, stagger: .05, delay: .5, ease: 'back.out(1.5)' });
+      document.querySelectorAll('.rv').forEach(el => {
+        ScrollTrigger.create({ trigger: el, start: 'top 92%', onEnter: () => gsap.to(el, { opacity: 1, y: 0, duration: .5, ease: 'power2.out' }), once: true });
+      });
+      function animBars(c) { c.querySelectorAll('[data-target]').forEach((b, i) => { const t = parseFloat(b.dataset.target) || 0; gsap.to(b, { width: t + '%', duration: 1.2 + i * .04, delay: i * .05, ease: 'power3.out' }) }) }
+      document.querySelectorAll('.panel,.pc,.dc,.ac,.dr,.pi').forEach(el => {
+        ScrollTrigger.create({ trigger: el, start: 'top 95%', onEnter: () => { gsap.to(el, { opacity: 1, y: 0, duration: .45, ease: 'power2.out' }); animBars(el) }, once: true });
+        gsap.set(el, { opacity: 0, y: 14 });
+      });
+      document.querySelectorAll('.ri').forEach((el, i) => {
+        ScrollTrigger.create({ trigger: el, start: 'top 96%', onEnter: () => gsap.to(el, { opacity: 1, x: 0, duration: .3, delay: (i % 15) * .035, ease: 'power2.out' }), once: true });
+        gsap.set(el, { opacity: 0, x: -8 });
+      });
+      /* Force-reveal elements that are already in viewport */
+      setTimeout(() => {
+        ScrollTrigger.refresh(true);
+        document.querySelectorAll('[data-target]').forEach(b => { const r = b.getBoundingClientRect(); if (r.top < window.innerHeight) { gsap.to(b, { width: parseFloat(b.dataset.target) + '%', duration: 1.2, ease: 'power3.out' }) } });
+        document.querySelectorAll('.ri').forEach((el, i) => { const r = el.getBoundingClientRect(); if (r.top < window.innerHeight) gsap.to(el, { opacity: 1, x: 0, duration: .3, delay: i * .025, ease: 'power2.out' }) });
+        document.querySelectorAll('.rv').forEach(el => { const r = el.getBoundingClientRect(); if (r.top < window.innerHeight) gsap.to(el, { opacity: 1, y: 0, duration: .4, ease: 'power2.out' }) });
+        document.querySelectorAll('.panel,.pc,.dc,.ac,.dr,.pi').forEach(el => { const r = el.getBoundingClientRect(); if (r.top < window.innerHeight) { gsap.to(el, { opacity: 1, y: 0, duration: .4, ease: 'power2.out' }); animBars(el) } });
+      }, 700);
+    }
+
+    /* ═══════════════════════════════════════
+       ██████╗ THEME TOGGLE (HOME ONLY)
+    ═══════════════════════════════════════ */
+    function toggleTheme(e) {
+      // Guard: only on home screen
+      if (dashboardOpen) return;
+
+      isYT = !isYT;
+      const overlay = document.getElementById('theme-overlay');
+      const body = document.body;
+      const btn = document.getElementById('themeToggleBtn');
+      const rect = btn.getBoundingClientRect();
+      const ox = rect.left + rect.width / 2, oy = rect.top + rect.height / 2;
+      const maxR = Math.hypot(Math.max(ox, innerWidth - ox), Math.max(oy, innerHeight - oy)) * 2.2;
+      const color = isYT ? '#FF0000' : '#1DB954';
+      const rgb = isYT ? '255,0,0' : '29,185,84';
+
+      /* ── 1. Apply theme class immediately ── */
+      body.classList.toggle('yt-theme', isYT);
+      document.getElementById('themeLbl').textContent = isYT ? 'YOUTUBE' : 'SPOTIFY';
+      document.title = isYT ? 'Statify — YouTube Analyzer' : 'Statify — Spotify Data Analyzer';
+
+      /* ── 2. Burst particles from button ── */
+      spawnBurst(ox, oy, color, 22);
+
+      /* ── 3. Full-screen radial ripple ── */
+      const ripple = document.createElement('div');
+      ripple.style.cssText = `position:absolute;border-radius:50%;pointer-events:none;width:${maxR}px;height:${maxR}px;left:${ox - maxR / 2}px;top:${oy - maxR / 2}px;background:radial-gradient(circle,${color}20 0%,transparent 65%);transform:scale(0);opacity:1`;
+      overlay.appendChild(ripple);
+      let rs = null; const rd = 680;
+      function ar2(ts) { if (!rs) rs = ts; const p = Math.min((ts - rs) / rd, 1); const ease = 1 - Math.pow(1 - p, 3); ripple.style.transform = `scale(${ease})`; ripple.style.opacity = `${1 - p * .95}`; if (p < 1) requestAnimationFrame(ar2); else overlay.removeChild(ripple) }
+      requestAnimationFrame(ar2);
+
+      /* ── 4. Animate HOME PAGE ELEMENTS ── */
+      // Dropzone icon swap
+      const svgSp = document.getElementById('dropSvgSpotify');
+      const svgYT = document.getElementById('dropSvgYT');
+      gsap.to(isYT ? svgSp : svgYT, {
+        opacity: 0, scale: .5, duration: .25, onComplete: () => {
+          (isYT ? svgSp : svgYT).style.display = 'none';
+          const other = isYT ? svgYT : svgSp; other.style.display = 'block';
+          gsap.fromTo(other, { opacity: 0, scale: .4, rotation: -15 }, { opacity: 1, scale: 1, rotation: 0, duration: .45, ease: 'back.out(2)' });
+        }
+      });
+
+      // Dropzone title typewriter wipe
+      const dzTitle = document.getElementById('dzTitle');
+      const newTitle = isYT ? 'Drop your YouTube history file' : 'Drop your Spotify JSON files';
+      gsap.to(dzTitle, { opacity: 0, y: -6, duration: .2, onComplete: () => { dzTitle.textContent = newTitle; gsap.to(dzTitle, { opacity: 1, y: 0, duration: .3 }) } });
+
+      // Tags swap
+      const dzTags = document.getElementById('dzTags');
+      gsap.to(dzTags, {
+        opacity: 0, duration: .15, onComplete: () => {
+          dzTags.innerHTML = isYT
+            ? '<span class="ftag">watch-history.html</span><span class="ftag">music-library-songs.csv</span>'
+            : '<span class="ftag">StreamingHistory_music_0.json</span><span class="ftag">StreamingHistory_music_1.json</span><span class="ftag">YourLibrary.json</span>';
+          gsap.fromTo(Array.from(dzTags.children), { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: .3, stagger: .06, ease: 'power2.out' });
+        }
+      });
+
+      // Hint text
+      const hint = document.getElementById('dzHint');
+      gsap.to(hint, {
+        opacity: 0, duration: .15, onComplete: () => {
+          hint.textContent = isYT ? 'Get data: Google Takeout → YouTube and YouTube Music → history' : 'Request data: Spotify → Account → Privacy Settings → Download your data';
+          gsap.to(hint, { opacity: 1, duration: .25 });
+        }
+      });
+
+      // Demo button text
+      const demoBtn = document.getElementById('demoBtn');
+      gsap.to(demoBtn, { scale: .94, duration: .12, yoyo: true, repeat: 1, onComplete: () => { demoBtn.textContent = (isYT ? '▶\u00a0Try with demo YT data' : '▶\u00a0Try with demo data') } });
+
+      // Upload button label
+      document.getElementById('uploadBtn').textContent = isYT ? 'Upload YT Files' : 'Upload Files';
+
+      /* ── 5. Dropzone border color ── */
+      const dze = document.getElementById('dropzone');
+      const svgCircles = dze.querySelectorAll('circle');
+      svgCircles.forEach(c => c.setAttribute('stroke', color));
+      const svgPaths = dze.querySelectorAll('path');
+      svgPaths.forEach(p => { if (p.getAttribute('stroke')) p.setAttribute('stroke', color); if (p.getAttribute('fill') && p.getAttribute('fill') !== 'none') p.setAttribute('fill', color) });
+
+      /* ── 6. Staggered card-pop on page elements ── */
+      const els = [dze, document.querySelector('.hdr-tag')];
+      els.forEach((el, i) => {
+        if (!el) return; setTimeout(() => {
+          el.style.boxShadow = `0 0 22px ${color}22`;
+          setTimeout(() => { el.style.boxShadow = '' }, 400);
+        }, 50 + i * 80)
+      });
+    }
+
+    /* ═══════════════════════════════════════
+       PARTICLE BURST
+    ═══════════════════════════════════════ */
+    function spawnBurst(cx, cy, color, count) {
+      const overlay = document.getElementById('theme-overlay');
+      for (let i = 0; i < count; i++) {
+        const p = document.createElement('div');
+        const angle = (Math.PI * 2 * i) / count + Math.random() * .5;
+        const dist = 50 + Math.random() * 100;
+        const size = 2 + Math.random() * 5;
+        const tx = Math.cos(angle) * dist, ty = Math.sin(angle) * dist;
+        p.style.cssText = `position:absolute;width:${size}px;height:${size}px;border-radius:50%;background:${color};left:${cx - size / 2}px;top:${cy - size / 2}px;pointer-events:none;opacity:1`;
+        overlay.appendChild(p);
+        let s2 = null; const dur = 450 + Math.random() * 300;
+        function ap2(ts) { if (!s2) s2 = ts; const pr = Math.min((ts - s2) / dur, 1); const ease = 1 - Math.pow(1 - pr, 2); p.style.transform = `translate(${tx * ease}px,${ty * ease}px) scale(${1 - pr * .7})`; p.style.opacity = `${1 - pr}`; if (pr < 1) requestAnimationFrame(ap2); else overlay.removeChild(p) }
+        requestAnimationFrame(ap2);
+      }
+    }
+
+    /* ═══════════════════════════════════════
+       LIGHT / DARK MODE
+    ═══════════════════════════════════════ */
+    function toggleMode() {
+      const on = document.body.classList.toggle('light-mode');
+      document.getElementById('modeIco').textContent = on ? '☀️' : '🌙';
+      document.getElementById('modeLbl').textContent = on ? 'LIGHT' : 'DARK';
+      try { localStorage.setItem('statify-mode', on ? 'light' : 'dark') } catch (e) { }
+    }
+    (function initMode() {
+      try { if (localStorage.getItem('statify-mode') === 'light') { document.body.classList.add('light-mode'); document.getElementById('modeIco').textContent = '☀️'; document.getElementById('modeLbl').textContent = 'LIGHT' } } catch (e) { }
+    })();
+
+    /* ═══════════════════════════════════════
+       KEYBOARD SHORTCUTS
+    ═══════════════════════════════════════ */
+    document.addEventListener('keydown', function (e) {
+      /* Esc → close modal */
+      if (e.key === 'Escape') { const m = document.getElementById('amodal'); if (m.classList.contains('show')) m.classList.remove('show') }
+      /* Arrow keys → wrapped card tabs */
+      if (!dashboardOpen) return;
+      const tabs = document.querySelectorAll('.wtab');
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        let cur = [...tabs].findIndex(t => t.classList.contains('act'));
+        if (e.key === 'ArrowRight') cur = Math.min(cur + 1, tabs.length - 1);
+        else cur = Math.max(cur - 1, 0);
+        tabs[cur].click();
+      }
+      /* Home → scroll to top */
+      if (e.key === 'Home' && dashboardOpen) { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }) }
+    });
+
+    /* ═══════════════════════════════════════
+       SEARCH / FILTER TOP 50
+    ═══════════════════════════════════════ */
+    function filterTop50() {
+      const q = document.getElementById('top50Search').value.toLowerCase().trim();
+      const rows = document.querySelectorAll('#top50 .ri');
+      let vis = 0;
+      rows.forEach(r => {
+        const name = r.querySelector('.ri-name')?.textContent?.toLowerCase() || '';
+        const sub = r.querySelector('.ri-sub')?.textContent?.toLowerCase() || '';
+        const show = !q || name.includes(q) || sub.includes(q);
+        r.style.display = show ? '' : 'none';
+        if (show) vis++;
+      });
+      document.getElementById('top50Count').textContent = q ? `${vis} result${vis !== 1 ? 's' : ''}` : '';
+      document.getElementById('top50Clear').style.display = q ? '' : 'none';
+    }
+    function clearTop50Search() {
+      document.getElementById('top50Search').value = '';
+      filterTop50();
+    }
+
+    /* ═══════════════════════════════════════
+       COLLAPSIBLE TOGGLE
+    ═══════════════════════════════════════ */
+    function toggleColl(header) {
+      header.classList.toggle('collapsed');
+      const body = header.nextElementSibling;
+      if (body && body.classList.contains('coll-body')) body.classList.toggle('collapsed');
+    }
+
+    /* ═══════════════════════════════════════
+       ACTIVITY CALENDAR (Streaks)
+    ═══════════════════════════════════════ */
+    function renderCalendar() {
+      const dMap = {}; S.forEach(x => { if (!x.ts) return; const d = x.ts.slice(0, 10); dMap[d] = (dMap[d] || 0) + 1 });
+      const now = new Date(); const ar = accentRgb();
+      /* Build 53 weeks × 7 days going back 371 days */
+      const grid = document.getElementById('calGrid'); grid.innerHTML = '';
+      const cells = []; const dayMs = 86400000;
+      /* Start from 371 days ago, aligned to Sunday */
+      let start = new Date(now - 370 * dayMs); start.setHours(0, 0, 0, 0);
+      while (start.getDay() !== 0) start = new Date(start.getTime() - dayMs);
+      const vals = [];
+      for (let d = new Date(start); d <= now; d = new Date(d.getTime() + dayMs)) {
+        const key = d.toISOString().slice(0, 10);
+        vals.push({ date: key, count: dMap[key] || 0, day: d.getDay(), month: d.getMonth() });
+      }
+      const maxV = Math.max(...vals.map(v => v.count), 1);
+      /* Month labels */
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const calMonths = document.getElementById('calMonths'); calMonths.innerHTML = '';
+      let lastMonth = -1; let weekIdx = 0;
+      /* Day labels */
+      const calLabels = document.getElementById('calLabels');
+      calLabels.innerHTML = ['', 'Mon', '', 'Wed', '', 'Fri', ''].map(l => `<div class="cal-lbl">${l}</div>`).join('');
+      /* Weeks */
+      let weekEl = null;
+      vals.forEach((v, i) => {
+        if (v.day === 0) {
+          weekEl = document.createElement('div'); weekEl.className = 'cal-week'; grid.appendChild(weekEl);
+          if (v.month !== lastMonth) { const lbl = document.createElement('div'); lbl.className = 'cal-month-lbl'; lbl.textContent = monthNames[v.month]; calMonths.appendChild(lbl); lastMonth = v.month }
+          else { const sp = document.createElement('div'); sp.className = 'cal-month-lbl'; sp.textContent = ''; calMonths.appendChild(sp) }
+        }
+        const cell = document.createElement('div'); cell.className = 'cal-cell';
+        const intensity = v.count / maxV;
+        if (v.count > 0) { cell.style.background = `rgba(${ar},${(.12 + intensity * .68).toFixed(2)})`; cell.style.borderColor = `rgba(${ar},${(.15 + intensity * .4).toFixed(2)})` }
+        cell.onmouseenter = e => showTip(e, `${v.date}<br>${v.count} ${isYT ? 'videos' : 'streams'}`);
+        cell.onmouseleave = () => hideTip();
+        if (weekEl) weekEl.appendChild(cell);
+      });
+      /* Legend */
+      const legend = document.getElementById('calLegend');
+      legend.innerHTML = `<span class="cal-legend-lbl">Less</span>${[0, .25, .5, .75, 1].map(l => `<div class="cal-legend-cell" style="background:${l === 0 ? 'var(--s2)' : `rgba(${ar},${(.12 + l * .68).toFixed(2)})`};border:1px solid ${l === 0 ? 'var(--border)' : `rgba(${ar},${(.15 + l * .4).toFixed(2)})`}"></div>`).join('')}<span class="cal-legend-lbl">More</span>`;
+    }
+
+    /* ═══════════════════════════════════════
+       GENRE BREAKDOWN
+    ═══════════════════════════════════════ */
+    const GENRE_MAP = {
+  /* Pop */'Taylor Swift': 'Pop', 'Ed Sheeran': 'Pop', 'Ariana Grande': 'Pop', 'Dua Lipa': 'Pop', 'Harry Styles': 'Pop', 'Olivia Rodrigo': 'Pop', 'Billie Eilish': 'Pop', 'Selena Gomez': 'Pop', 'Shawn Mendes': 'Pop', 'Justin Bieber': 'Pop', 'Camila Cabello': 'Pop', 'Halsey': 'Pop', 'Lorde': 'Pop', 'Charli XCX': 'Pop', 'Sabrina Carpenter': 'Pop', 'Chappell Roan': 'Pop',
+  /* Hip-Hop */'Drake': 'Hip-Hop', 'Kendrick Lamar': 'Hip-Hop', 'Travis Scott': 'Hip-Hop', 'Post Malone': 'Hip-Hop', 'Kanye West': 'Hip-Hop', 'J. Cole': 'Hip-Hop', '21 Savage': 'Hip-Hop', 'Lil Uzi Vert': 'Hip-Hop', 'Future': 'Hip-Hop', 'Eminem': 'Hip-Hop', 'Tyler, The Creator': 'Hip-Hop', 'Mac Miller': 'Hip-Hop', 'Juice WRLD': 'Hip-Hop', 'Metro Boomin': 'Hip-Hop',
+  /* R&B */'The Weeknd': 'R&B', 'SZA': 'R&B', 'Frank Ocean': 'R&B', 'Daniel Caesar': 'R&B', 'Doja Cat': 'R&B', 'Summer Walker': 'R&B', 'Brent Faiyaz': 'R&B', 'Jhené Aiko': 'R&B', 'Bryson Tiller': 'R&B', 'H.E.R.': 'R&B', 'Usher': 'R&B',
+  /* Rock */'Arctic Monkeys': 'Rock', 'Tame Impala': 'Rock', 'Radiohead': 'Rock', 'Imagine Dragons': 'Rock', 'Foo Fighters': 'Rock', 'Red Hot Chili Peppers': 'Rock', 'Nirvana': 'Rock', 'Coldplay': 'Rock', 'Paramore': 'Rock', 'Green Day': 'Rock', 'Linkin Park': 'Rock', 'Weezer': 'Rock', 'The 1975': 'Rock',
+  /* Electronic */'The Chainsmokers': 'Electronic', 'Calvin Harris': 'Electronic', 'Marshmello': 'Electronic', 'Kygo': 'Electronic', 'Skrillex': 'Electronic', 'Deadmau5': 'Electronic', 'Martin Garrix': 'Electronic', 'Flume': 'Electronic', 'ODESZA': 'Electronic', 'Disclosure': 'Electronic',
+  /* Latin */'Bad Bunny': 'Latin', 'J Balvin': 'Latin', 'Rosalía': 'Latin', 'Shakira': 'Latin', 'Ozuna': 'Latin', 'Daddy Yankee': 'Latin', 'Rauw Alejandro': 'Latin', 'Karol G': 'Latin', 'Feid': 'Latin',
+  /* K-Pop */'BTS': 'K-Pop', 'BLACKPINK': 'K-Pop', 'Stray Kids': 'K-Pop', 'TWICE': 'K-Pop', 'aespa': 'K-Pop', 'NewJeans': 'K-Pop', 'LE SSERAFIM': 'K-Pop', 'IVE': 'K-Pop',
+  /* Country */'Morgan Wallen': 'Country', 'Luke Combs': 'Country', 'Zach Bryan': 'Country', 'Chris Stapleton': 'Country',
+  /* Indie */'Phoebe Bridgers': 'Indie', 'Mitski': 'Indie', 'Hozier': 'Indie', 'Clairo': 'Indie', 'boygenius': 'Indie', 'Bon Iver': 'Indie', 'The Neighbourhood': 'Indie', 'Glass Animals': 'Indie', 'Cigarettes After Sex': 'Indie', 'Wallows': 'Indie', 'beabadoobee': 'Indie', 'Rex Orange County': 'Indie'
+    };
+    const YT_GENRE_MAP = {
+      'MrBeast': 'Entertainment', 'PewDiePie': 'Entertainment', 'Corridor Crew': 'Entertainment',
+      'Veritasium': 'Science', '3Blue1Brown': 'Science', 'Vsauce': 'Science', 'Kurzgesagt': 'Science', 'Nile Red': 'Science',
+      'MKBHD': 'Tech', 'Linus Tech Tips': 'Tech',
+      'Mark Rober': 'Engineering', 'Practical Engineering': 'Engineering',
+      'Tom Scott': 'Education', 'CGP Grey': 'Education', 'Wendover Productions': 'Education'
+    };
+    const GENRE_COLORS = ['#4ade80', '#60a5fa', '#f87171', '#fbbf24', '#c084fc', '#f472b6', '#22d3ee', '#a3e635', '#fb923c', '#94a3b8'];
+    function renderGenre() {
+      const map = isYT ? YT_GENRE_MAP : GENRE_MAP;
+      const gM = {};
+      S.forEach(x => { const g = map[x.artist] || 'Other'; gM[g] = (gM[g] || 0) + 1 });
+      const sorted = Object.entries(gM).sort((a, b) => b[1] - a[1]);
+      const labels = sorted.map(([g]) => g), data = sorted.map(([, c]) => c);
+      const colors = sorted.map((_, i) => GENRE_COLORS[i % GENRE_COLORS.length]);
+      if (genreCI) genreCI.destroy();
+      const ctx = document.getElementById('genreChart').getContext('2d');
+      genreCI = new Chart(ctx, { type: 'doughnut', data: { labels, datasets: [{ data, backgroundColor: colors, borderColor: 'transparent', borderWidth: 3, hoverBorderColor: 'rgba(255,255,255,.2)', hoverOffset: 6 }] }, options: { responsive: true, maintainAspectRatio: false, animation: { animateRotate: true, duration: 1200 }, cutout: '65%', plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(20,20,20,.95)', titleFont: { family: 'Space Mono', size: 11 }, bodyFont: { family: 'Space Mono', size: 10 }, cornerRadius: 4, padding: 10 } } } });
+      document.getElementById('genreLegend').innerHTML = sorted.map(([g, c], i) => {
+        const pct = Math.round((c / S.length) * 100);
+        return `<div class="genre-item"><div class="genre-dot" style="background:${colors[i]}"></div>${g} ${pct}%</div>`;
+      }).join('');
+    }
+
+    /* ═══════════════════════════════════════
+       YOUR DAY TIMELINE
+    ═══════════════════════════════════════ */
+    function renderYourDay() {
+      const date = document.getElementById('dayDate').value;
+      const tl = document.getElementById('dayTimeline');
+      const sum = document.getElementById('daySummary');
+      if (!date) { tl.innerHTML = '<div class="day-empty">Select a date above</div>'; sum.textContent = ''; return }
+      const fl = S.filter(x => x.ts && x.ts.startsWith(date)).sort((a, b) => a.ts.localeCompare(b.ts));
+      sum.textContent = `${fl.length} ${isYT ? 'videos' : 'streams'} on ${date}`;
+      if (!fl.length) { tl.innerHTML = '<div class="day-empty">No activity on this date</div>'; return }
+      /* Group by hour */
+      const hours = {}; fl.forEach(x => { const h = new Date(x.ts).getHours(); if (!hours[h]) hours[h] = []; hours[h].push(x) });
+      let html = ''; let idx = 0;
+      for (let h = 0; h < 24; h++) {
+        if (!hours[h]) continue;
+        hours[h].forEach(x => {
+          const time = new Date(x.ts);
+          const t = `${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`;
+          const delay = Math.min(idx * 0.04, 1.2);
+          html += `<div class="day-entry" style="animation-delay:${delay.toFixed(2)}s"><div class="day-dot"></div><div class="day-time">${t}</div><div class="day-track">${x.track}</div><div class="day-artist">${x.artist}${!isYT && x.ms ? ' · ' + fmt(x.ms) : ''}</div></div>`;
+          idx++;
+        });
+      }
+      tl.innerHTML = html;
+      tl.scrollTop = 0;
+    }
+
+    /* ═══════════════════════════════════════
+       LISTENING JOURNEY
+    ═══════════════════════════════════════ */
+    function renderJourney() {
+      const mMap = {};
+      S.forEach(x => {
+        if (!x.ts) return;
+        const m = x.ts.slice(0, 7);
+        if (!mMap[m]) mMap[m] = { count: 0, artists: {}, tracks: {} };
+        mMap[m].count++;
+        mMap[m].artists[x.artist] = (mMap[m].artists[x.artist] || 0) + 1;
+        mMap[m].tracks[x.track] = (mMap[m].tracks[x.track] || 0) + 1;
+      });
+      const months = Object.entries(mMap).sort((a, b) => a[0].localeCompare(b[0]));
+      const maxCount = Math.max(...months.map(([, v]) => v.count), 1);
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      let prevTopArtist = '';
+      const scroll = document.getElementById('journeyScroll');
+      scroll.innerHTML = months.map(([m, v]) => {
+        const topA = Object.entries(v.artists).sort((a, b) => b[1] - a[1])[0];
+        const topT = Object.entries(v.tracks).sort((a, b) => b[1] - a[1])[0];
+        const isNew = topA && topA[0] !== prevTopArtist;
+        if (topA) prevTopArtist = topA[0];
+        const yr = m.slice(0, 4), mo = parseInt(m.slice(5));
+        const pct = Math.round((v.count / maxCount) * 100);
+        return `<div class="journey-card${isNew ? ' highlight' : ''}">
+      ${isNew ? '<div class="journey-badge">★ NEW #1</div>' : ''}
+      <div class="journey-month">${monthNames[mo - 1]} ${yr}</div>
+      <div class="journey-artist">${topA ? topA[0] : '—'}</div>
+      <div class="journey-track">${topT ? topT[0] : '—'}</div>
+      <div class="journey-count">${v.count}</div>
+      <div class="journey-bar"><div class="journey-bar-fill" data-target="${pct}"></div></div>
+    </div>`;
+      }).join('');
+    }
+
+    /* ═══════════════════════════════════════
+       COMPARE PERIODS
+    ═══════════════════════════════════════ */
+    function renderCompare() {
+      const months = [...new Set(S.filter(x => x.ts).map(x => x.ts.slice(0, 7)))].sort();
+      const selA = document.getElementById('cmpA'), selB = document.getElementById('cmpB');
+      /* Populate selectors if empty */
+      if (!selA.options.length) {
+        const opts = months.map(m => `<option value="${m}">${m}</option>`).join('');
+        selA.innerHTML = opts; selB.innerHTML = opts;
+        /* Default: last month vs this month */
+        if (months.length >= 2) { selA.value = months[months.length - 2]; selB.value = months[months.length - 1] }
+        else if (months.length === 1) { selA.value = months[0]; selB.value = months[0] }
+      }
+      const pA = selA.value, pB = selB.value;
+      const fA = S.filter(x => x.ts && x.ts.startsWith(pA)), fB = S.filter(x => x.ts && x.ts.startsWith(pB));
+      function stats(fl) {
+        const tot = fl.reduce((a, x) => a + x.ms, 0);
+        const uT = new Set(fl.map(x => x.track)).size;
+        const uA = new Set(fl.map(x => x.artist)).size;
+        const aM = {}; fl.forEach(x => { aM[x.artist] = (aM[x.artist] || 0) + 1 });
+        const topA = Object.entries(aM).sort((a, b) => b[1] - a[1])[0];
+        return { count: fl.length, time: tot, uT, uA, topA: topA ? topA[0] : '—' };
+      }
+      const sA = stats(fA), sB = stats(fB);
+      function delta(a, b) { if (!a) return ''; const d = b - a; const pct = a ? Math.round((d / a) * 100) : 0; return d >= 0 ? `<span class="cmp-delta up">↑ ${pct}%</span>` : `<span class="cmp-delta down">↓ ${Math.abs(pct)}%</span>` }
+      const unit = isYT ? 'videos' : 'streams';
+      const rows = [
+        { l: unit.toUpperCase(), a: fN(sA.count), b: fN(sB.count), d: delta(sA.count, sB.count) },
+        { l: isYT ? 'UNIQUE VIDEOS' : 'LISTEN TIME', a: isYT ? fN(sA.uT) : fmt(sA.time), b: isYT ? fN(sB.uT) : fmt(sB.time), d: delta(isYT ? sA.uT : sA.time, isYT ? sB.uT : sB.time) },
+        { l: isYT ? 'CHANNELS' : 'UNIQUE ARTISTS', a: fN(sA.uA), b: fN(sB.uA), d: delta(sA.uA, sB.uA) },
+        { l: `TOP ${isYT ? 'CHANNEL' : 'ARTIST'}`, a: sA.topA, b: sB.topA, d: '' },
+      ];
+      document.getElementById('cmpGrid').innerHTML = rows.map(r => `
+    <div class="cmp-card"><div class="cmp-label">${r.l}</div><div class="cmp-val">${r.a}</div><div style="font-family:var(--mono);font-size:.48rem;color:var(--muted);margin-top:2px">${pA}</div></div>
+    <div class="cmp-card"><div class="cmp-label">${r.l}</div><div class="cmp-val">${r.b}</div>${r.d}<div style="font-family:var(--mono);font-size:.48rem;color:var(--muted);margin-top:2px">${pB}</div></div>
+  `).join('');
+      /* Compare chart */
+      const dMapA = {}, dMapB = {};
+      fA.forEach(x => { if (!x.ts) return; const d = parseInt(x.ts.slice(8, 10)) || 1; dMapA[d] = (dMapA[d] || 0) + 1 });
+      fB.forEach(x => { if (!x.ts) return; const d = parseInt(x.ts.slice(8, 10)) || 1; dMapB[d] = (dMapB[d] || 0) + 1 });
+      const days = Array.from({ length: 31 }, (_, i) => i + 1);
+      const ac = accentColor();
+      if (cmpCI) cmpCI.destroy();
+      const ctx = document.getElementById('cmpChart').getContext('2d');
+      cmpCI = new Chart(ctx, {
+        type: 'line', data: {
+          labels: days, datasets: [
+            { label: pA, data: days.map(d => dMapA[d] || 0), borderColor: ac, borderWidth: 2, fill: false, tension: .4, pointRadius: 2 },
+            { label: pB, data: days.map(d => dMapB[d] || 0), borderColor: '#5b9cf6', borderWidth: 2, fill: false, tension: .4, pointRadius: 2, borderDash: [4, 3] }
+          ]
+        }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#888', font: { family: 'Space Mono', size: 10 } } } }, scales: { x: { ticks: { color: '#666', font: { family: 'Space Mono', size: 9 } }, grid: { color: '#1a1a1a' } }, y: { ticks: { color: '#666', font: { family: 'Space Mono', size: 9 } }, grid: { color: '#1a1a1a' }, beginAtZero: true } } }
+      });
+    }
+
+    /* ═══════════════════════════════════════
+       EXPORT DASHBOARD
+    ═══════════════════════════════════════ */
+    function exportDashboard() {
+      if (!window.html2canvas) return alert('html2canvas not loaded');
+      const btn = document.getElementById('exportBtn');
+      btn.textContent = '⏳ Exporting...'; btn.disabled = true;
+      const dash = document.getElementById('dashboard');
+      html2canvas(dash, { backgroundColor: getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#080808', scale: 1.5, useCORS: true, logging: false, windowWidth: dash.scrollWidth, windowHeight: dash.scrollHeight }).then(c => {
+        c.toBlob(function (blob) {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url; a.download = 'statify-dashboard.jpg';
+          document.body.appendChild(a); a.click();
+          document.body.removeChild(a); URL.revokeObjectURL(url);
+          btn.textContent = '📸 Export'; btn.disabled = false;
+        }, 'image/jpeg', 0.92);
+      }).catch(() => { btn.textContent = '📸 Export'; btn.disabled = false; alert('Export failed') });
+    }
+
+    /* ═══════════════════════════════════════
+       SHARE CARD (Social Formats)
+    ═══════════════════════════════════════ */
+    function shareCard(format) {
+      if (!window.html2canvas) return alert('html2canvas not loaded');
+      const card = document.getElementById('wcard');
+      const w = format === 'story' ? 1080 : 1200, h = format === 'story' ? 1920 : 675;
+      /* Create off-screen container */
+      const wrap = document.createElement('div');
+      const ac = accentColor(), ar = accentRgb();
+      wrap.style.cssText = `position:fixed;left:-9999px;top:0;width:${w}px;height:${h}px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#080808 0%,rgba(${ar},.15) 50%,#080808 100%);padding:${format === 'story' ? '80px 60px' : '40px 60px'}`;
+      /* Clone the card */
+      const clone = card.cloneNode(true);
+      clone.style.cssText = `width:${format === 'story' ? '860px' : '580px'};transform:scale(${format === 'story' ? 1 : .9});background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:32px`;
+      wrap.appendChild(clone);
+      /* Branding */
+      const brand = document.createElement('div');
+      brand.style.cssText = `margin-top:${format === 'story' ? '40px' : '20px'};font-family:'Plus Jakarta Sans',sans-serif;font-size:${format === 'story' ? '28px' : '18px'};color:${ac};font-weight:800;letter-spacing:-.02em`;
+      brand.textContent = 'STATIFY';
+      wrap.appendChild(brand);
+      const sub = document.createElement('div');
+      sub.style.cssText = `font-family:'Space Mono',monospace;font-size:${format === 'story' ? '14px' : '11px'};color:#666;margin-top:6px`;
+      sub.textContent = 'Your data, your story • statify.app';
+      wrap.appendChild(sub);
+      document.body.appendChild(wrap);
+      html2canvas(wrap, { backgroundColor: null, scale: 2, useCORS: true, logging: false, width: w, height: h }).then(c => {
+        c.toBlob(function (blob) {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url; a.download = `statify-${format === 'story' ? 'instagram-story' : 'twitter-card'}.jpg`;
+          document.body.appendChild(a); a.click();
+          document.body.removeChild(a); URL.revokeObjectURL(url);
+          document.body.removeChild(wrap);
+        }, 'image/jpeg', 0.92);
+      }).catch(() => { document.body.removeChild(wrap); alert('Share export failed') });
+    }
+
+    /* ═══════════════════════════════════════
+       SCROLL TO TOP
+    ═══════════════════════════════════════ */
+    window.addEventListener('scroll', function () {
+      const btn = document.getElementById('scrollTopBtn');
+      btn.classList.toggle('show', window.scrollY > 400);
+    }, { passive: true });
+
+    /* ═══════════════════════════════════════
+       COUNT-UP ANIMATION
+    ═══════════════════════════════════════ */
+    function animateCountUp() {
+      document.querySelectorAll('.sc-val[data-count]').forEach(el => {
+        const raw = el.getAttribute('data-count');
+        const num = parseFloat(raw.replace(/,/g, ''));
+        if (isNaN(num)) { el.textContent = raw; return }
+        const isInt = Number.isInteger(num);
+        const suffix = el.getAttribute('data-suffix') || '';
+        const prefix = el.getAttribute('data-prefix') || '';
+        const dur = 800;
+        const start = performance.now();
+        function step(now) {
+          const p = Math.min((now - start) / dur, 1);
+          const ease = 1 - Math.pow(1 - p, 3); /* easeOutCubic */
+          const cur = num * ease;
+          el.textContent = prefix + (isInt ? fN(Math.round(cur)) : cur.toFixed(1)) + suffix;
+          if (p < 1) requestAnimationFrame(step);
+          else el.textContent = prefix + (isInt ? fN(num) : num.toFixed(1)) + suffix;
+        }
+        requestAnimationFrame(step);
+      });
+    }
+
+    /* ═══════════════════════════════════════
+       ACCENT COLOR PICKER
+    ═══════════════════════════════════════ */
+    const ACCENT_COLORS = [
+      { name: 'Spotify Green', hex: '#1DB954', rgb: '29,185,84' },
+      { name: 'Cyan', hex: '#06b6d4', rgb: '6,182,212' },
+      { name: 'Purple', hex: '#a855f7', rgb: '168,85,247' },
+      { name: 'Rose', hex: '#f43f5e', rgb: '244,63,94' },
+      { name: 'Amber', hex: '#f59e0b', rgb: '245,158,11' },
+      { name: 'Sky', hex: '#0ea5e9', rgb: '14,165,233' }
+    ];
+    function initAccentPicker() {
+      const pop = document.getElementById('accentPop');
+      pop.innerHTML = ACCENT_COLORS.map((c, i) => `<div class="accent-opt${i === 0 ? ' active' : ''}" style="background:${c.hex}" data-idx="${i}" onclick="setAccent(${i})" title="${c.name}"></div>`).join('');
+      /* Restore saved accent */
+      try {
+        const saved = localStorage.getItem('statify-accent');
+        if (saved) { const idx = ACCENT_COLORS.findIndex(c => c.hex === saved); if (idx >= 0) setAccent(idx, true) }
+      } catch (e) { }
+    }
+    function toggleAccentPicker() {
+      const pop = document.getElementById('accentPop');
+      pop.classList.toggle('show');
+    }
+    function setAccent(idx, silent) {
+      if (document.body.classList.contains('yt-theme')) return; /* YT uses its own red */
+      const c = ACCENT_COLORS[idx];
+      document.documentElement.style.setProperty('--g', c.hex);
+      document.documentElement.style.setProperty('--g2', c.hex);
+      document.getElementById('accentSwatch').style.background = c.hex;
+      /* Update active dot */
+      document.querySelectorAll('.accent-opt').forEach((el, i) => el.classList.toggle('active', i === idx));
+      if (!silent) { document.getElementById('accentPop').classList.remove('show') }
+      try { localStorage.setItem('statify-accent', c.hex) } catch (e) { }
+    }
+    initAccentPicker();
+    /* Close picker on outside click */
+    document.addEventListener('click', function (e) {
+      const btn = document.getElementById('accentBtn');
+      if (btn && !btn.contains(e.target)) { document.getElementById('accentPop').classList.remove('show') }
+    });
+
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(() => { }) }
+  </script>
+</body>
+
+</html>

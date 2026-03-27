@@ -1,0 +1,12 @@
+{
+  "name": "Statify — Music Data Analyzer",
+  "short_name": "Statify",
+  "description": "Analyze your Spotify & YouTube Music data. Private, local, beautiful.",
+  "start_url": "./Statify_v3.html",
+  "display": "standalone",
+  "background_color": "#080808",
+  "theme_color": "#1DB954",
+  "icons": [
+    { "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23080808' stroke='%231DB954' stroke-width='4'/><circle cx='50' cy='50' r='8' fill='%231DB954'/><circle cx='50' cy='50' r='20' fill='none' stroke='%231DB954' stroke-width='3'/><circle cx='50' cy='50' r='32' fill='none' stroke='%231DB954' stroke-width='2' opacity='.5'/></svg>", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
