@@ -3470,7 +3470,7 @@
       border-bottom: 1px solid var(--border)
     }
     .np-section-label {
-      font-family: var(--mono); font-size: .52rem;
+      font-family: var(--mono); font-size: .68rem;
       color: var(--g); letter-spacing: .1em;
       display: flex; align-items: center; gap: 6px;
       margin-bottom: 12px
@@ -3510,15 +3510,15 @@
     }
     .np-info { flex: 1; min-width: 0 }
     .np-track {
-      font-size: .9rem; font-weight: 700;
+      font-size: 1.02rem; font-weight: 700;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis
     }
     .np-artist {
-      font-size: .72rem; color: var(--text2); margin-top: 3px;
+      font-size: .84rem; color: var(--text2); margin-top: 3px;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis
     }
     .np-album {
-      font-family: var(--mono); font-size: .55rem;
+      font-family: var(--mono); font-size: .64rem;
       color: var(--muted); margin-top: 4px;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis
     }
@@ -3543,7 +3543,7 @@
     /* Recently Played — vertical list */
     .rp-section { padding: 14px 18px }
     .rp-section-label {
-      font-family: var(--mono); font-size: .52rem;
+      font-family: var(--mono); font-size: .68rem;
       color: var(--muted); letter-spacing: .1em; margin-bottom: 10px
     }
     .rp-list { display: flex; flex-direction: column; gap: 2px }
@@ -3554,7 +3554,7 @@
     }
     .rp-item:hover { background: var(--s2) }
     .rp-num {
-      font-family: var(--mono); font-size: .54rem;
+      font-family: var(--mono); font-size: .62rem;
       color: var(--muted2); width: 16px; text-align: right; flex-shrink: 0
     }
     .rp-art {
@@ -3569,123 +3569,186 @@
     }
     .rp-info { flex: 1; min-width: 0 }
     .rp-track {
-      font-size: .8rem; font-weight: 600;
+      font-size: .9rem; font-weight: 600;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis
     }
     .rp-artist {
-      font-size: .66rem; color: var(--text2); margin-top: 2px;
+      font-size: .76rem; color: var(--text2); margin-top: 2px;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis
     }
     .rp-ago {
-      font-family: var(--mono); font-size: .5rem;
+      font-family: var(--mono); font-size: .6rem;
       color: var(--muted2); flex-shrink: 0
     }
 
-    /* Spotify auth modal */
+    /* Spotify auth modal — dark minimal */
     #spotify-modal {
       display: none; position: fixed; inset: 0; z-index: 500;
-      background: rgba(0,0,0,.76); backdrop-filter: blur(10px);
-      align-items: center; justify-content: center
+      background: rgba(0,0,0,.82); backdrop-filter: blur(14px);
+      align-items: center; justify-content: center; padding: 20px
     }
     #spotify-modal.show { display: flex }
     .spm-box {
       background: var(--s1); border: 1px solid var(--border2);
-      border-radius: 10px; padding: 32px 28px; max-width: 380px; width: 92%;
-      text-align: center
+      border-radius: var(--r); padding: 36px 32px 28px; max-width: 400px; width: 100%;
+      text-align: left; position: relative
     }
-    .spm-logo {
-      width: 44px; height: 44px; margin: 0 auto 14px;
-      background: #1DB954; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center; font-size: 1.3rem
+    /* close X top-right */
+    .spm-x {
+      position: absolute; top: 16px; right: 16px;
+      background: none; border: none; color: var(--muted);
+      font-family: var(--mono); font-size: .72rem; cursor: pointer;
+      transition: color .2s; line-height: 1; padding: 4px 6px
     }
-    .spm-title { font-size: 1rem; font-weight: 700; margin-bottom: 6px }
+    .spm-x:hover { color: var(--text) }
+    /* eyebrow */
+    .spm-eyebrow {
+      font-family: var(--mono); font-size: .58rem;
+      color: var(--g); letter-spacing: .16em;
+      margin-bottom: 10px; display: flex; align-items: center; gap: 7px
+    }
+    .spm-eyebrow-dot {
+      width: 6px; height: 6px; border-radius: 50%; background: var(--g);
+      animation: blink 1.8s ease-in-out infinite
+    }
+    .spm-title {
+      font-size: 1.45rem; font-weight: 800; letter-spacing: -.02em;
+      margin-bottom: 5px; color: var(--text)
+    }
     .spm-desc {
-      font-size: .78rem; color: var(--muted); line-height: 1.6; margin-bottom: 4px
+      font-family: var(--mono); font-size: .65rem; color: var(--muted);
+      line-height: 1.7; margin-bottom: 20px
     }
-    .spm-scopes {
-      font-family: var(--mono); font-size: .55rem; color: var(--muted2);
-      background: var(--s2); border: 1px solid var(--border);
-      border-radius: 4px; padding: 10px 14px; text-align: left;
-      margin: 12px 0; line-height: 1.9
+    /* step label */
+    .spm-step {
+      font-family: var(--mono); font-size: .54rem; color: var(--muted2);
+      letter-spacing: .1em; margin-bottom: 5px; display: block
     }
-    .spm-note {
-      font-family: var(--mono); font-size: .53rem; color: var(--muted2);
-      margin-bottom: 18px; line-height: 1.6
+    .spm-input-label {
+      font-family: var(--mono); font-size: .62rem; color: var(--text2);
+      margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between
     }
-    .spm-btn {
-      width: 100%; padding: 13px;
-      background: #1DB954; color: #000; font-weight: 800;
-      border: none; border-radius: 5px; cursor: pointer; font-size: .88rem;
-      transition: background .2s; display: flex; align-items: center;
-      justify-content: center; gap: 8px
-    }
-    .spm-btn:hover { background: #1ed760 }
-    .spm-cancel {
-      margin-top: 10px; background: none; border: none;
-      color: var(--muted); font-size: .74rem; cursor: pointer;
-      font-family: var(--mono); display: block; width: 100%; text-align: center
-    }
-    .spm-cancel:hover { color: var(--text) }
     .spm-input {
-      width: 100%; padding: 9px 12px; margin-bottom: 8px;
+      width: 100%; padding: 10px 13px; margin-bottom: 4px;
       background: var(--s2); border: 1px solid var(--border2);
-      color: var(--text); font-family: var(--mono); font-size: .7rem;
-      border-radius: 4px; outline: none; transition: border-color .2s
+      color: var(--text); font-family: var(--mono); font-size: .72rem;
+      border-radius: var(--r); outline: none; transition: border-color .2s;
+      letter-spacing: .04em
     }
     .spm-input:focus { border-color: var(--g) }
     .spm-input::placeholder { color: var(--muted2) }
-    .spm-input-label {
-      font-family: var(--mono); font-size: .58rem; color: var(--muted);
-      text-align: left; margin-bottom: 5px; display: block
+    .spm-hint {
+      font-family: var(--mono); font-size: .54rem; color: var(--muted2);
+      line-height: 1.6; margin: 10px 0 20px; padding: 10px 12px;
+      background: var(--s2); border-left: 2px solid var(--border2);
+      border-radius: 0 var(--r) var(--r) 0
     }
-    .spm-link { color: var(--g); text-decoration: none }
-    .spm-link:hover { text-decoration: underline }
+    .spm-hint strong { color: var(--text2) }
+    .spm-scopes {
+      font-family: var(--mono); font-size: .58rem; color: var(--muted);
+      display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap
+    }
+    .spm-scope-tag {
+      background: var(--s2); border: 1px solid var(--border);
+      border-radius: 3px; padding: 3px 8px
+    }
     .spm-error {
       font-family: var(--mono); font-size: .6rem; color: #e05555;
       margin-bottom: 10px; display: none
     }
     .spm-error.show { display: block }
+    .spm-btn {
+      width: 100%; padding: 13px;
+      background: var(--g); color: #000; font-weight: 800;
+      border: none; border-radius: var(--r); cursor: pointer;
+      font-family: var(--font); font-size: .88rem;
+      transition: background .2s; display: flex; align-items: center;
+      justify-content: center; gap: 8px; letter-spacing: .01em
+    }
+    .spm-btn:hover { background: var(--g2) }
+    .spm-link { color: var(--g); text-decoration: none; font-size: .58rem }
+    .spm-link:hover { text-decoration: underline }
+    .spm-cancel {
+      margin-top: 12px; background: none; border: none;
+      color: var(--muted); font-size: .62rem; cursor: pointer;
+      font-family: var(--mono); display: block; width: 100%; text-align: center;
+      letter-spacing: .06em; transition: color .2s
+    }
+    .spm-cancel:hover { color: var(--text) }
 
-    /* ── Floating mini-player (bottom-left) ── */
+    /* ── Floating mini-player — iOS pill style ── */
     #np-float {
-      position: fixed; bottom: 20px; left: 20px; z-index: 300;
-      width: 260px;
-      background: var(--s1); border: 1px solid var(--border2);
-      border-radius: 8px; padding: 10px 12px;
-      box-shadow: 0 8px 32px rgba(0,0,0,.6);
-      display: none; flex-direction: column; gap: 8px;
-      transition: opacity .3s, transform .3s
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      z-index: 300;
+      width: 340px;
+      background: rgba(30,30,30,.92);
+      backdrop-filter: blur(28px) saturate(1.6);
+      -webkit-backdrop-filter: blur(28px) saturate(1.6);
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 18px;
+      padding: 10px 14px 8px;
+      box-shadow: 0 12px 40px rgba(0,0,0,.7), 0 0 0 .5px rgba(255,255,255,.06);
+      display: none; flex-direction: column; gap: 6px;
+      transition: opacity .3s, transform .3s, width .35s cubic-bezier(.34,1.56,.64,1), border-radius .35s
     }
     #np-float.visible { display: flex }
     #np-float.entering {
       animation: floatIn .35s cubic-bezier(.34,1.56,.64,1) forwards
     }
-    @keyframes floatIn {
-      from { opacity: 0; transform: translateY(16px) scale(.95) }
-      to   { opacity: 1; transform: translateY(0) scale(1) }
+    /* Collapsed state — just the art disc */
+    #np-float.npf-collapsed {
+      width: 52px; border-radius: 50%;
+      padding: 7px; gap: 0; cursor: pointer;
+      align-items: center; justify-content: center
     }
-    .npf-top { display: flex; align-items: center; gap: 9px }
+    #np-float.npf-collapsed .npf-main-row,
+    #np-float.npf-collapsed .npf-controls-row,
+    #np-float.npf-collapsed .npf-prog-bg,
+    #np-float.npf-collapsed .npf-times { display: none !important }
+    #np-float.npf-collapsed .npf-collapsed-art { display: flex !important }
+
+    @keyframes floatIn {
+      from { opacity: 0; transform: translateX(-50%) translateY(16px) scale(.95) }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1) }
+    }
+
+    .npf-collapsed-art {
+      display: none;
+      width: 38px; height: 38px; border-radius: 50%;
+      overflow: hidden; flex-shrink: 0; position: relative
+    }
+    .npf-collapsed-art img { width: 100%; height: 100%; object-fit: cover; border-radius: 50% }
+    .npf-collapsed-art-ph {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: var(--s3); display: flex; align-items: center; justify-content: center; font-size: .9rem
+    }
+
+    .npf-main-row { display: flex; align-items: center; gap: 10px }
+    .npf-art-wrap { position: relative; flex-shrink: 0 }
     .npf-art {
-      width: 38px; height: 38px; border-radius: 4px;
-      object-fit: cover; flex-shrink: 0; background: var(--s3)
+      width: 44px; height: 44px; border-radius: 10px;
+      object-fit: cover; flex-shrink: 0; background: var(--s3);
+      box-shadow: 0 3px 10px rgba(0,0,0,.5)
     }
     .npf-art-ph {
-      width: 38px; height: 38px; border-radius: 4px;
+      width: 44px; height: 44px; border-radius: 10px;
       background: var(--s3); border: 1px solid var(--border);
       display: flex; align-items: center; justify-content: center;
-      font-size: .9rem; flex-shrink: 0
+      font-size: 1rem; flex-shrink: 0
     }
     .npf-info { flex: 1; min-width: 0 }
     .npf-track {
-      font-size: .75rem; font-weight: 700;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis
+      font-size: .82rem; font-weight: 700;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      color: #fff
     }
     .npf-artist {
-      font-size: .62rem; color: var(--text2); margin-top: 2px;
+      font-size: .65rem; color: rgba(255,255,255,.55); margin-top: 2px;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis
     }
-    .npf-controls { display: flex; align-items: center; gap: 6px; flex-shrink: 0 }
-    .npf-bars { display: flex; align-items: flex-end; gap: 2px; height: 9px }
+    /* right-side: bars + close */
+    .npf-right { display: flex; align-items: center; gap: 7px; flex-shrink: 0 }
+    .npf-bars { display: flex; align-items: flex-end; gap: 2px; height: 10px }
     .npf-bar {
       width: 2px; border-radius: 1px; background: var(--g);
       animation: wd 1.1s ease-in-out infinite
@@ -3694,24 +3757,58 @@
     .npf-bar:nth-child(3) { animation-delay: .36s }
     .npf-bar.paused { animation: none; height: 2px !important }
     .npf-close {
-      background: none; border: none; color: var(--muted);
-      font-size: .7rem; cursor: pointer; padding: 0 2px;
-      line-height: 1; transition: color .2s
+      background: rgba(255,255,255,.1); border: none; color: rgba(255,255,255,.6);
+      font-size: .62rem; cursor: pointer; padding: 0;
+      width: 20px; height: 20px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      line-height: 1; transition: background .2s, color .2s
     }
-    .npf-close:hover { color: var(--text) }
+    .npf-close:hover { background: rgba(255,255,255,.2); color: #fff }
+
+    /* Playback controls row */
+    .npf-controls-row {
+      display: flex; align-items: center; justify-content: center; gap: 18px;
+      padding: 2px 0
+    }
+    .npf-ctrl-btn {
+      background: none; border: none; cursor: pointer;
+      color: rgba(255,255,255,.75); font-size: .82rem;
+      padding: 4px 6px; border-radius: 4px; transition: color .15s, transform .1s;
+      line-height: 1
+    }
+    .npf-ctrl-btn:hover { color: #fff; transform: scale(1.15) }
+    .npf-ctrl-btn:active { transform: scale(.92) }
+    .npf-ctrl-play {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: var(--g); color: #000 !important;
+      display: flex; align-items: center; justify-content: center;
+      font-size: .9rem; transition: background .2s, transform .1s !important
+    }
+    .npf-ctrl-play:hover { background: var(--g2); transform: scale(1.08) !important }
+
+    /* device icon bottom-right of art */
+    .npf-device-badge {
+      position: absolute; bottom: -4px; right: -4px;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: var(--s1); border: 1px solid var(--border2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .52rem
+    }
+
     .npf-prog-bg {
-      height: 2px; background: var(--border2); border-radius: 1px; overflow: hidden
+      height: 3px; background: rgba(255,255,255,.12); border-radius: 2px; overflow: hidden;
+      cursor: pointer
     }
-    .npf-prog-fill { height: 100%; background: var(--g); border-radius: 1px }
+    .npf-prog-fill { height: 100%; background: var(--g); border-radius: 2px }
     .npf-times {
       display: flex; justify-content: space-between;
-      font-family: var(--mono); font-size: .46rem; color: var(--muted)
+      font-family: var(--mono); font-size: .46rem; color: rgba(255,255,255,.35)
     }
 
     @media(max-width:640px) {
       .np-card { flex-direction: row }
       .rp-list { gap: 0 }
-      #np-float { width: 220px; bottom: 14px; left: 14px }
+      #np-float { width: 300px; bottom: 14px }
     }
   </style>
 </head>
@@ -3859,26 +3956,35 @@
       <!-- ═══════ SPOTIFY AUTH MODAL ═══════ -->
       <div id="spotify-modal">
         <div class="spm-box">
-          <div class="spm-logo">🎵</div>
-          <div class="spm-title">Connect Spotify Live</div>
-          <p class="spm-desc">See your currently playing song and recently played tracks in real time.</p>
-          <label class="spm-input-label">Your Spotify App Client ID &nbsp;<a class="spm-link" href="https://developer.spotify.com/dashboard" target="_blank">(get one free ↗)</a></label>
-          <input class="spm-input" id="spm-client-id" type="text" placeholder="e.g. 1a2b3c4d5e6f7a8b9c0d...">
+          <button class="spm-x" onclick="closeSpotifyModal()">✕</button>
+          <div class="spm-eyebrow"><div class="spm-eyebrow-dot"></div>SPOTIFY LIVE</div>
+          <div class="spm-title">Connect Live</div>
+          <p class="spm-desc">See what you're playing right now and recently played — in real time.</p>
+
+          <label class="spm-input-label">
+            <span>Client ID</span>
+            <a class="spm-link" href="https://developer.spotify.com/dashboard" target="_blank">get one free ↗</a>
+          </label>
+          <input class="spm-input" id="spm-client-id" type="text" placeholder="e.g. ee18b62f9afd419c8deb0af681429d9d">
           <div class="spm-error" id="spm-error"></div>
-          <div class="spm-scopes">
-            Permissions requested:<br>
-            &bull;&nbsp;user-read-currently-playing<br>
-            &bull;&nbsp;user-read-recently-played
+
+          <div class="spm-hint">
+            Create a free app at <strong>developer.spotify.com</strong><br>
+            Add <strong id="spm-redirect-uri"></strong> as Redirect URI
           </div>
-          <p class="spm-note">
-            Create a free app at developer.spotify.com<br>
-            Add <strong id="spm-redirect-uri" style="color:var(--text2)"></strong> as Redirect URI
-          </p>
+
+          <div class="spm-scopes">
+            <span class="spm-scope-tag">user-read-currently-playing</span>
+            <span class="spm-scope-tag">user-read-recently-played</span>
+            <span class="spm-scope-tag">user-modify-playback-state</span>
+            <span class="spm-scope-tag">user-read-playback-state</span>
+          </div>
+
           <button class="spm-btn" onclick="spotifyAuthorize()">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="#000"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424a.623.623 0 01-.857.207c-2.348-1.435-5.304-1.76-8.785-.964a.623.623 0 11-.277-1.215c3.809-.87 7.076-.496 9.712 1.115a.623.623 0 01.207.857zm1.223-2.722a.78.78 0 01-1.072.257c-2.687-1.652-6.785-2.131-9.965-1.166a.78.78 0 01-.453-1.492c3.632-1.102 8.147-.568 11.233 1.329a.78.78 0 01.257 1.072zm.105-2.835C14.692 8.95 9.375 8.775 6.297 9.71a.937.937 0 11-.543-1.795c3.532-1.07 9.404-.863 13.115 1.332a.937.937 0 01-.955 1.62z"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424a.623.623 0 01-.857.207c-2.348-1.435-5.304-1.76-8.785-.964a.623.623 0 11-.277-1.215c3.809-.87 7.076-.496 9.712 1.115a.623.623 0 01.207.857zm1.223-2.722a.78.78 0 01-1.072.257c-2.687-1.652-6.785-2.131-9.965-1.166a.78.78 0 01-.453-1.492c3.632-1.102 8.147-.568 11.233 1.329a.78.78 0 01.257 1.072zm.105-2.835C14.692 8.95 9.375 8.775 6.297 9.71a.937.937 0 11-.543-1.795c3.532-1.07 9.404-.863 13.115 1.332a.937.937 0 01-.955 1.62z"/></svg>
             Connect with Spotify
           </button>
-          <button class="spm-cancel" onclick="closeSpotifyModal()">Cancel</button>
+          <button class="spm-cancel" onclick="closeSpotifyModal()">CANCEL</button>
         </div>
       </div>
 
@@ -4120,23 +4226,41 @@
     </div>
   </div>
   <div id="tooltip"></div>
-  <!-- ══════ FLOATING MINI PLAYER ══════ -->
-  <div id="np-float">
-    <div class="npf-top">
-      <div id="npf-art-wrap"></div>
+  <!-- ══════ FLOATING MINI PLAYER — iOS pill ══════ -->
+  <div id="np-float" onclick="npfToggleCollapse(event)">
+    <!-- Collapsed state: just rotating disc -->
+    <div class="npf-collapsed-art" id="npf-collapsed-art">
+      <div class="npf-art-ph" id="npf-collapsed-ph">🎵</div>
+    </div>
+
+    <!-- Expanded: top row -->
+    <div class="npf-main-row">
+      <div class="npf-art-wrap">
+        <div id="npf-art-wrap"></div>
+        <div class="npf-device-badge" id="npf-device-badge" title="">📱</div>
+      </div>
       <div class="npf-info">
         <div class="npf-track" id="npf-track">—</div>
         <div class="npf-artist" id="npf-artist">—</div>
       </div>
-      <div class="npf-controls">
+      <div class="npf-right">
         <div class="npf-bars" id="npf-bars">
           <div class="npf-bar" style="height:6px"></div>
           <div class="npf-bar" style="height:9px"></div>
           <div class="npf-bar" style="height:5px"></div>
         </div>
-        <button class="npf-close" onclick="hideFloat()" title="Hide">✕</button>
+        <button class="npf-close" onclick="event.stopPropagation();hideFloat()" title="Hide">✕</button>
       </div>
     </div>
+
+    <!-- Controls row -->
+    <div class="npf-controls-row">
+      <button class="npf-ctrl-btn" onclick="event.stopPropagation();spPlayerCmd('previous')" title="Previous">⏮</button>
+      <button class="npf-ctrl-btn npf-ctrl-play" id="npf-play-btn" onclick="event.stopPropagation();spPlayerCmd('playpause')" title="Play/Pause">⏸</button>
+      <button class="npf-ctrl-btn" onclick="event.stopPropagation();spPlayerCmd('next')" title="Next">⏭</button>
+    </div>
+
+    <!-- Progress -->
     <div class="npf-prog-bg"><div class="npf-prog-fill" id="npf-fill" style="width:0%"></div></div>
     <div class="npf-times"><span id="npf-elapsed">0:00</span><span id="npf-duration">0:00</span></div>
   </div>
@@ -5517,7 +5641,7 @@
 
     /* ── State ── */
     const SP = {
-      SCOPES: 'user-read-currently-playing user-read-recently-played',
+      SCOPES: 'user-read-currently-playing user-read-recently-played user-modify-playback-state user-read-playback-state',
       clientId: null, accessToken: null, tokenExpiry: 0, pollTimer: null,
       /* Real-time progress tracking */
       trackDuration: 0, progressMs: 0, progressTimestamp: 0, isPlaying: false,
@@ -5791,11 +5915,18 @@
       const floatEl = document.getElementById('np-float');
       const wasVisible = floatEl.classList.contains('visible');
 
-      /* Art */
+      /* Art — expanded */
       const artWrap = document.getElementById('npf-art-wrap');
-      if (artWrap) artWrap.innerHTML = art
-        ? `<img class="npf-art" src="${art}" alt="">`
+      const artHtml = art
+        ? `<img class="npf-art" src="${art}" alt="" style="border-radius:10px">`
         : `<div class="npf-art-ph">🎵</div>`;
+      if (artWrap) artWrap.innerHTML = artHtml;
+
+      /* Art — collapsed disc */
+      const collArt = document.getElementById('npf-collapsed-art');
+      if (collArt) collArt.innerHTML = art
+        ? `<img src="${art}" alt="" style="width:38px;height:38px;border-radius:50%;object-fit:cover">`
+        : `<div class="npf-collapsed-art-ph">🎵</div>`;
 
       document.getElementById('npf-track').textContent = track.name;
       document.getElementById('npf-artist').textContent = artists;
@@ -5803,13 +5934,80 @@
       document.getElementById('npf-elapsed').textContent = msToMMSS(progressMs);
       document.getElementById('npf-duration').textContent = msToMMSS(track.duration_ms || 0);
 
+      /* Play/pause button */
+      const playBtn = document.getElementById('npf-play-btn');
+      if (playBtn) playBtn.textContent = isPlaying ? '⏸' : '▶';
+
       /* Bars */
       document.getElementById('npf-bars').querySelectorAll('.npf-bar').forEach(b => b.classList.toggle('paused', !isPlaying));
+
+      /* Device badge */
+      fetchDeviceBadge();
 
       if (!wasVisible) {
         floatEl.classList.add('visible', 'entering');
         setTimeout(() => floatEl.classList.remove('entering'), 400);
       }
+    }
+
+    /* Toggle collapse on pill click */
+    function npfToggleCollapse(e) {
+      const f = document.getElementById('np-float');
+      if (f.classList.contains('npf-collapsed')) {
+        f.classList.remove('npf-collapsed');
+      }
+      /* Only collapse if clicking the main-row art area, not controls */
+    }
+
+    /* Device badge */
+    async function fetchDeviceBadge() {
+      const badge = document.getElementById('npf-device-badge');
+      if (!badge) return;
+      try {
+        if (!await ensureToken()) return;
+        const res = await fetch('https://api.spotify.com/v1/me/player/devices', {
+          headers: { Authorization: 'Bearer ' + SP.accessToken }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const active = (data.devices || []).find(d => d.is_active);
+        if (!active) { badge.style.display = 'none'; return; }
+        badge.style.display = 'flex';
+        const type = (active.type || '').toLowerCase();
+        const icons = { computer: '💻', smartphone: '📱', tablet: '📱', speaker: '🔊', tv: '📺', castdongle: '📡', gameConsole: '🎮' };
+        const btNames = ['bluetooth', 'bt', 'airplay', 'airpods', 'sonos', 'homepod'];
+        const isBt = btNames.some(k => active.name.toLowerCase().includes(k));
+        badge.title = active.name;
+        badge.textContent = isBt ? '🔵' : (icons[type] || '🔊');
+      } catch(e) {}
+    }
+
+    /* Playback controls */
+    async function spPlayerCmd(cmd) {
+      if (!await ensureToken()) return;
+      try {
+        if (cmd === 'playpause') {
+          const stateRes = await fetch('https://api.spotify.com/v1/me/player', {
+            headers: { Authorization: 'Bearer ' + SP.accessToken }
+          });
+          if (stateRes.status === 200) {
+            const st = await stateRes.json();
+            const endpoint = st.is_playing ? 'pause' : 'play';
+            await fetch(`https://api.spotify.com/v1/me/player/${endpoint}`, {
+              method: 'PUT', headers: { Authorization: 'Bearer ' + SP.accessToken }
+            });
+          }
+        } else if (cmd === 'next') {
+          await fetch('https://api.spotify.com/v1/me/player/next', {
+            method: 'POST', headers: { Authorization: 'Bearer ' + SP.accessToken }
+          });
+        } else if (cmd === 'previous') {
+          await fetch('https://api.spotify.com/v1/me/player/previous', {
+            method: 'POST', headers: { Authorization: 'Bearer ' + SP.accessToken }
+          });
+        }
+        setTimeout(fetchNowPlaying, 600);
+      } catch(e) {}
     }
 
     /* ── Fetch Recently Played ── */
