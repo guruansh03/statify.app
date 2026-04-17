@@ -3447,12 +3447,14 @@
     }
     .live-chevron.open { transform: rotate(180deg) }
     .live-disconnect {
-      font-family: var(--mono); font-size: .52rem;
-      color: var(--muted); background: none; border: none;
-      cursor: pointer; padding: 2px 8px;
-      transition: color .2s
+      font-family: var(--mono); font-size: .62rem;
+      color: var(--text2); background: rgba(255,255,255,.06);
+      border: 1px solid var(--border2);
+      border-radius: 3px; cursor: pointer; padding: 3px 10px;
+      transition: color .2s, background .2s, border-color .2s;
+      letter-spacing: .04em
     }
-    .live-disconnect:hover { color: #e05555 }
+    .live-disconnect:hover { color: #e05555; border-color: rgba(224,85,85,.4); background: rgba(224,85,85,.08) }
 
     .live-body {
       overflow: hidden;
@@ -3489,24 +3491,42 @@
     .np-card {
       display: flex; align-items: center; gap: 14px;
       background: var(--s2); border: 1px solid var(--border2);
-      border-radius: 5px; padding: 12px 14px;
+      border-radius: 8px; padding: 14px 16px;
       position: relative; overflow: hidden
     }
-    .np-card::after {
-      content: ''; position: absolute; inset: 0;
-      background: linear-gradient(90deg, rgba(29,185,84,.04) 0%, transparent 50%);
-      pointer-events: none
+    /* blurred art background */
+    .np-card-bg {
+      position: absolute; inset: 0;
+      background-size: cover; background-position: center;
+      filter: blur(28px) saturate(1.4) brightness(.22);
+      transform: scale(1.1);
+      pointer-events: none; z-index: 0
     }
+    .np-card > * { position: relative; z-index: 1 }
+    .np-art-wrap { position: relative; flex-shrink: 0 }
     .np-art {
-      width: 56px; height: 56px; border-radius: 4px;
+      width: 64px; height: 64px; border-radius: 6px;
       object-fit: cover; flex-shrink: 0;
-      box-shadow: 0 3px 12px rgba(0,0,0,.5)
+      box-shadow: 0 4px 16px rgba(0,0,0,.6)
     }
+    /* live bars overlay on art */
+    .np-art-bars {
+      position: absolute; bottom: 4px; left: 4px;
+      display: flex; align-items: flex-end; gap: 2px; height: 10px
+    }
+    .np-art-bar {
+      width: 2px; border-radius: 1px; background: rgba(255,255,255,.9);
+      animation: wd 1.1s ease-in-out infinite;
+      box-shadow: 0 0 4px rgba(255,255,255,.5)
+    }
+    .np-art-bar:nth-child(2) { animation-delay: .18s }
+    .np-art-bar:nth-child(3) { animation-delay: .36s }
+    .np-art-bar.paused { animation: none; height: 2px !important }
     .np-art-placeholder {
-      width: 56px; height: 56px; border-radius: 4px;
+      width: 64px; height: 64px; border-radius: 6px;
       background: var(--s3); border: 1px solid var(--border);
       display: flex; align-items: center; justify-content: center;
-      font-size: 1.3rem; flex-shrink: 0
+      font-size: 1.4rem; flex-shrink: 0
     }
     .np-info { flex: 1; min-width: 0 }
     .np-track {
@@ -3522,19 +3542,29 @@
       color: var(--muted); margin-top: 4px;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis
     }
-    .np-progress-wrap { margin-top: 9px }
+    .np-progress-wrap { margin-top: 10px }
     .np-progress-bar {
-      height: 2px; background: var(--border2); border-radius: 2px; overflow: hidden
+      height: 5px; background: rgba(255,255,255,.12); border-radius: 3px;
+      overflow: hidden; cursor: pointer; transition: height .15s
     }
+    .np-progress-bar:hover { height: 8px }
     .np-progress-fill {
-      height: 100%; background: var(--g); border-radius: 2px
-      /* no transition — JS handles smooth RAF ticking */
+      height: 100%; background: var(--g); border-radius: 3px
     }
     .np-times {
       display: flex; justify-content: space-between;
-      font-family: var(--mono); font-size: .5rem;
-      color: var(--muted); margin-top: 3px
+      font-family: var(--mono); font-size: .52rem;
+      color: var(--muted); margin-top: 4px
     }
+    /* like button */
+    .np-like {
+      flex-shrink: 0; background: none; border: none;
+      color: var(--muted); font-size: 1rem; cursor: pointer;
+      transition: color .2s, transform .2s; padding: 4px; line-height: 1
+    }
+    .np-like:hover { color: #e05555; transform: scale(1.2) }
+    .np-like.liked { color: #e05555 }
+    .np-like.liked:hover { transform: scale(1.1) }
     .np-nothing {
       font-family: var(--mono); font-size: .65rem;
       color: var(--muted); padding: 14px 0; text-align: center
@@ -3678,28 +3708,29 @@
 
     /* ── Floating mini-player — iOS pill style ── */
     #np-float {
-      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-      z-index: 300;
-      width: 340px;
-      background: rgba(30,30,30,.92);
-      backdrop-filter: blur(28px) saturate(1.6);
-      -webkit-backdrop-filter: blur(28px) saturate(1.6);
+      position: fixed; bottom: 20px; left: 50%;
+      z-index: 300; width: 340px;
+      background: rgba(22,22,22,.94);
+      backdrop-filter: blur(32px) saturate(1.8);
+      -webkit-backdrop-filter: blur(32px) saturate(1.8);
       border: 1px solid rgba(255,255,255,.10);
-      border-radius: 18px;
-      padding: 10px 14px 8px;
+      border-radius: 20px; padding: 12px 14px 10px;
       box-shadow: 0 12px 40px rgba(0,0,0,.7), 0 0 0 .5px rgba(255,255,255,.06);
-      display: none; flex-direction: column; gap: 6px;
-      transition: opacity .3s, transform .3s, width .35s cubic-bezier(.34,1.56,.64,1), border-radius .35s
+      display: none; flex-direction: column; gap: 8px;
+      transition: opacity .3s, width .35s cubic-bezier(.34,1.56,.64,1),
+                  border-radius .35s, box-shadow .5s, height .35s;
+      user-select: none; cursor: grab; transform: translateX(-50%)
     }
     #np-float.visible { display: flex }
-    #np-float.entering {
-      animation: floatIn .35s cubic-bezier(.34,1.56,.64,1) forwards
+    #np-float.npf-dragging { transition: box-shadow .2s; cursor: grabbing }
+    #np-float.entering { animation: floatIn .4s cubic-bezier(.34,1.56,.64,1) forwards }
+    #np-float.npf-glowing {
+      box-shadow: 0 12px 40px rgba(0,0,0,.7), 0 0 0 .5px rgba(255,255,255,.06),
+                  0 0 48px 6px var(--npf-glow, rgba(29,185,84,.3))
     }
-    /* Collapsed state — just the art disc */
     #np-float.npf-collapsed {
-      width: 52px; border-radius: 50%;
-      padding: 7px; gap: 0; cursor: pointer;
-      align-items: center; justify-content: center
+      width: 54px; height: 54px; border-radius: 50%; padding: 0; gap: 0;
+      align-items: center; justify-content: center; overflow: hidden; cursor: pointer
     }
     #np-float.npf-collapsed .npf-main-row,
     #np-float.npf-collapsed .npf-controls-row,
@@ -3708,45 +3739,53 @@
     #np-float.npf-collapsed .npf-collapsed-art { display: flex !important }
 
     @keyframes floatIn {
-      from { opacity: 0; transform: translateX(-50%) translateY(16px) scale(.95) }
+      from { opacity: 0; transform: translateX(-50%) translateY(20px) scale(.92) }
       to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1) }
     }
+    @keyframes npfSlideInRight {
+      from { opacity: 0; transform: translateX(28px) }
+      to   { opacity: 1; transform: translateX(0) }
+    }
+    @keyframes npfSlideInLeft {
+      from { opacity: 0; transform: translateX(-28px) }
+      to   { opacity: 1; transform: translateX(0) }
+    }
+    .npf-slide-right { animation: npfSlideInRight .3s cubic-bezier(.22,1,.36,1) }
+    .npf-slide-left  { animation: npfSlideInLeft  .3s cubic-bezier(.22,1,.36,1) }
 
     .npf-collapsed-art {
-      display: none;
-      width: 38px; height: 38px; border-radius: 50%;
-      overflow: hidden; flex-shrink: 0; position: relative
+      display: none; width: 54px; height: 54px; border-radius: 50%;
+      overflow: hidden; flex-shrink: 0; align-items: center; justify-content: center
     }
-    .npf-collapsed-art img { width: 100%; height: 100%; object-fit: cover; border-radius: 50% }
-    .npf-collapsed-art-ph {
-      width: 38px; height: 38px; border-radius: 50%;
-      background: var(--s3); display: flex; align-items: center; justify-content: center; font-size: .9rem
-    }
+    .npf-collapsed-art img { width: 54px; height: 54px; object-fit: cover; border-radius: 50% }
 
-    .npf-main-row { display: flex; align-items: center; gap: 10px }
+    @keyframes npfSpin { to { transform: rotate(360deg) } }
     .npf-art-wrap { position: relative; flex-shrink: 0 }
     .npf-art {
-      width: 44px; height: 44px; border-radius: 10px;
+      width: 46px; height: 46px; border-radius: 50%;
       object-fit: cover; flex-shrink: 0; background: var(--s3);
-      box-shadow: 0 3px 10px rgba(0,0,0,.5)
+      box-shadow: 0 3px 12px rgba(0,0,0,.55)
     }
+    .npf-art.npf-spinning { animation: npfSpin 7s linear infinite }
+    .npf-art.npf-spinning-paused { animation: npfSpin 7s linear infinite paused }
+    .npf-collapsed-art img.npf-spinning { animation: npfSpin 7s linear infinite }
+    .npf-collapsed-art img.npf-spinning-paused { animation: npfSpin 7s linear infinite paused }
     .npf-art-ph {
-      width: 44px; height: 44px; border-radius: 10px;
+      width: 46px; height: 46px; border-radius: 50%;
       background: var(--s3); border: 1px solid var(--border);
       display: flex; align-items: center; justify-content: center;
       font-size: 1rem; flex-shrink: 0
     }
-    .npf-info { flex: 1; min-width: 0 }
+    .npf-main-row { display: flex; align-items: center; gap: 10px }
+    .npf-info { flex: 1; min-width: 0; overflow: hidden }
     .npf-track {
       font-size: .82rem; font-weight: 700;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      color: #fff
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff
     }
     .npf-artist {
       font-size: .65rem; color: rgba(255,255,255,.55); margin-top: 2px;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis
     }
-    /* right-side: bars + close */
     .npf-right { display: flex; align-items: center; gap: 7px; flex-shrink: 0 }
     .npf-bars { display: flex; align-items: flex-end; gap: 2px; height: 10px }
     .npf-bar {
@@ -3756,6 +3795,13 @@
     .npf-bar:nth-child(2) { animation-delay: .18s }
     .npf-bar:nth-child(3) { animation-delay: .36s }
     .npf-bar.paused { animation: none; height: 2px !important }
+    .npf-like {
+      background: none; border: none; color: rgba(255,255,255,.4);
+      font-size: .82rem; cursor: pointer; padding: 2px;
+      transition: color .2s, transform .2s; line-height: 1
+    }
+    .npf-like:hover { color: #e05555; transform: scale(1.2) }
+    .npf-like.liked { color: #e05555 }
     .npf-close {
       background: rgba(255,255,255,.1); border: none; color: rgba(255,255,255,.6);
       font-size: .62rem; cursor: pointer; padding: 0;
@@ -3764,41 +3810,35 @@
       line-height: 1; transition: background .2s, color .2s
     }
     .npf-close:hover { background: rgba(255,255,255,.2); color: #fff }
-
-    /* Playback controls row */
     .npf-controls-row {
-      display: flex; align-items: center; justify-content: center; gap: 18px;
-      padding: 2px 0
+      display: flex; align-items: center; justify-content: center; gap: 18px; padding: 2px 0
     }
     .npf-ctrl-btn {
       background: none; border: none; cursor: pointer;
-      color: rgba(255,255,255,.75); font-size: .82rem;
-      padding: 4px 6px; border-radius: 4px; transition: color .15s, transform .1s;
-      line-height: 1
+      color: rgba(255,255,255,.75); font-size: .85rem;
+      padding: 4px 6px; border-radius: 4px; transition: color .15s, transform .1s; line-height: 1
     }
-    .npf-ctrl-btn:hover { color: #fff; transform: scale(1.15) }
-    .npf-ctrl-btn:active { transform: scale(.92) }
+    .npf-ctrl-btn:hover { color: #fff; transform: scale(1.18) }
+    .npf-ctrl-btn:active { transform: scale(.9) }
     .npf-ctrl-play {
-      width: 34px; height: 34px; border-radius: 50%;
+      width: 36px; height: 36px; border-radius: 50%;
       background: var(--g); color: #000 !important;
       display: flex; align-items: center; justify-content: center;
-      font-size: .9rem; transition: background .2s, transform .1s !important
+      font-size: .92rem; transition: background .2s, transform .1s !important;
+      box-shadow: 0 2px 10px rgba(29,185,84,.35)
     }
-    .npf-ctrl-play:hover { background: var(--g2); transform: scale(1.08) !important }
-
-    /* device icon bottom-right of art */
+    .npf-ctrl-play:hover { background: var(--g2); transform: scale(1.1) !important }
     .npf-device-badge {
-      position: absolute; bottom: -4px; right: -4px;
+      position: absolute; bottom: -3px; right: -3px;
       width: 16px; height: 16px; border-radius: 50%;
-      background: var(--s1); border: 1px solid var(--border2);
-      display: flex; align-items: center; justify-content: center;
-      font-size: .52rem
+      background: rgba(22,22,22,.95); border: 1px solid rgba(255,255,255,.15);
+      display: flex; align-items: center; justify-content: center; font-size: .5rem
     }
-
     .npf-prog-bg {
-      height: 3px; background: rgba(255,255,255,.12); border-radius: 2px; overflow: hidden;
-      cursor: pointer
+      height: 3px; background: rgba(255,255,255,.12); border-radius: 2px;
+      overflow: hidden; cursor: pointer; transition: height .15s
     }
+    .npf-prog-bg:hover { height: 5px }
     .npf-prog-fill { height: 100%; background: var(--g); border-radius: 2px }
     .npf-times {
       display: flex; justify-content: space-between;
@@ -3978,6 +4018,8 @@
             <span class="spm-scope-tag">user-read-recently-played</span>
             <span class="spm-scope-tag">user-modify-playback-state</span>
             <span class="spm-scope-tag">user-read-playback-state</span>
+            <span class="spm-scope-tag">user-library-read</span>
+            <span class="spm-scope-tag">user-library-modify</span>
           </div>
 
           <button class="spm-btn" onclick="spotifyAuthorize()">
@@ -4227,19 +4269,17 @@
   </div>
   <div id="tooltip"></div>
   <!-- ══════ FLOATING MINI PLAYER — iOS pill ══════ -->
-  <div id="np-float" onclick="npfToggleCollapse(event)">
-    <!-- Collapsed state: just rotating disc -->
-    <div class="npf-collapsed-art" id="npf-collapsed-art">
-      <div class="npf-art-ph" id="npf-collapsed-ph">🎵</div>
-    </div>
+  <div id="np-float">
+    <!-- Collapsed: spinning vinyl disc -->
+    <div class="npf-collapsed-art" id="npf-collapsed-art"></div>
 
-    <!-- Expanded: top row -->
+    <!-- Expanded: main row -->
     <div class="npf-main-row">
       <div class="npf-art-wrap">
         <div id="npf-art-wrap"></div>
-        <div class="npf-device-badge" id="npf-device-badge" title="">📱</div>
+        <div class="npf-device-badge" id="npf-device-badge" style="display:none">🔊</div>
       </div>
-      <div class="npf-info">
+      <div class="npf-info" id="npf-info-wrap">
         <div class="npf-track" id="npf-track">—</div>
         <div class="npf-artist" id="npf-artist">—</div>
       </div>
@@ -4249,6 +4289,7 @@
           <div class="npf-bar" style="height:9px"></div>
           <div class="npf-bar" style="height:5px"></div>
         </div>
+        <button class="npf-like" id="npf-like-btn" onclick="event.stopPropagation();npfToggleLike()" title="Save to library">♡</button>
         <button class="npf-close" onclick="event.stopPropagation();hideFloat()" title="Hide">✕</button>
       </div>
     </div>
@@ -4261,7 +4302,7 @@
     </div>
 
     <!-- Progress -->
-    <div class="npf-prog-bg"><div class="npf-prog-fill" id="npf-fill" style="width:0%"></div></div>
+    <div class="npf-prog-bg" id="npf-prog-bg"><div class="npf-prog-fill" id="npf-fill" style="width:0%"></div></div>
     <div class="npf-times"><span id="npf-elapsed">0:00</span><span id="npf-duration">0:00</span></div>
   </div>
 
@@ -5641,11 +5682,11 @@
 
     /* ── State ── */
     const SP = {
-      SCOPES: 'user-read-currently-playing user-read-recently-played user-modify-playback-state user-read-playback-state',
+      SCOPES: 'user-read-currently-playing user-read-recently-played user-modify-playback-state user-read-playback-state user-library-read user-library-modify',
       clientId: null, accessToken: null, tokenExpiry: 0, pollTimer: null,
       /* Real-time progress tracking */
       trackDuration: 0, progressMs: 0, progressTimestamp: 0, isPlaying: false,
-      rafId: null, floatHidden: false,
+      rafId: null, floatHidden: false, _lastCmd: 'next', _currentTrackId: null,
       livePanelCollapsed: false
     };
 
@@ -5877,7 +5918,6 @@
       const wrap = document.getElementById('now-playing-wrap');
       if (!wrap) return;
 
-      /* Bars animation state */
       const bars = document.getElementById('npBarsEl');
       if (bars) bars.querySelectorAll('.np-bar').forEach(b => b.classList.toggle('paused', !isPlaying));
 
@@ -5888,26 +5928,83 @@
       }
 
       const art = track.album?.images?.[0]?.url;
-      const artEl = art ? `<img class="np-art" src="${art}" alt="">` : `<div class="np-art-placeholder">🎵</div>`;
+      const artEl = art
+        ? `<div class="np-art-wrap"><img class="np-art" src="${art}" alt=""><div class="np-art-bars"><div class="np-art-bar${!isPlaying?' paused':''}" style="height:5px"></div><div class="np-art-bar${!isPlaying?' paused':''}" style="height:8px"></div><div class="np-art-bar${!isPlaying?' paused':''}" style="height:4px"></div></div></div>`
+        : `<div class="np-art-placeholder">🎵</div>`;
       const pct = track.duration_ms ? (progressMs / track.duration_ms) * 100 : 0;
       const artists = (track.artists || []).map(a => a.name).join(', ');
+      const durMs = track.duration_ms || 0;
+      const trackId = track.id || '';
 
       wrap.innerHTML = `
         <div class="np-card">
+          <div class="np-card-bg" id="np-card-bg"${art ? ` style="background-image:url('${art}')"` : ''}></div>
           ${artEl}
           <div class="np-info">
             <div class="np-track">${escHtml(track.name)}</div>
             <div class="np-artist">${escHtml(artists)}</div>
             <div class="np-album">${escHtml(track.album?.name || '')}</div>
             <div class="np-progress-wrap">
-              <div class="np-progress-bar"><div class="np-progress-fill" id="np-fill-inline" style="width:${pct}%"></div></div>
-              <div class="np-times"><span id="np-elapsed-inline">${msToMMSS(progressMs)}</span><span>${msToMMSS(track.duration_ms || 0)}</span></div>
+              <div class="np-progress-bar" id="np-prog-bar" title="Click to seek">
+                <div class="np-progress-fill" id="np-fill-inline" style="width:${pct}%"></div>
+              </div>
+              <div class="np-times"><span id="np-elapsed-inline">${msToMMSS(progressMs)}</span><span>${msToMMSS(durMs)}</span></div>
             </div>
           </div>
+          <button class="np-like" id="np-like-btn" onclick="npToggleLike('${trackId}')" title="Save to library">♡</button>
         </div>`;
 
-      /* Update floating mini-player */
+      /* Seekable progress bar */
+      const progBar = document.getElementById('np-prog-bar');
+      if (progBar) {
+        progBar.addEventListener('click', async (e) => {
+          const rect = progBar.getBoundingClientRect();
+          const pct = (e.clientX - rect.left) / rect.width;
+          const posMs = Math.floor(pct * durMs);
+          if (!await ensureToken()) return;
+          await fetch(`https://api.spotify.com/v1/me/player/seek?position_ms=${posMs}`, {
+            method: 'PUT', headers: { Authorization: 'Bearer ' + SP.accessToken }
+          });
+          SP.progressMs = posMs; SP.progressTimestamp = performance.now();
+        });
+      }
+
+      /* Check if liked */
+      checkLiked(trackId);
+
       updateFloat(track, isPlaying, pct, progressMs, artists, art);
+    }
+
+    /* Like helpers */
+    SP._currentTrackId = null;
+    async function checkLiked(trackId) {
+      SP._currentTrackId = trackId;
+      if (!trackId || !await ensureToken()) return;
+      try {
+        const res = await fetch(`https://api.spotify.com/v1/me/tracks/contains?ids=${trackId}`, {
+          headers: { Authorization: 'Bearer ' + SP.accessToken }
+        });
+        const data = await res.json();
+        const liked = data[0] === true;
+        ['np-like-btn','npf-like-btn'].forEach(id => {
+          const btn = document.getElementById(id);
+          if (btn) { btn.textContent = liked ? '♥' : '♡'; btn.classList.toggle('liked', liked); }
+        });
+      } catch(e) {}
+    }
+    async function npToggleLike(trackId) {
+      if (!trackId || !await ensureToken()) return;
+      const btn = document.getElementById('np-like-btn');
+      const liked = btn?.classList.contains('liked');
+      const method = liked ? 'DELETE' : 'PUT';
+      await fetch(`https://api.spotify.com/v1/me/tracks?ids=${trackId}`, {
+        method, headers: { Authorization: 'Bearer ' + SP.accessToken, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: [trackId] })
+      });
+      checkLiked(trackId);
+    }
+    async function npfToggleLike() {
+      if (SP._currentTrackId) npToggleLike(SP._currentTrackId);
     }
 
     function updateFloat(track, isPlaying, pct, progressMs, artists, art) {
@@ -5915,49 +6012,144 @@
       const floatEl = document.getElementById('np-float');
       const wasVisible = floatEl.classList.contains('visible');
 
-      /* Art — expanded */
+      /* Track change detection → slide animation */
+      const prevTrackId = floatEl.dataset.trackId || '';
+      const newTrackId  = track.id || '';
+      const trackChanged = wasVisible && prevTrackId && prevTrackId !== newTrackId;
+      floatEl.dataset.trackId = newTrackId;
+
+      /* Art — expanded (vinyl disc) */
       const artWrap = document.getElementById('npf-art-wrap');
+      const spinClass = isPlaying ? 'npf-art npf-spinning' : 'npf-art npf-spinning-paused';
       const artHtml = art
-        ? `<img class="npf-art" src="${art}" alt="" style="border-radius:10px">`
+        ? `<img class="${spinClass}" src="${art}" alt="">`
         : `<div class="npf-art-ph">🎵</div>`;
       if (artWrap) artWrap.innerHTML = artHtml;
 
       /* Art — collapsed disc */
       const collArt = document.getElementById('npf-collapsed-art');
       if (collArt) collArt.innerHTML = art
-        ? `<img src="${art}" alt="" style="width:38px;height:38px;border-radius:50%;object-fit:cover">`
-        : `<div class="npf-collapsed-art-ph">🎵</div>`;
+        ? `<img class="${isPlaying?'npf-spinning':'npf-spinning-paused'}" src="${art}" alt="" style="width:54px;height:54px;object-fit:cover;border-radius:50%">`
+        : `<div style="font-size:1.4rem">🎵</div>`;
 
-      document.getElementById('npf-track').textContent = track.name;
+      /* Track / artist with slide animation */
+      const infoWrap = document.getElementById('npf-info-wrap');
+      if (infoWrap && trackChanged) {
+        const dir = SP._lastCmd === 'previous' ? 'npf-slide-left' : 'npf-slide-right';
+        infoWrap.classList.remove('npf-slide-right','npf-slide-left');
+        void infoWrap.offsetWidth;
+        infoWrap.classList.add(dir);
+        setTimeout(() => infoWrap.classList.remove(dir), 350);
+      }
+      document.getElementById('npf-track').textContent  = track.name;
       document.getElementById('npf-artist').textContent = artists;
-      document.getElementById('npf-fill').style.width = pct + '%';
-      document.getElementById('npf-elapsed').textContent = msToMMSS(progressMs);
+      document.getElementById('npf-fill').style.width   = pct + '%';
+      document.getElementById('npf-elapsed').textContent  = msToMMSS(progressMs);
       document.getElementById('npf-duration').textContent = msToMMSS(track.duration_ms || 0);
 
-      /* Play/pause button */
+      /* Update spin state on existing art if no track change */
+      if (!trackChanged && artWrap) {
+        artWrap.querySelectorAll('img').forEach(img => {
+          img.classList.toggle('npf-spinning', isPlaying);
+          img.classList.toggle('npf-spinning-paused', !isPlaying);
+        });
+      }
+
+      /* Play/pause icon */
       const playBtn = document.getElementById('npf-play-btn');
       if (playBtn) playBtn.textContent = isPlaying ? '⏸' : '▶';
 
       /* Bars */
       document.getElementById('npf-bars').querySelectorAll('.npf-bar').forEach(b => b.classList.toggle('paused', !isPlaying));
 
+      /* Album art color glow */
+      if (art && trackChanged) extractGlowColor(art, floatEl);
+
       /* Device badge */
-      fetchDeviceBadge();
+      if (!wasVisible || trackChanged) fetchDeviceBadge();
 
       if (!wasVisible) {
         floatEl.classList.add('visible', 'entering');
         setTimeout(() => floatEl.classList.remove('entering'), 400);
+        initFloatDrag(floatEl);
+        initFloatSwipe(floatEl);
       }
     }
 
-    /* Toggle collapse on pill click */
-    function npfToggleCollapse(e) {
-      const f = document.getElementById('np-float');
-      if (f.classList.contains('npf-collapsed')) {
-        f.classList.remove('npf-collapsed');
-      }
-      /* Only collapse if clicking the main-row art area, not controls */
+    /* ── Album art dominant color → CSS var glow ── */
+    function extractGlowColor(artUrl, floatEl) {
+      const img = new Image(); img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        try {
+          const c = document.createElement('canvas'); c.width = c.height = 16;
+          const ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0, 16, 16);
+          const d = ctx.getImageData(0, 0, 16, 16).data;
+          let r=0,g=0,b=0,n=0;
+          for (let i=0;i<d.length;i+=4) {
+            const brightness = (d[i]+d[i+1]+d[i+2])/3;
+            if (brightness > 30 && brightness < 230) { r+=d[i]; g+=d[i+1]; b+=d[i+2]; n++; }
+          }
+          if (!n) return;
+          r=Math.round(r/n); g=Math.round(g/n); b=Math.round(b/n);
+          floatEl.style.setProperty('--npf-glow', `rgba(${r},${g},${b},.32)`);
+          floatEl.classList.add('npf-glowing');
+        } catch(e) {}
+      };
+      img.src = artUrl;
     }
+
+    /* ── Draggable pill ── */
+    function initFloatDrag(el) {
+      if (el._dragInited) return; el._dragInited = true;
+      let ox,oy,ex,ey,dragging=false;
+      el.addEventListener('mousedown', e => {
+        if (e.target.tagName==='BUTTON'||e.target.tagName==='IMG') return;
+        dragging=true; ox=e.clientX; oy=e.clientY;
+        const r=el.getBoundingClientRect(); ex=r.left; ey=r.top;
+        el.classList.add('npf-dragging'); e.preventDefault();
+      });
+      document.addEventListener('mousemove', e => {
+        if (!dragging) return;
+        const dx=e.clientX-ox, dy=e.clientY-oy;
+        el.style.left = (ex+dx+el.offsetWidth/2)+'px';
+        el.style.top  = (ey+dy)+'px';
+        el.style.bottom='auto'; el.style.transform='translateX(-50%)';
+      });
+      document.addEventListener('mouseup', ()=>{ dragging=false; el.classList.remove('npf-dragging') });
+    }
+
+    /* ── Swipe left/right to skip (mobile) ── */
+    function initFloatSwipe(el) {
+      if (el._swipeInited) return; el._swipeInited = true;
+      let sx,sy;
+      el.addEventListener('touchstart', e=>{ sx=e.touches[0].clientX; sy=e.touches[0].clientY }, {passive:true});
+      el.addEventListener('touchend', e=>{
+        const dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
+        if (Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.5) {
+          SP._lastCmd = dx<0?'next':'previous';
+          spPlayerCmd(SP._lastCmd);
+        }
+      }, {passive:true});
+    }
+
+    /* ── Click pill to collapse / expand ── */
+    document.addEventListener('DOMContentLoaded', ()=>{
+      const f = document.getElementById('np-float');
+      if (!f) return;
+      f.addEventListener('click', e=>{
+        if (e.target.tagName==='BUTTON') return;
+        if (f.classList.contains('npf-collapsed')) f.classList.remove('npf-collapsed');
+        else if (!e.target.closest('.npf-controls-row') && !e.target.closest('.npf-prog-bg')) {
+          /* only collapse if clicking art area or outside controls */
+          if (e.target.closest('.npf-art-wrap')||e.target.closest('.npf-collapsed-art')) {
+            f.classList.toggle('npf-collapsed');
+          }
+        }
+      });
+    });
+
+    /* Toggle collapse helper (kept for backwards compat) */
+    function npfToggleCollapse(e) {}
 
     /* Device badge */
     async function fetchDeviceBadge() {
@@ -5971,42 +6163,43 @@
         if (!res.ok) return;
         const data = await res.json();
         const active = (data.devices || []).find(d => d.is_active);
-        if (!active) { badge.style.display = 'none'; return; }
-        badge.style.display = 'flex';
-        const type = (active.type || '').toLowerCase();
-        const icons = { computer: '💻', smartphone: '📱', tablet: '📱', speaker: '🔊', tv: '📺', castdongle: '📡', gameConsole: '🎮' };
-        const btNames = ['bluetooth', 'bt', 'airplay', 'airpods', 'sonos', 'homepod'];
-        const isBt = btNames.some(k => active.name.toLowerCase().includes(k));
+        if (!active) { badge.style.display='none'; return; }
+        badge.style.display='flex';
+        const type = (active.type||'').toLowerCase();
+        const icons = { computer:'💻', smartphone:'📱', tablet:'📱', speaker:'🔊', tv:'📺', castdongle:'📡', gameconsole:'🎮' };
+        const btNames = ['bluetooth','bt','airplay','airpods','sonos','homepod'];
+        const isBt = btNames.some(k=>active.name.toLowerCase().includes(k));
         badge.title = active.name;
-        badge.textContent = isBt ? '🔵' : (icons[type] || '🔊');
+        badge.textContent = isBt ? '🔵' : (icons[type]||'🔊');
       } catch(e) {}
     }
 
     /* Playback controls */
     async function spPlayerCmd(cmd) {
+      SP._lastCmd = cmd;
       if (!await ensureToken()) return;
       try {
-        if (cmd === 'playpause') {
+        if (cmd==='playpause') {
           const stateRes = await fetch('https://api.spotify.com/v1/me/player', {
-            headers: { Authorization: 'Bearer ' + SP.accessToken }
+            headers:{Authorization:'Bearer '+SP.accessToken}
           });
-          if (stateRes.status === 200) {
+          if (stateRes.status===200) {
             const st = await stateRes.json();
-            const endpoint = st.is_playing ? 'pause' : 'play';
-            await fetch(`https://api.spotify.com/v1/me/player/${endpoint}`, {
-              method: 'PUT', headers: { Authorization: 'Bearer ' + SP.accessToken }
+            const ep = st.is_playing?'pause':'play';
+            await fetch(`https://api.spotify.com/v1/me/player/${ep}`, {
+              method:'PUT', headers:{Authorization:'Bearer '+SP.accessToken}
             });
           }
-        } else if (cmd === 'next') {
+        } else if (cmd==='next') {
           await fetch('https://api.spotify.com/v1/me/player/next', {
-            method: 'POST', headers: { Authorization: 'Bearer ' + SP.accessToken }
+            method:'POST', headers:{Authorization:'Bearer '+SP.accessToken}
           });
-        } else if (cmd === 'previous') {
+        } else if (cmd==='previous') {
           await fetch('https://api.spotify.com/v1/me/player/previous', {
-            method: 'POST', headers: { Authorization: 'Bearer ' + SP.accessToken }
+            method:'POST', headers:{Authorization:'Bearer '+SP.accessToken}
           });
         }
-        setTimeout(fetchNowPlaying, 600);
+        setTimeout(fetchNowPlaying, 700);
       } catch(e) {}
     }
 
