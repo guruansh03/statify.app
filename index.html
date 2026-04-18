@@ -4903,7 +4903,10 @@
        TOOLTIP
     ═══════════════════════════════════════ */
     const tip = document.getElementById('tooltip');
-    function showTip(e, t) { tip.style.display = 'block'; tip.innerHTML = t; tip.style.left = (e.clientX + 14) + 'px'; tip.style.top = (e.clientY - 36) + 'px' }
+    const _tipStore = {};
+    let _tipId = 0;
+    function showTip(e, t) { tip.style.display = 'block'; tip.innerHTML = typeof t === 'string' ? t : ''; tip.style.left = (e.clientX + 14) + 'px'; tip.style.top = (e.clientY - 36) + 'px' }
+    function showTipId(e, id) { showTip(e, _tipStore[id] || ''); }
     function hideTip() { tip.style.display = 'none' }
     document.addEventListener('mousemove', e => { if (tip.style.display === 'block') { tip.style.left = (e.clientX + 14) + 'px'; tip.style.top = (e.clientY - 36) + 'px' } });
 
@@ -5152,14 +5155,19 @@
     // Helper: unwrap Google Takeout JSON-encoded text fields e.g. {"text":"hello"}
     function unwrapGTText(raw) {
       if (!raw) return '';
-      const s = String(raw).trim();
+      let s = String(raw).trim();
+      // Handle Excel-style double-quote escaping: {""text"":""hello""} -> {"text":"hello"}
+      if (s.startsWith('{') && s.includes('""')) s = s.replace(/""/g, '"');
       if (s.startsWith('{')) {
         try {
           const obj = JSON.parse(s);
           return obj.text || obj.message || obj.content || Object.values(obj).find(v => typeof v === 'string' && v.length > 0) || '';
         } catch (e) {
           const m = s.match(/"text"\s*:\s*"((?:[^"\\]|\\.)*)"/);
-          return m ? m[1].replace(/\\"/g, '"') : s;
+          if (m) return m[1].replace(/\\"/g, '"');
+          const m2 = s.match(/text\s*:\s*"((?:[^"\\]|\\.)*)"/);
+          if (m2) return m2[1].replace(/\\"/g, '"');
+          return s;
         }
       }
       return s;
@@ -5313,7 +5321,7 @@
           rows.forEach(row => {
             // Actual format: only Video ID + timestamp. Use Video ID as title placeholder.
             const videoId = row['video id'] || row['videoid'] || '';
-            const title = row['video title'] || row['videotitle'] || row['title'] || row['name'] || (videoId ? `Video: ${videoId}` : '');
+            const title = row['video title'] || row['videotitle'] || row['title'] || row['name'] || (videoId ? videoId : '');
             const channel = row['channel title'] || row['channeltitle'] || row['channel'] || '';
             const url = row['video url'] || row['videourl'] || row['url'] || (videoId ? `https://youtube.com/watch?v=${videoId}` : '');
             const ts = row['playlist video creation timestamp'] || row['time added'] || row['timeadded'] || '';
@@ -5594,7 +5602,7 @@
               <div class="ri" style="padding:8px 14px">
                 <span style="color:var(--muted);font-size:.68rem;font-family:var(--mono);width:20px">${i+1}</span>
                 <div style="flex:1;min-width:0">
-                  <div style="font-size:.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${v.title}</div>
+                  <div style="font-size:.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${v.title && v.title !== v.videoId ? v.title : (v.url ? `<a href="${v.url}" target="_blank" rel="noopener" style="color:var(--g);text-decoration:none">▶ ${v.videoId || 'Watch'}</a>` : v.title)}</div>
                   ${v.channel?'<div style="font-size:.68rem;color:var(--muted);font-family:var(--mono)">'+v.channel+'</div>':''}
                 </div>
               </div>`).join('')}
@@ -5968,7 +5976,8 @@
         ).sort((a,b)=>b[1]-a[1]).slice(0,5);
         const tipHtml = topVids.map(([t,c])=>`<div style='white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px;padding:2px 0'><span style='color:var(--g);font-weight:700;margin-right:6px'>${c}×</span>${t.length>36?t.slice(0,35)+'…':t}</div>`).join('');
         const tipContent = `<div style='font-family:var(--mono);font-size:.68rem;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em'>${a} — top ${isYT?'videos':'tracks'}</div>${tipHtml}`;
-        return `<div class="ri" onmouseenter="showTip(event,${JSON.stringify(tipContent)})" onmouseleave="hideTip()"><span class="rn ${i < 3 ? 't3' : ''}">${String(i + 1).padStart(2, '0')}</span><div class="ri-info"><div class="ri-name">${a}</div><div class="ri-sub">${isYT ? v.count + ' videos watched' : fmt(v.ms) + ' total'}</div></div><div class="rc"><div class="rc-n">${v.count}</div><div class="rc-l">${unit}</div></div>${!isYT ? `<div style="width:6px"></div><div class="rc rc-b"><div class="rc-n">${fmt(v.ms)}</div><div class="rc-l">TIME</div></div>` : ''}</div>`;
+        const tipKey = 'art_' + (++_tipId); _tipStore[tipKey] = tipContent;
+        return `<div class="ri" onmouseenter="showTipId(event,'${tipKey}')" onmouseleave="hideTip()"><span class="rn ${i < 3 ? 't3' : ''}">${String(i + 1).padStart(2, '0')}</span><div class="ri-info"><div class="ri-name">${a}</div><div class="ri-sub">${isYT ? v.count + ' videos watched' : fmt(v.ms) + ' total'}</div></div><div class="rc"><div class="rc-n">${v.count}</div><div class="rc-l">${unit}</div></div>${!isYT ? `<div style="width:6px"></div><div class="rc rc-b"><div class="rc-n">${fmt(v.ms)}</div><div class="rc-l">TIME</div></div>` : ''}</div>`;
       }).join('');
       document.querySelectorAll('.sart-btn').forEach(b => b.classList.toggle('act', b.dataset.sort === sortArt));
     }
@@ -6304,16 +6313,29 @@
     };
     const YT_GENRE_MAP = {
       'MrBeast': 'Entertainment', 'PewDiePie': 'Entertainment', 'Corridor Crew': 'Entertainment',
-      'Veritasium': 'Science', '3Blue1Brown': 'Science', 'Vsauce': 'Science', 'Kurzgesagt': 'Science', 'Nile Red': 'Science',
-      'MKBHD': 'Tech', 'Linus Tech Tips': 'Tech',
-      'Mark Rober': 'Engineering', 'Practical Engineering': 'Engineering',
-      'Tom Scott': 'Education', 'CGP Grey': 'Education', 'Wendover Productions': 'Education'
+      'Dude Perfect': 'Entertainment', 'Mark Rober': 'Entertainment', 'Jimmy Fallon': 'Entertainment',
+      'Veritasium': 'Science', '3Blue1Brown': 'Science', 'Vsauce': 'Science', 'Kurzgesagt': 'Science',
+      'Nile Red': 'Science', 'SciShow': 'Science', 'MinutePhysics': 'Science', 'AsapSCIENCE': 'Science',
+      'MKBHD': 'Tech', 'Linus Tech Tips': 'Tech', 'Unbox Therapy': 'Tech', 'Dave2D': 'Tech',
+      'Mrwhosetheboss': 'Tech', 'JerryRigEverything': 'Tech', 'TechLinked': 'Tech',
+      'Practical Engineering': 'Engineering', 'Real Engineering': 'Engineering',
+      'Tom Scott': 'Education', 'CGP Grey': 'Education', 'Wendover Productions': 'Education',
+      'Half as Interesting': 'Education', 'TED': 'Education', 'TEDx Talks': 'Education',
+      'Crash Course': 'Education', 'Khan Academy': 'Education',
+      'ESPN': 'Sports', 'NBA': 'Sports', 'NFL': 'Sports', 'FIFA': 'Sports',
+      'GoodMythicalMorning': 'Entertainment', 'jacksepticeye': 'Gaming', 'Markiplier': 'Gaming',
+      'Dream': 'Gaming', 'Technoblade': 'Gaming', 'GameTheory': 'Gaming', 'MatPat': 'Gaming',
+      'Valkyrae': 'Gaming', 'pokimane': 'Gaming', 'xQc': 'Gaming',
+      'Gordon Ramsay': 'Food', 'Joshua Weissman': 'Food', 'Babish Culinary Universe': 'Food',
+      'Tasty': 'Food', 'Bon Appétit': 'Food',
+      'NowThis': 'News', 'Vice': 'News', 'Vox': 'News', 'CNN': 'News', 'BBC News': 'News',
+      'The Late Show': 'Comedy', 'Saturday Night Live': 'Comedy', 'CollegeHumor': 'Comedy'
     };
     const GENRE_COLORS = ['#4ade80', '#60a5fa', '#f87171', '#fbbf24', '#c084fc', '#f472b6', '#22d3ee', '#a3e635', '#fb923c', '#94a3b8'];
     function renderGenre() {
       const map = isYT ? YT_GENRE_MAP : GENRE_MAP;
       const gM = {};
-      S.forEach(x => { const g = map[x.artist] || 'Other'; gM[g] = (gM[g] || 0) + 1 });
+      S.forEach(x => { const key = isYT ? (x.channel || x.artist) : x.artist; const g = map[key] || 'Other'; gM[g] = (gM[g] || 0) + 1 });
       const sorted = Object.entries(gM).sort((a, b) => b[1] - a[1]);
       const labels = sorted.map(([g]) => g), data = sorted.map(([, c]) => c);
       const colors = sorted.map((_, i) => GENRE_COLORS[i % GENRE_COLORS.length]);
