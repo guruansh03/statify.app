@@ -7399,7 +7399,7 @@
       wrap.innerHTML = items.map((item, i) => {
         const t = item.track;
         const art = t.album?.images?.[2]?.url || t.album?.images?.[1]?.url || t.album?.images?.[0]?.url;
-        const artEl = art ? `<img class="rp-art" src="${art}" alt="">` : `<div class="rp-art-placeholder">🎵</div>`;
+        const artEl = art ? `<img class="rp-art" src="${art}" alt="" onerror="this.outerHTML='<div class=\\'rp-art-placeholder\\'>🎵</div>'">` : `<div class="rp-art-placeholder">🎵</div>`;
         const artists = (t.artists || []).map(a => a.name).join(', ');
         return `<div class="rp-item">
           <span class="rp-num">${i + 1}</span>
@@ -7528,7 +7528,7 @@
         const cards = playlists.map(p => {
           const art = p.images?.[0]?.url;
           const artEl = art
-            ? `<img class="pl-card-art" src="${escHtml(art)}" alt="" loading="lazy">`
+            ? `<img class="pl-card-art" src="${escHtml(art)}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="pl-card-art-ph" style="display:none">🎵</div>`
             : `<div class="pl-card-art-ph">🎵</div>`;
           const isOldest = p.id === oldestId;
           const isNewest = p.id === newestId;
