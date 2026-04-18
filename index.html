@@ -5071,8 +5071,34 @@
       if (!f.length) return;
       showLoader('READING YT FILES...');
       const r = [];
-      for (const fi of f) r.push(new Promise(res => { const rd = new FileReader(); rd.onload = () => res({ name: fi.name, content: rd.result, type: fi.name.split('.').pop().toLowerCase() }); rd.readAsText(fi) }));
-      Promise.all(r).then(res => { showLoader('PARSING...'); setTimeout(() => { parseYTFiles(res); showYTDash(false) }, 600) });
+      for (const fi of f) {
+        // Skip image files and channel/video-metadata CSVs we don't use
+        const ln = fi.name.toLowerCase();
+        const skip = ln.endsWith('.jpg') || ln.endsWith('.png') || ln.endsWith('.jpeg') ||
+          ln.includes('channel feature') || ln.includes('channel page') || ln.includes('channel url') ||
+          ln.includes('channel community') || ln.includes('video recordings') || ln.includes('video texts');
+        if (skip) continue;
+        r.push(new Promise(res => {
+          const rd = new FileReader();
+          rd.onload = () => res({ name: fi.name, content: rd.result, type: fi.name.split('.').pop().toLowerCase(), size: fi.size });
+          rd.onerror = () => res({ name: fi.name, content: '', type: fi.name.split('.').pop().toLowerCase(), size: 0, error: true });
+          rd.readAsText(fi);
+        }));
+      }
+      if (!r.length) { showLoader('NO VALID FILES'); return; }
+      Promise.all(r).then(res => {
+        showLoader('PARSING ' + res.length + ' FILES...');
+        // Parse in next tick so loader renders
+        setTimeout(() => {
+          try {
+            parseYTFiles(res);
+          } catch(e) {
+            console.error('parseYTFiles error:', e);
+          }
+          console.log('Parse complete — S.length:', S.length, 'search:', ytSearchData.length, 'subs:', ytSubscriptions.length, 'comments:', ytComments.length, 'playlists:', Object.keys(ytPlaylists).length);
+          showYTDash(false);
+        }, 100);
+      });
     }
     function parseCSVRows(content) {
       const lines = content.split('\n');
@@ -5104,144 +5130,165 @@
 
         // ── WATCH HISTORY HTML ──
         if (type === 'html' && ln.includes('watch')) {
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(content, 'text/html');
-          // Real Google Takeout format: div.outer-cell > div.content-cell
-          // Each entry: "Watched [title link]\n[channel link]\nApr 17, 2026, 2:32:22 AM GMT+05:30"
-          // Strategy: find all <a> tags that are inside cells and pair with timestamp text
-          const cells = doc.querySelectorAll('div.outer-cell, div[class*="outer-cell"]');
-          cells.forEach(cell => {
-            const links = cell.querySelectorAll('a');
-            if (links.length < 1) return;
-            const title = links[0]?.textContent?.trim();
-            const channel = links[1]?.textContent?.trim() || links[0]?.textContent?.trim();
-            const txt = cell.textContent || '';
-            // Match timestamp: "Apr 17, 2026, 2:32:22 AM GMT+05:30" or "Apr 17, 2026, 2:32 AM GMT+05:30"
-            const m = txt.match(/([A-Z][a-z]{2} \d{1,2}, \d{4}, \d{1,2}:\d{2}(?::\d{2})? [AP]M)/);
-            if (title && m) {
-              const ts = new Date(m[1]);
-              if (!isNaN(ts)) S.push({ ts: ts.toISOString(), artist: channel||title, track: title, channel: channel||title, ms: 0, skipped: false, platform: '', fullMs: 0 });
+          // REGEX-BASED PARSER — avoids DOMParser choking on 38MB files
+          // Real Google Takeout format per entry (raw HTML):
+          // <div class="outer-cell..."> ... Watched <a href="...">TITLE</a> ... <a href="/channel/...">CHANNEL</a> ... Apr 17, 2026, 2:32:22 AM GMT+05:30 ...
+          // Strategy: split on outer-cell boundaries, extract links + timestamp from each chunk
+          const CHUNK_RE = /<div[^>]+class="[^"]*outer-cell[^"]*"[^>]*>([\s\S]*?)(?=<div[^>]+class="[^"]*outer-cell|$)/gi;
+          const HREF_RE = /<a[^>]+href="([^"]*)"[^>]*>([^<]+)<\/a>/gi;
+          const TS_RE = /([A-Z][a-z]{2} \d{1,2}, \d{4}, \d{1,2}:\d{2}(?::\d{2})? [AP]M)/;
+          let chunk;
+          CHUNK_RE.lastIndex = 0;
+          while ((chunk = CHUNK_RE.exec(content)) !== null) {
+            const block = chunk[1];
+            const tsMatch = block.match(TS_RE);
+            if (!tsMatch) continue;
+            const ts = new Date(tsMatch[1]);
+            if (isNaN(ts)) continue;
+            // Extract all links from this block
+            const links = [];
+            let lm;
+            const lre = /<a[^>]+href="([^"]*)"[^>]*>([^<]{1,200})<\/a>/gi;
+            lre.lastIndex = 0;
+            while ((lm = lre.exec(block)) !== null) {
+              links.push({ href: lm[1], text: lm[2].trim() });
             }
-          });
-          // Fallback 1: content-cell divs (old format)
-          if (!S.length) {
-            doc.querySelectorAll('div.content-cell').forEach(cell => {
-              const links = cell.querySelectorAll('a');
-              if (!links.length) return;
-              const title = links[0]?.textContent?.trim();
-              const channel = links[1]?.textContent?.trim();
-              const txt = cell.textContent || '';
-              const m = txt.match(/([A-Z][a-z]{2} \d{1,2}, \d{4},? \d{1,2}:\d{2}(?::\d{2})? [AP]M)/);
-              if (title && m) {
-                const ts = new Date(m[1]);
-                if (!isNaN(ts)) S.push({ ts: ts.toISOString(), artist: channel||title, track: title, channel: channel||title, ms: 0, skipped: false, platform: '', fullMs: 0 });
-              }
-            });
+            // First link = video title (has watch?v= or youtu), second = channel
+            const vidLink = links.find(l => l.href.includes('watch?v=') || l.href.includes('youtu.be/') || l.href.includes('youtube.com/shorts/'));
+            const chanLink = links.find(l => l.href.includes('/channel/') || l.href.includes('/@') || l.href.includes('/user/'));
+            const title = vidLink?.text || links[0]?.text || 'Unknown';
+            const channel = chanLink?.text || links[1]?.text || title;
+            if (title && title !== 'Unknown') {
+              S.push({ ts: ts.toISOString(), artist: channel, track: title, channel, ms: 0, skipped: false, platform: '', fullMs: 0 });
+            }
           }
-          // Fallback 2: brute-force every <a> tag with a sibling timestamp
+          // Fallback: simpler regex if outer-cell not found (search history style / older format)
           if (!S.length) {
-            const allAs = doc.querySelectorAll('a[href*="youtube.com/watch"], a[href*="youtu.be"]');
-            allAs.forEach(a => {
-              const title = a.textContent?.trim();
-              const parent = a.closest('div') || a.parentElement;
-              const channelA = parent?.querySelectorAll('a')?.[1];
-              const channel = channelA?.textContent?.trim() || '';
-              const txt = parent?.textContent || '';
-              const m = txt.match(/([A-Z][a-z]{2} \d{1,2}, \d{4},? \d{1,2}:\d{2}(?::\d{2})? [AP]M)/);
-              if (title && m) {
-                const ts = new Date(m[1]);
-                if (!isNaN(ts)) S.push({ ts: ts.toISOString(), artist: channel||title, track: title, channel: channel||title, ms: 0, skipped: false, platform: '', fullMs: 0 });
-              }
-            });
+            const ENTRY_RE = /Watched\s*<a[^>]+href="([^"]*)"[^>]*>([^<]{1,300})<\/a>[\s\S]{0,500}?<a[^>]+href="([^"]*)"[^>]*>([^<]{1,200})<\/a>[\s\S]{0,300}?([A-Z][a-z]{2} \d{1,2}, \d{4}, \d{1,2}:\d{2}(?::\d{2})? [AP]M)/gi;
+            let em;
+            while ((em = ENTRY_RE.exec(content)) !== null) {
+              const ts = new Date(em[5]);
+              if (isNaN(ts)) continue;
+              S.push({ ts: ts.toISOString(), artist: em[4].trim(), track: em[2].trim(), channel: em[4].trim(), ms: 0, skipped: false, platform: '', fullMs: 0 });
+            }
           }
+          console.log('watch-history parsed:', S.length, 'entries');
         }
 
         // ── SEARCH HISTORY HTML ──
         else if (type === 'html' && ln.includes('search')) {
-          const parser = new DOMParser();
-          const doc = parser.parseFromString(content, 'text/html');
-          const cells = doc.querySelectorAll('div.outer-cell, div[class*="outer-cell"], div.content-cell');
-          cells.forEach(cell => {
-            const links = cell.querySelectorAll('a');
-            const query = links[0]?.textContent?.trim();
-            const txt = cell.textContent || '';
-            const m = txt.match(/([A-Z][a-z]{2} \d{1,2}, \d{4},? \d{1,2}:\d{2}(?::\d{2})? [AP]M)/);
-            if (query && m) {
-              const ts = new Date(m[1]);
-              if (!isNaN(ts)) ytSearchData.push({ ts: ts.toISOString(), query });
-            }
-          });
-          // Fallback: find search links
-          if (!ytSearchData.length) {
-            doc.querySelectorAll('a[href*="search_query"], a[href*="q="]').forEach(a => {
-              const query = a.textContent?.trim();
-              const parent = a.closest('div') || a.parentElement;
-              const txt = parent?.textContent || '';
-              const m = txt.match(/([A-Z][a-z]{2} \d{1,2}, \d{4},? \d{1,2}:\d{2}(?::\d{2})? [AP]M)/);
-              if (query && m) {
-                const ts = new Date(m[1]);
-                if (!isNaN(ts)) ytSearchData.push({ ts: ts.toISOString(), query });
-              }
-            });
+          // Regex-based — same format as watch history
+          const SCHUNK_RE = /<div[^>]+class="[^"]*outer-cell[^"]*"[^>]*>([\s\S]*?)(?=<div[^>]+class="[^"]*outer-cell|$)/gi;
+          const STS_RE = /([A-Z][a-z]{2} \d{1,2}, \d{4}, \d{1,2}:\d{2}(?::\d{2})? [AP]M)/;
+          let schunk;
+          SCHUNK_RE.lastIndex = 0;
+          while ((schunk = SCHUNK_RE.exec(content)) !== null) {
+            const block = schunk[1];
+            const tsMatch = block.match(STS_RE);
+            if (!tsMatch) continue;
+            const ts = new Date(tsMatch[1]);
+            if (isNaN(ts)) continue;
+            // Extract first link text as the search query
+            const slm = block.match(/<a[^>]+href="([^"]*)"[^>]*>([^<]{1,300})<\/a>/i);
+            const query = slm ? slm[2].trim() : null;
+            if (query) ytSearchData.push({ ts: ts.toISOString(), query });
           }
+          // Fallback: Searched for <a>QUERY</a> pattern
+          if (!ytSearchData.length) {
+            const SENTRY_RE = /Searched\s+for\s+<a[^>]*>([^<]{1,200})<\/a>[\s\S]{0,300}?([A-Z][a-z]{2} \d{1,2}, \d{4}, \d{1,2}:\d{2}(?::\d{2})? [AP]M)/gi;
+            let sem;
+            while ((sem = SENTRY_RE.exec(content)) !== null) {
+              const ts = new Date(sem[2]);
+              if (!isNaN(ts)) ytSearchData.push({ ts: ts.toISOString(), query: sem[1].trim() });
+            }
+          }
+          console.log('search-history parsed:', ytSearchData.length, 'entries');
         }
 
         // ── SUBSCRIPTIONS CSV ──
+        // Google Takeout actual columns: Channel Id, Channel Url, Channel Title
         else if (type === 'csv' && ln.includes('subscription')) {
           parseCSVRows(content).forEach(row => {
-            const name = row['channel title'] || row['name'] || row['title'] || '';
-            const url = row['channel url'] || row['url'] || '';
-            const id = row['channel id'] || '';
-            if (name) ytSubscriptions.push({ name, url, id });
+            // Try all possible column name variants
+            const name = row['channel title'] || row['channeltitle'] || row['title'] || row['name'] || row['channel name'] || Object.values(row).find(v => v && v.length > 1 && !v.startsWith('UC') && !v.startsWith('http')) || '';
+            const url = row['channel url'] || row['channelurl'] || row['url'] || '';
+            const id = row['channel id'] || row['channelid'] || '';
+            if (name && name.length > 0) ytSubscriptions.push({ name: name.trim(), url, id });
           });
+          console.log('subscriptions parsed:', ytSubscriptions.length, 'first row keys:', Object.keys(parseCSVRows(content.split("\n").slice(0,2).join("\n"))[0] || {}).join(', '));
         }
 
         // ── COMMENTS CSV ──
+        // Google Takeout actual columns: Comment Id, Comment Text, Video Id, Timestamp (likely)
         else if (type === 'csv' && ln.includes('comment')) {
-          parseCSVRows(content).forEach(row => {
-            const text = row['comment text'] || row['content'] || row['text'] || '';
-            const ts = row['date'] || row['timestamp'] || row['published at'] || '';
-            const videoId = row['video id'] || row['url'] || '';
-            if (text) ytComments.push({ text, ts, videoId });
+          const rows = parseCSVRows(content);
+          if (rows.length) console.log('comments cols:', Object.keys(rows[0]).join(', '));
+          rows.forEach(row => {
+            // Find comment text — usually the longest value in the row
+            const text = row['comment text'] || row['commenttext'] || row['content'] || row['text'] || row['value'] ||
+              Object.entries(row).filter(([k]) => !k.includes('id') && !k.includes('url') && !k.includes('date') && !k.includes('time')).sort((a,b) => (b[1]||'').length - (a[1]||'').length)[0]?.[1] || '';
+            const ts = row['date'] || row['timestamp'] || row['createdat'] || row['created at'] || row['time'] || '';
+            const videoId = row['video id'] || row['videoid'] || row['url'] || '';
+            if (text && text.length > 0) ytComments.push({ text: text.trim(), ts, videoId });
           });
+          console.log('comments parsed:', ytComments.length);
         }
 
         // ── LIVE CHATS CSV ──
         else if (type === 'csv' && (ln.includes('live chat') || ln.includes('live_chat'))) {
-          parseCSVRows(content).forEach(row => {
-            const msg = row['message'] || row['text'] || row['content'] || '';
+          const rows = parseCSVRows(content);
+          if (rows.length) console.log('live chat cols:', Object.keys(rows[0]).join(', '));
+          rows.forEach(row => {
+            const msg = row['message'] || row['message text'] || row['messagetext'] || row['text'] || row['content'] ||
+              Object.entries(row).filter(([k]) => !k.includes('id') && !k.includes('url') && !k.includes('date') && !k.includes('time') && !k.includes('channel')).sort((a,b) => (b[1]||'').length - (a[1]||'').length)[0]?.[1] || '';
             const ts = row['date'] || row['timestamp'] || '';
-            const channel = row['channel'] || row['channel title'] || '';
-            if (msg) ytLiveChats.push({ msg, ts, channel });
+            const channel = row['channel title'] || row['channel'] || row['livechat id'] || '';
+            if (msg && msg.length > 0) ytLiveChats.push({ msg: msg.trim(), ts, channel });
           });
+          console.log('live chats parsed:', ytLiveChats.length);
         }
 
         // ── PLAYLIST CSVs ──
-        else if (type === 'csv' && (ln.includes('video') || ln.includes('playlist') || ln.includes('nostalgia') || ln.includes('goosebump') || ln.includes('peak') || ln.includes('music-video') || ln.includes('watch later'))) {
+        // Google Takeout playlist format: Playlist Id,Channel Id,Time Added,Video Id,Video Title,Video Description,Video Url,Channel Title,Channel Url
+        else if (type === 'csv' && (ln.includes('video') || ln.includes('playlist') || ln.includes('nostalgia') || ln.includes('goosebump') || ln.includes('peak') || ln.includes('music-video') || ln.includes('watch later') || ln.includes('watch_later'))) {
           const rows = parseCSVRows(content);
-          const playlistName = name.replace(/-videos\.csv$/i,'').replace(/\.csv$/i,'').replace(/-/g,' ').trim();
+          if (rows.length) console.log('playlist', name, 'cols:', Object.keys(rows[0]).join(', '));
+          const playlistName = name.replace(/-videos\.csv$/i,'').replace(/\.csv$/i,'').replace(/-/g,' ').replace(/_/g,' ').trim();
           if (!ytPlaylists[playlistName]) ytPlaylists[playlistName] = [];
           rows.forEach(row => {
-            const title = row['video title'] || row['title'] || row['name'] || '';
-            const channel = row['channel title'] || row['channel'] || '';
-            const url = row['video url'] || row['url'] || '';
-            if (title) ytPlaylists[playlistName].push({ title, channel, url });
+            // Google Takeout uses "Video Title" and "Channel Title"
+            const title = row['video title'] || row['videotitle'] || row['title'] || row['name'] || row['video name'] || '';
+            const channel = row['channel title'] || row['channeltitle'] || row['channel'] || '';
+            const url = row['video url'] || row['videourl'] || row['url'] || '';
+            if (title && title.length > 0) ytPlaylists[playlistName].push({ title: title.trim(), channel: channel.trim(), url });
           });
+          console.log('playlist', playlistName, ':', ytPlaylists[playlistName].length, 'entries');
         }
 
-        // ── MUSIC LIBRARY CSV ──
-        else if (type === 'csv' && (ln.includes('music-library') || ln.includes('music_library'))) {
-          parseCSVRows(content).forEach(row => {
-            const title = row.title || row['song title'] || row['track title'] || '';
+        // ── MUSIC LIBRARY CSV ── (music library songs.csv or music-library-songs.csv)
+        else if (type === 'csv' && (ln.includes('music') && (ln.includes('library') || ln.includes('song')))) {
+          const rows = parseCSVRows(content);
+          if (rows.length) console.log('music library cols:', Object.keys(rows[0]).join(', '));
+          rows.forEach(row => {
+            const title = row.title || row['song title'] || row['track title'] || row['video title'] || row['name'] || '';
             if (title) ytMusicData.push({
-              title,
-              artist: row.artist || row['artist name'] || 'Unknown',
-              album: row.album || row['album title'] || ''
+              title: title.trim(),
+              artist: (row.artist || row['artist name'] || row['channel title'] || 'Unknown').trim(),
+              album: (row.album || row['album title'] || '').trim()
             });
           });
+          console.log('music library parsed:', ytMusicData.length);
         }
       }
       ytWatchData = [...S];
+      console.log('=== YT PARSE SUMMARY ===');
+      console.log('Watch history:', S.length, 'videos');
+      console.log('Search history:', ytSearchData.length, 'searches');
+      console.log('Subscriptions:', ytSubscriptions.length, 'channels');
+      console.log('Comments:', ytComments.length, 'comments');
+      console.log('Live chats:', ytLiveChats.length, 'messages');
+      console.log('Playlists:', Object.keys(ytPlaylists).map(k => k+':'+ytPlaylists[k].length).join(', '));
+      console.log('Music library:', ytMusicData.length, 'songs');
     }
 
 
