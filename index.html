@@ -3857,9 +3857,6 @@
       border-radius: var(--r)
     }
     .npc-art-ph { font-size: 2.5rem }
-    @keyframes npcSpin { to { transform: rotate(360deg) } }
-    .npc-art-img.spinning { animation: npcSpin 9s linear infinite }
-    .npc-art-img.paused   { animation: npcSpin 9s linear infinite paused }
     .npc-track {
       font-size: .92rem; font-weight: 800;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis
@@ -4021,6 +4018,106 @@
     }
     .npb-expand:hover { color: var(--text) }
 
+    /* ── Track Stats Block (sidebar) ── */
+    .npc-stats-wrap {
+      padding: 12px 16px 14px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      background: rgba(29,185,84,.03)
+    }
+    body.yt-theme .npc-stats-wrap { background: rgba(255,0,0,.03) }
+    .npc-stats-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 10px
+    }
+    .npc-stats-title {
+      font-family: var(--mono); font-size: .58rem;
+      color: var(--muted); letter-spacing: .12em
+    }
+    .npc-stats-tabs { display: flex; gap: 4px }
+    .npc-stat-tab {
+      font-family: var(--mono); font-size: .5rem; letter-spacing: .06em;
+      padding: 3px 7px; border-radius: 2px; cursor: pointer;
+      border: 1px solid var(--border2); background: none; color: var(--muted);
+      transition: all .15s
+    }
+    .npc-stat-tab.act, .npc-stat-tab:hover {
+      border-color: var(--g); color: var(--g); background: rgba(29,185,84,.08)
+    }
+    body.yt-theme .npc-stat-tab.act, body.yt-theme .npc-stat-tab:hover {
+      border-color: #FF0000; color: #FF0000; background: rgba(255,0,0,.08)
+    }
+    .npc-stats-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 8px; margin-bottom: 10px
+    }
+    .npc-stat-cell {
+      background: var(--s2); border: 1px solid var(--border);
+      border-radius: 4px; padding: 8px 10px
+    }
+    .npc-stat-lbl {
+      font-family: var(--mono); font-size: .46rem;
+      color: var(--muted); letter-spacing: .08em; margin-bottom: 4px
+    }
+    .npc-stat-val {
+      font-family: var(--mono); font-size: .92rem;
+      font-weight: 700; color: var(--g); transition: color .55s
+    }
+    body.yt-theme .npc-stat-val { color: #FF0000 }
+    .npc-stat-bar-wrap { margin-top: 4px }
+    .npc-stat-bar-lbl {
+      font-family: var(--mono); font-size: .46rem;
+      color: var(--muted2); letter-spacing: .08em; margin-bottom: 5px
+    }
+    .npc-stat-bar-bg {
+      height: 3px; background: var(--border2);
+      border-radius: 2px; overflow: hidden
+    }
+    .npc-stat-bar-fill {
+      height: 100%; background: var(--g);
+      border-radius: 2px; width: 0%;
+      transition: width .8s ease, background .55s
+    }
+    body.yt-theme .npc-stat-bar-fill { background: #FF0000 }
+
+    /* ── Collapsible Live+Playlists Parent ── */
+    .live-super-wrap {
+      margin-bottom: 0
+    }
+    .live-super-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 20px 10px;
+      cursor: pointer; user-select: none;
+      border-bottom: 1px solid var(--border)
+    }
+    .live-super-dot {
+      width: 6px; height: 6px; border-radius: 50%; background: var(--g);
+      animation: blink 1.8s ease-in-out infinite; flex-shrink: 0;
+      transition: background .55s
+    }
+    body.yt-theme .live-super-dot { background: #FF0000 }
+    .live-super-title {
+      font-family: var(--mono); font-size: .62rem;
+      color: var(--g); letter-spacing: .14em; flex: 1;
+      transition: color .55s
+    }
+    body.yt-theme .live-super-title { color: #FF0000 }
+    .live-super-chevron {
+      font-family: var(--mono); font-size: .7rem;
+      color: var(--muted); transition: transform .3s
+    }
+    .live-super-chevron.open { transform: rotate(0deg) }
+    .live-super-chevron:not(.open) { transform: rotate(-90deg) }
+    .live-super-body {
+      overflow: hidden;
+      max-height: 4000px;
+      transition: max-height .4s ease, opacity .3s ease;
+      opacity: 1
+    }
+    .live-super-body.collapsed {
+      max-height: 0; opacity: 0; pointer-events: none
+    }
+
     /* YT theme overrides */
     body.yt-theme #np-bar { background: var(--s1) }
     body.yt-theme .npb-play,
@@ -4149,6 +4246,16 @@
         <div class="waveform" id="wf"></div>
       </div>
 
+      <!-- ═══════ LIVE + PLAYLISTS SUPER SECTION ═══════ -->
+      <div class="live-super-wrap" id="live-super-wrap">
+        <!-- Super-section collapsible header -->
+        <div class="live-super-header" onclick="toggleLiveSuper()">
+          <div class="live-super-dot"></div>
+          <span class="live-super-title">SPOTIFY LIVE</span>
+          <span class="live-super-chevron open" id="liveSuperChevron">▾</span>
+        </div>
+        <div class="live-super-body" id="liveSuperBody">
+
       <!-- ═══════ SPOTIFY LIVE SECTION ═══════ -->
       <div id="live-panel">
         <div class="live-panel-inner rv">
@@ -4183,6 +4290,34 @@
           </div>
         </div>
       </div>
+
+      <!-- ═══════ SPOTIFY PLAYLISTS SECTION ═══════ -->
+      <div id="playlists-panel" style="display:none;margin-bottom:32px">
+        <div class="live-panel-inner rv">
+          <div class="live-header" id="playlistsHeaderBtn" onclick="togglePlaylistsPanel()">
+            <div class="live-dot"></div>
+            <span class="live-title">PLAYLISTS — GROUPED BY GENRE</span>
+            <span class="pl-count-badge" id="pl-count-badge"></span>
+            <span class="live-chevron open" id="playlistsChevron">▾</span>
+          </div>
+          <div class="pl-body" id="plBody">
+            <div class="pl-controls">
+              <div class="pl-sort-row">
+                <span class="sort-lbl">SORT</span>
+                <button class="sort-btn pl-sort-btn act" data-sort="oldest" onclick="setPlSort('oldest',this)">OLDEST</button>
+                <button class="sort-btn pl-sort-btn" data-sort="newest" onclick="setPlSort('newest',this)">NEWEST</button>
+                <button class="sort-btn pl-sort-btn" data-sort="name" onclick="setPlSort('name',this)">A–Z</button>
+                <button class="sort-btn pl-sort-btn" data-sort="tracks" onclick="setPlSort('tracks',this)">TRACKS</button>
+              </div>
+              <input class="pl-search" id="pl-search" type="text" placeholder="Search playlists…" oninput="renderPlaylists()">
+            </div>
+            <div id="pl-genre-wrap"></div>
+          </div>
+        </div>
+      </div>
+
+        </div><!-- /liveSuperBody -->
+      </div><!-- /live-super-wrap -->
 
       <!-- ═══════ SPOTIFY AUTH MODAL ═══════ -->
       <div id="spotify-modal">
@@ -4220,31 +4355,6 @@
             Connect with Spotify
           </button>
           <button class="spm-cancel" onclick="closeSpotifyModal()">CANCEL</button>
-        </div>
-      </div>
-
-      <!-- ═══════ SPOTIFY PLAYLISTS SECTION ═══════ -->
-      <div id="playlists-panel" style="display:none;margin-bottom:32px">
-        <div class="live-panel-inner rv">
-          <div class="live-header" id="playlistsHeaderBtn" onclick="togglePlaylistsPanel()">
-            <div class="live-dot"></div>
-            <span class="live-title">PLAYLISTS — GROUPED BY GENRE</span>
-            <span class="pl-count-badge" id="pl-count-badge"></span>
-            <span class="live-chevron open" id="playlistsChevron">▾</span>
-          </div>
-          <div class="pl-body" id="plBody">
-            <div class="pl-controls">
-              <div class="pl-sort-row">
-                <span class="sort-lbl">SORT</span>
-                <button class="sort-btn pl-sort-btn act" data-sort="oldest" onclick="setPlSort('oldest',this)">OLDEST</button>
-                <button class="sort-btn pl-sort-btn" data-sort="newest" onclick="setPlSort('newest',this)">NEWEST</button>
-                <button class="sort-btn pl-sort-btn" data-sort="name" onclick="setPlSort('name',this)">A–Z</button>
-                <button class="sort-btn pl-sort-btn" data-sort="tracks" onclick="setPlSort('tracks',this)">TRACKS</button>
-              </div>
-              <input class="pl-search" id="pl-search" type="text" placeholder="Search playlists…" oninput="renderPlaylists()">
-            </div>
-            <div id="pl-genre-wrap"></div>
-          </div>
         </div>
       </div>
 
@@ -4518,6 +4628,40 @@
       </div>
     </div>
 
+    <!-- Track stats block -->
+    <div class="npc-stats-wrap" id="npc-stats-wrap" style="display:none">
+      <div class="npc-stats-header">
+        <span class="npc-stats-title">TRACK STATS</span>
+        <div class="npc-stats-tabs">
+          <button class="npc-stat-tab act" onclick="switchStatPeriod('lifetime',this)">ALL TIME</button>
+          <button class="npc-stat-tab" onclick="switchStatPeriod('year',this)">YEAR</button>
+          <button class="npc-stat-tab" onclick="switchStatPeriod('month',this)">MONTH</button>
+        </div>
+      </div>
+      <div class="npc-stats-grid" id="npc-stats-grid">
+        <div class="npc-stat-cell">
+          <div class="npc-stat-lbl">POPULARITY</div>
+          <div class="npc-stat-val" id="npc-stat-popularity">—</div>
+        </div>
+        <div class="npc-stat-cell">
+          <div class="npc-stat-lbl">YOUR STREAMS</div>
+          <div class="npc-stat-val" id="npc-stat-streams">—</div>
+        </div>
+        <div class="npc-stat-cell">
+          <div class="npc-stat-lbl">YOUR MINUTES</div>
+          <div class="npc-stat-val" id="npc-stat-minutes">—</div>
+        </div>
+        <div class="npc-stat-cell">
+          <div class="npc-stat-lbl">DURATION</div>
+          <div class="npc-stat-val" id="npc-stat-duration">—</div>
+        </div>
+      </div>
+      <div class="npc-stat-bar-wrap">
+        <div class="npc-stat-bar-lbl">POPULARITY SCORE</div>
+        <div class="npc-stat-bar-bg"><div class="npc-stat-bar-fill" id="npc-stat-bar"></div></div>
+      </div>
+    </div>
+
     <!-- Recent tracks list -->
     <div class="npc-recent">
       <div class="npc-section-label">
@@ -4530,7 +4674,7 @@
       </div>
       <div id="npc-recent-wrap" class="rp-list" style="padding:0 6px"></div>
     </div>
-  </div>
+  </div><!-- /#np-ctx -->
 
   <!-- ══════ STICKY FOOTER BAR ══════ -->
   <div id="np-bar" onclick="npBarClick(event)">
@@ -6138,6 +6282,14 @@
     }
 
     /* ── Collapsible panel toggle ── */
+    function toggleLiveSuper() {
+      const body = document.getElementById('liveSuperBody');
+      const chev = document.getElementById('liveSuperChevron');
+      if (!body) return;
+      const collapsed = body.classList.toggle('collapsed');
+      if (chev) chev.classList.toggle('open', !collapsed);
+    }
+
     function toggleLivePanel() {
       SP.livePanelCollapsed = !SP.livePanelCollapsed;
       document.getElementById('liveBody').classList.toggle('collapsed', SP.livePanelCollapsed);
@@ -6207,7 +6359,7 @@
       /* ── Context panel updates ── */
       /* art — full-width in panel */
       const panelArtHtml = art
-        ? `<img class="npc-art-img${isPlaying ? ' spinning' : ' paused'}" src="${art}" alt="">`
+        ? `<img class="npc-art-img" src="${art}" alt="">`
         : `<span class="npc-art-ph">🎵</span>`;
       document.getElementById('npc-art-wrap').innerHTML = panelArtHtml;
 
@@ -6333,12 +6485,14 @@
 
       /* Check if liked */
       checkLiked(trackId);
+      fetchTrackStats(track);
 
       updateFloat(track, isPlaying, pct, progressMs, artists, art);
     }
 
     /* Like helpers */
     SP._currentTrackId = null;
+    SP._currentLiked = false;
     async function checkLiked(trackId) {
       SP._currentTrackId = trackId;
       if (!trackId || !await ensureToken()) return;
@@ -6348,6 +6502,7 @@
         });
         const data = await res.json();
         const liked = data[0] === true;
+        SP._currentLiked = liked;
         ['np-like-btn','npb-like-btn','npc-like-btn'].forEach(id => {
           const btn = document.getElementById(id);
           if (btn) { btn.textContent = liked ? '♥' : '♡'; btn.classList.toggle('liked', liked); }
@@ -6356,8 +6511,7 @@
     }
     async function npToggleLike(trackId) {
       if (!trackId || !await ensureToken()) return;
-      const btn = document.getElementById('np-like-btn');
-      const liked = btn?.classList.contains('liked');
+      const liked = SP._currentLiked;
       const method = liked ? 'DELETE' : 'PUT';
       await fetch(`https://api.spotify.com/v1/me/tracks?ids=${trackId}`, {
         method, headers: { Authorization: 'Bearer ' + SP.accessToken, 'Content-Type': 'application/json' },
@@ -6367,6 +6521,64 @@
     }
     async function npfToggleLike() {
       if (SP._currentTrackId) npToggleLike(SP._currentTrackId);
+    }
+
+    /* ── Track Stats for Sidebar Panel ── */
+    SP._currentTrackData = null; // full track object
+    SP._statPeriod = 'lifetime'; // 'lifetime' | 'year' | 'month'
+
+    function switchStatPeriod(period, btn) {
+      SP._statPeriod = period;
+      document.querySelectorAll('.npc-stat-tab').forEach(b => b.classList.remove('act'));
+      if (btn) btn.classList.add('act');
+      renderTrackStats();
+    }
+
+    function renderTrackStats() {
+      const track = SP._currentTrackData;
+      const wrap = document.getElementById('npc-stats-wrap');
+      if (!track || !wrap) return;
+      wrap.style.display = 'block';
+
+      const popularity = track.popularity ?? 0;
+      const durMs = track.duration_ms || 0;
+      const durMin = Math.round(durMs / 60000 * 10) / 10;
+
+      // Local stats from uploaded listening history (S array)
+      const trackName = (track.name || '').toLowerCase();
+      const artistName = (track.artists?.[0]?.name || '').toLowerCase();
+      const now = new Date();
+
+      let filtered = (typeof S !== 'undefined' ? S : []).filter(x => {
+        const n = (x.track || '').toLowerCase();
+        const a = (x.artist || '').toLowerCase();
+        return n === trackName && a.includes(artistName.split(' ')[0]);
+      });
+
+      if (SP._statPeriod === 'year') {
+        const cutoff = new Date(now.getFullYear(), 0, 1).toISOString();
+        filtered = filtered.filter(x => x.ts && x.ts >= cutoff);
+      } else if (SP._statPeriod === 'month') {
+        const cutoff = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+        filtered = filtered.filter(x => x.ts && x.ts >= cutoff);
+      }
+
+      const streams = filtered.length;
+      const minutes = streams > 0
+        ? Math.round(filtered.reduce((a, x) => a + (x.ms || durMs), 0) / 60000)
+        : '—';
+
+      document.getElementById('npc-stat-popularity').textContent = popularity + '/100';
+      document.getElementById('npc-stat-streams').textContent = streams > 0 ? streams.toLocaleString() : (typeof S !== 'undefined' && S.length ? '0' : '—');
+      document.getElementById('npc-stat-minutes').textContent = minutes !== '—' ? minutes + ' min' : '—';
+      document.getElementById('npc-stat-duration').textContent = durMin + ' min';
+      const bar = document.getElementById('npc-stat-bar');
+      if (bar) bar.style.width = popularity + '%';
+    }
+
+    async function fetchTrackStats(track) {
+      SP._currentTrackData = track;
+      renderTrackStats();
     }
 
     /* ── Album art dominant color → CSS var (kept for future use) ── */
@@ -6639,28 +6851,9 @@
     }
 
     /* Hook into connect / disconnect / dashboard show */
-    const _origOnConnected = onSpotifyConnected;
-    function onSpotifyConnected() {
-      _origOnConnected();
-      const plPanel = document.getElementById('playlists-panel');
-      const dash = document.getElementById('dashboard');
-      if (plPanel && dash && dash.style.display !== 'none') {
-        plPanel.style.display = 'block';
-        fetchAllPlaylists();
-      }
-    }
-
-    const _origDisconnect = spotifyDisconnect;
-    function spotifyDisconnect() {
-      _origDisconnect();
-      const plPanel = document.getElementById('playlists-panel');
-      if (plPanel) plPanel.style.display = 'none';
-      SP._playlists = [];
-    }
-
-    /* Also show when dashboard becomes visible after connect */
-    const _origDashObs = _dashObs;
+    /* Playlist auto-show: patch SP callbacks after page load */
     document.addEventListener('DOMContentLoaded', () => {
+      /* Show playlists panel whenever dashboard becomes visible while connected */
       const dash2 = document.getElementById('dashboard');
       if (dash2) {
         const plObs = new MutationObserver(() => {
@@ -6668,13 +6861,48 @@
             const plPanel = document.getElementById('playlists-panel');
             if (plPanel && plPanel.style.display === 'none') {
               plPanel.style.display = 'block';
-              fetchAllPlaylists();
+              if (!SP._playlists || !SP._playlists.length) fetchAllPlaylists();
             }
           }
         });
         plObs.observe(dash2, { attributes: true, attributeFilter: ['style'] });
       }
+
+      /* If already connected when page loads (token in localStorage), fetch playlists */
+      if (SP.accessToken && SP.tokenExpiry > Date.now()) {
+        const plPanel = document.getElementById('playlists-panel');
+        const dash = document.getElementById('dashboard');
+        if (plPanel && dash && dash.style.display !== 'none') {
+          plPanel.style.display = 'block';
+          fetchAllPlaylists();
+        }
+      }
     });
+
+    /* Patch spotifyDisconnect to also hide playlists */
+    (function() {
+      const _orig = spotifyDisconnect;
+      spotifyDisconnect = function() {
+        _orig();
+        const plPanel = document.getElementById('playlists-panel');
+        if (plPanel) plPanel.style.display = 'none';
+        SP._playlists = [];
+      };
+    })();
+
+    /* Patch onSpotifyConnected to also show playlists */
+    (function() {
+      const _orig = onSpotifyConnected;
+      onSpotifyConnected = function() {
+        _orig();
+        const plPanel = document.getElementById('playlists-panel');
+        const dash = document.getElementById('dashboard');
+        if (plPanel && dash && dash.style.display !== 'none') {
+          plPanel.style.display = 'block';
+          fetchAllPlaylists();
+        }
+      };
+    })();
 
     /* ── Hide live button in YT mode ── */
     window.addEventListener('load', () => {
