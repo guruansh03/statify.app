@@ -5505,7 +5505,7 @@
       const body = document.getElementById('yt-search-body');
       if (!ytSearchData.length) { if(sec) sec.style.display='none'; return; }
       if(sec) sec.style.display='';
-      if(body) body.classList.remove('collapsed');
+      if(body) { body.classList.remove('collapsed'); body.style.maxHeight = 'none'; }
 
       const total = ytSearchData.length;
       const qMap = {};
@@ -5539,7 +5539,7 @@
       const body = document.getElementById('yt-subs-body');
       if (!ytSubscriptions.length) { if(sec) sec.style.display='none'; return; }
       if(sec) sec.style.display='';
-      if(body) body.classList.remove('collapsed');
+      if(body) { body.classList.remove('collapsed'); body.style.maxHeight = 'none'; }
 
       const total = ytSubscriptions.length;
       // Cross ref with watch history
@@ -5581,7 +5581,7 @@
       const body = document.getElementById('yt-comments-body');
       if (!ytComments.length) { if(sec) sec.style.display='none'; return; }
       if(sec) sec.style.display='';
-      if(body) body.classList.remove('collapsed');
+      if(body) { body.classList.remove('collapsed'); body.style.maxHeight = 'none'; }
 
       const total = ytComments.length;
       const lengths = ytComments.map(c=>c.text.length);
@@ -5609,7 +5609,7 @@
       const entries = Object.entries(ytPlaylists).filter(([,v])=>v.length>0);
       if (!entries.length) { if(sec) sec.style.display='none'; return; }
       if(sec) sec.style.display='';
-      if(body) body.classList.remove('collapsed');
+      if(body) { body.classList.remove('collapsed'); body.style.maxHeight = 'none'; }
 
       const el = document.getElementById('yt-playlists-content');
       if (!el) return;
@@ -6290,7 +6290,15 @@
     function toggleColl(header) {
       header.classList.toggle('collapsed');
       const body = header.nextElementSibling;
-      if (body && body.classList.contains('coll-body')) body.classList.toggle('collapsed');
+      if (body && body.classList.contains('coll-body')) {
+        const isCollapsing = !body.classList.toggle('collapsed'); // toggle returns new state; true=collapsed
+        // Reset inline maxHeight so CSS transition takes over
+        if (body.classList.contains('collapsed')) {
+          body.style.maxHeight = '';
+        } else {
+          body.style.maxHeight = 'none';
+        }
+      }
     }
 
     /* ═══════════════════════════════════════
