@@ -2747,6 +2747,8 @@
 
     .journey-card {
       flex: 0 0 180px;
+      min-width: 0;
+      overflow: hidden;
       background: var(--s1);
       border: 1px solid var(--border);
       border-radius: var(--r);
@@ -5161,16 +5163,34 @@
       // Handle Excel-style double-quote escaping: {""text"":""hello""} -> {"text":"hello"}
       if (s.startsWith('{') && s.includes('""')) s = s.replace(/""/g, '"');
       if (s.startsWith('{')) {
+        // Try standard JSON first
         try {
           const obj = JSON.parse(s);
           return obj.text || obj.message || obj.content || Object.values(obj).find(v => typeof v === 'string' && v.length > 0) || '';
-        } catch (e) {
-          const m = s.match(/"text"\s*:\s*"((?:[^"\\]|\\.)*)"/);
-          if (m) return m[1].replace(/\\"/g, '"');
-          const m2 = s.match(/text\s*:\s*"((?:[^"\\]|\\.)*)"/);
-          if (m2) return m2[1].replace(/\\"/g, '"');
-          return s;
+        } catch (e) {}
+        // Try quoted key: {"text":"..."} or {text:"..."}
+        const m1 = s.match(/"text"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+        if (m1) return m1[1].replace(/\\"/g, '"');
+        const m2 = s.match(/text\s*:\s*"((?:[^"\\]|\\.)*)"/);
+        if (m2) return m2[1].replace(/\\"/g, '"');
+        // Handle unquoted value: {text:hello world} — Google Takeout actual format
+        const m3 = s.match(/^\{\s*(?:"?text"?|text)\s*:\s*(.*?)\s*\}$/s);
+        if (m3) {
+          let val = m3[1].trim();
+          // Remove surrounding quotes if present
+          if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+            val = val.slice(1, -1);
+          }
+          return val;
         }
+        // Fallback: strip outer braces and return remainder after first colon
+        const colonIdx = s.indexOf(':');
+        if (colonIdx !== -1) {
+          let val = s.slice(colonIdx + 1, -1).trim();
+          if ((val.startsWith('"') && val.endsWith('"'))) val = val.slice(1,-1);
+          return val;
+        }
+        return s;
       }
       return s;
     }
@@ -6425,8 +6445,11 @@
         return `<div class="journey-card${isNew ? ' highlight' : ''}">
       ${isNew ? '<div class="journey-badge">★ NEW #1</div>' : ''}
       <div class="journey-month">${monthNames[mo - 1]} ${yr}</div>
+      <div style="font-family:var(--mono);font-size:.5rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:1px">${isYT ? 'CREATOR' : 'ARTIST'}</div>
       <div class="journey-artist">${topA ? topA[0] : '—'}</div>
-      <div class="journey-track">${topT ? topT[0] : '—'}</div>
+      <div style="font-family:var(--mono);font-size:.5rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:6px;margin-bottom:1px">${isYT ? 'TOP VIDEO' : 'TOP TRACK'}</div>
+      <div class="journey-track">${topT ? (topT[0].length>48?topT[0].slice(0,47)+'…':topT[0]) : '—'}</div>
+      <div style="font-family:var(--mono);font-size:.5rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:6px;margin-bottom:2px">${isYT ? 'VIDEOS WATCHED' : 'STREAMS'}</div>
       <div class="journey-count">${v.count}</div>
       <div class="journey-bar"><div class="journey-bar-fill" data-target="${pct}"></div></div>
     </div>`;
