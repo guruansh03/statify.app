@@ -5124,9 +5124,11 @@
     }
 
     // Helper: parse Google Takeout timestamp "Apr 17, 2026, 9:44:30 PM GMT+05:30"
+    // Note: Google uses U+202F narrow no-break space between time and AM/PM
     function parseGTTimestamp(str) {
       if (!str) return null;
-      // Strip GMT offset, parse base, return ISO string
+      // Normalize narrow no-break space (U+202F) and non-breaking space (U+00A0) to regular space
+      str = str.replace(/\u202f/g, ' ').replace(/\u00a0/g, ' ');
       const m = str.match(/^(.+?)\s+GMT([+-])(\d{2}):(\d{2})$/);
       if (m) {
         const base = new Date(m[1]);
@@ -5165,7 +5167,7 @@
           // REGEX-BASED PARSER — avoids DOMParser choking on large files
           // Google Takeout format: outer-cell divs, timestamp may have GMT+HH:MM suffix
           const CHUNK_RE = /<div[^>]+class="[^"]*outer-cell[^"]*"[^>]*>([\s\S]*?)(?=<div[^>]+class="[^"]*outer-cell|$)/gi;
-          const TS_RE = /([A-Z][a-z]{2} \d{1,2}, \d{4}, \d{1,2}:\d{2}(?::\d{2})? [AP]M(?:\s+GMT[+-]\d{2}:\d{2})?)/;
+          const TS_RE = /([A-Z][a-z]{2} \d{1,2}, \d{4}, \d{1,2}:\d{2}(?::\d{2})?\s[AP]M(?:\s+GMT[+-]\d{2}:\d{2})?)/;
           let chunk;
           CHUNK_RE.lastIndex = 0;
           while ((chunk = CHUNK_RE.exec(content)) !== null) {
@@ -5191,7 +5193,7 @@
           }
           // Fallback for older format
           if (!S.length) {
-            const ENTRY_RE = /Watched\s*<a[^>]+href="([^"]*)"[^>]*>([^<]{1,300})<\/a>[\s\S]{0,500}?<a[^>]+href="([^"]*)"[^>]*>([^<]{1,200})<\/a>[\s\S]{0,300}?([A-Z][a-z]{2} \d{1,2}, \d{4}, \d{1,2}:\d{2}(?::\d{2})? [AP]M(?:\s+GMT[+-]\d{2}:\d{2})?)/gi;
+            const ENTRY_RE = /Watched\s*<a[^>]+href="([^"]*)"[^>]*>([^<]{1,300})<\/a>[\s\S]{0,500}?<a[^>]+href="([^"]*)"[^>]*>([^<]{1,200})<\/a>[\s\S]{0,300}?([A-Z][a-z]{2} \d{1,2}, \d{4}, \d{1,2}:\d{2}(?::\d{2})?\s[AP]M(?:\s+GMT[+-]\d{2}:\d{2})?)/gi;
             let em;
             while ((em = ENTRY_RE.exec(content)) !== null) {
               const tsISO = parseGTTimestamp(em[5]);
@@ -5205,7 +5207,7 @@
         // ── SEARCH HISTORY HTML ──
         else if (type === 'html' && ln.includes('search')) {
           const SCHUNK_RE = /<div[^>]+class="[^"]*outer-cell[^"]*"[^>]*>([\s\S]*?)(?=<div[^>]+class="[^"]*outer-cell|$)/gi;
-          const STS_RE = /([A-Z][a-z]{2} \d{1,2}, \d{4}, \d{1,2}:\d{2}(?::\d{2})? [AP]M(?:\s+GMT[+-]\d{2}:\d{2})?)/;
+          const STS_RE = /([A-Z][a-z]{2} \d{1,2}, \d{4}, \d{1,2}:\d{2}(?::\d{2})?\s[AP]M(?:\s+GMT[+-]\d{2}:\d{2})?)/;
           let schunk;
           SCHUNK_RE.lastIndex = 0;
           while ((schunk = SCHUNK_RE.exec(content)) !== null) {
@@ -5219,7 +5221,7 @@
             if (query) ytSearchData.push({ ts: tsISO, query });
           }
           if (!ytSearchData.length) {
-            const SENTRY_RE = /Searched\s+for\s+<a[^>]*>([^<]{1,200})<\/a>[\s\S]{0,300}?([A-Z][a-z]{2} \d{1,2}, \d{4}, \d{1,2}:\d{2}(?::\d{2})? [AP]M(?:\s+GMT[+-]\d{2}:\d{2})?)/gi;
+            const SENTRY_RE = /Searched\s+for\s+<a[^>]*>([^<]{1,200})<\/a>[\s\S]{0,300}?([A-Z][a-z]{2} \d{1,2}, \d{4}, \d{1,2}:\d{2}(?::\d{2})?\s[AP]M(?:\s+GMT[+-]\d{2}:\d{2})?)/gi;
             let sem;
             while ((sem = SENTRY_RE.exec(content)) !== null) {
               const tsISO = parseGTTimestamp(sem[2]);
