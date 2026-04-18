@@ -52,7 +52,7 @@
       color: var(--text);
       font-family: var(--font);
       min-height: 100vh;
-      overflow-x: hidden
+      overflow-x: clip
     }
 
     /* ═══════════ YOUTUBE THEME ═══════════ */
@@ -4620,7 +4620,6 @@
         <span id="npc-duration">0:00</span>
       </div>
       <div class="npc-controls">
-        <button class="npc-like" id="npc-like-btn" onclick="npfToggleLike()" title="Save">♡</button>
         <button class="npc-cbtn" onclick="spPlayerCmd('previous')">⏮</button>
         <button class="npc-play-btn" id="npc-play-btn" onclick="spPlayerCmd('playpause')">▶</button>
         <button class="npc-cbtn" onclick="spPlayerCmd('next')">⏭</button>
@@ -4705,8 +4704,6 @@
       <div class="npb-bar" style="height:9px"></div>
       <div class="npb-bar" style="height:4px"></div>
     </div>
-    <!-- like -->
-    <button class="npb-like" id="npb-like-btn" onclick="event.stopPropagation();npfToggleLike()" title="Save">♡</button>
     <!-- expand -->
     <button class="npb-expand" id="npb-expand-btn" onclick="event.stopPropagation();toggleCtxPanel()">EXPAND ›</button>
   </div>
