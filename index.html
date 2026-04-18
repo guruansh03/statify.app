@@ -1159,8 +1159,8 @@
       position: fixed;
       background: var(--s3);
       border: 1px solid var(--border2);
-      padding: 6px 10px;
-      border-radius: 3px;
+      padding: 10px 14px;
+      border-radius: 5px;
       font-family: var(--mono);
       font-size: .62rem;
       pointer-events: none;
@@ -1168,7 +1168,9 @@
       display: none;
       color: var(--text);
       white-space: nowrap;
-      line-height: 1.5
+      line-height: 1.6;
+      max-width: 280px;
+      box-shadow: 0 4px 20px rgba(0,0,0,.4)
     }
 
     /* ═══════════ TOP 50 ═══════════ */
@@ -5123,6 +5125,12 @@
       return rows;
     }
 
+    // Helper: decode HTML entities from Google Takeout text
+    function decodeHTML(str) {
+      if (!str) return str;
+      return str.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&apos;/g,"'").replace(/&nbsp;/g,' ');
+    }
+
     // Helper: parse Google Takeout timestamp "Apr 17, 2026, 9:44:30 PM GMT+05:30"
     // Note: Google uses U+202F narrow no-break space between time and AM/PM
     function parseGTTimestamp(str) {
@@ -5184,12 +5192,17 @@
               links.push({ href: lm[1], text: lm[2].trim() });
             }
             const vidLink = links.find(l => l.href.includes('watch?v=') || l.href.includes('youtu.be/') || l.href.includes('youtube.com/shorts/'));
-            const chanLink = links.find(l => l.href.includes('/channel/') || l.href.includes('/@') || l.href.includes('/user/'));
-            const title = vidLink?.text || links[0]?.text || 'Unknown';
-            const channel = chanLink?.text || links[1]?.text || title;
-            if (title && title !== 'Unknown') {
-              S.push({ ts: tsISO, artist: channel, track: title, channel, ms: 0, skipped: false, platform: '', fullMs: 0 });
-            }
+            // Only process actual watched videos (skip community posts, visits, etc.)
+            if (!vidLink) continue;
+            // Skip deleted/unavailable videos where title = URL (video was removed)
+            const rawTitle = vidLink.text.trim();
+            if (rawTitle.startsWith('http') || rawTitle.startsWith('www.youtube')) continue;
+            // Channel link — exclude myaccount.google.com "here" footer links
+            const chanLink = links.find(l => (l.href.includes('/channel/') || l.href.includes('/@') || l.href.includes('/user/')) && !l.href.includes('myaccount'));
+            // Safe fallback: use next non-myaccount, non-youtube-watch link as channel
+            const safeFallbackChan = links.find(l => !l.href.includes('watch?v=') && !l.href.includes('youtu.be/') && !l.href.includes('shorts/') && !l.href.includes('myaccount') && !l.href.includes('/post/'));
+            const channel = decodeHTML(chanLink?.text || safeFallbackChan?.text || 'Unknown Channel');
+            S.push({ ts: tsISO, artist: channel, track: decodeHTML(rawTitle), channel, ms: 0, skipped: false, platform: '', fullMs: 0 });
           }
           // Fallback for older format
           if (!S.length) {
@@ -5676,7 +5689,7 @@
         { l: 'DAILY AVERAGE', v: isYT ? Math.round(n / span) + '/day' : fmt(tot / span), i: '⏤' },
         { l: isYT ? 'UNIQUE VIDEOS' : 'UNIQUE TRACKS', v: fN(uT), i: '♪' },
         { l: isYT ? 'CHANNELS' : 'UNIQUE ARTISTS', v: fN(uA), i: '◉' },
-        { l: 'SKIP RATE', v: isYT ? '—' : ((sk / n) * 100).toFixed(1) + '%', i: '»' },
+        { l: isYT ? 'RE-WATCHED' : 'SKIP RATE', v: isYT ? (() => { const vCounts = {}; S.forEach(x => { vCounts[x.track] = (vCounts[x.track]||0)+1; }); const rewatched = Object.values(vCounts).filter(c=>c>1).length; return fN(rewatched) })() : ((sk / n) * 100).toFixed(1) + '%', i: isYT ? '↩' : '»' },
         { l: 'DAYS TRACKED', v: span, i: '▦' },
         { l: 'LIBRARY', v: lib ? fN((lib.tracks || []).length) : (isYT && ytMusicData.length ? fN(ytMusicData.length) : '—'), i: '♥' }
       ];
@@ -5948,7 +5961,15 @@
       if (!aMap) { aMap = {}; S.forEach(x => { if (!aMap[x.artist]) aMap[x.artist] = { count: 0, ms: 0 }; aMap[x.artist].count++; aMap[x.artist].ms += x.ms }) }
       const topAList = Object.entries(aMap).sort((a, b) => sortArt === 'time' ? b[1].ms - a[1].ms : b[1].count - a[1].count).slice(0, 12);
       const unit = isYT ? 'WATCHES' : 'PLAYS';
-      document.getElementById('topArtists').innerHTML = topAList.map(([a, v], i) => `<div class="ri"><span class="rn ${i < 3 ? 't3' : ''}">${String(i + 1).padStart(2, '0')}</span><div class="ri-info"><div class="ri-name">${a}</div><div class="ri-sub">${isYT ? v.count + ' videos watched' : fmt(v.ms) + ' total'}</div></div><div class="rc"><div class="rc-n">${v.count}</div><div class="rc-l">${unit}</div></div>${!isYT ? `<div style="width:6px"></div><div class="rc rc-b"><div class="rc-n">${fmt(v.ms)}</div><div class="rc-l">TIME</div></div>` : ''}</div>`).join('');
+      document.getElementById('topArtists').innerHTML = topAList.map(([a, v], i) => {
+        // Build top 5 videos/tracks for this artist for hover popup
+        const topVids = Object.entries(
+          S.filter(x => x.artist === a).reduce((acc, x) => { acc[x.track] = (acc[x.track]||0)+1; return acc; }, {})
+        ).sort((a,b)=>b[1]-a[1]).slice(0,5);
+        const tipHtml = topVids.map(([t,c])=>`<div style='white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px;padding:2px 0'><span style='color:var(--g);font-weight:700;margin-right:6px'>${c}×</span>${t.length>36?t.slice(0,35)+'…':t}</div>`).join('');
+        const tipContent = `<div style='font-family:var(--mono);font-size:.68rem;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em'>${a} — top ${isYT?'videos':'tracks'}</div>${tipHtml}`;
+        return `<div class="ri" onmouseenter="showTip(event,${JSON.stringify(tipContent)})" onmouseleave="hideTip()"><span class="rn ${i < 3 ? 't3' : ''}">${String(i + 1).padStart(2, '0')}</span><div class="ri-info"><div class="ri-name">${a}</div><div class="ri-sub">${isYT ? v.count + ' videos watched' : fmt(v.ms) + ' total'}</div></div><div class="rc"><div class="rc-n">${v.count}</div><div class="rc-l">${unit}</div></div>${!isYT ? `<div style="width:6px"></div><div class="rc rc-b"><div class="rc-n">${fmt(v.ms)}</div><div class="rc-l">TIME</div></div>` : ''}</div>`;
+      }).join('');
       document.querySelectorAll('.sart-btn').forEach(b => b.classList.toggle('act', b.dataset.sort === sortArt));
     }
     function setSort(type, s, el) {
@@ -6495,20 +6516,27 @@
     function animateCountUp() {
       document.querySelectorAll('.sc-val[data-count]').forEach(el => {
         const raw = el.getAttribute('data-count');
-        const num = parseFloat(raw.replace(/,/g, ''));
+        // Extract numeric part and suffix (k, %, /day, etc.)
+        const match = raw.match(/^([0-9,]+\.?[0-9]*)(k?)(.*)$/);
+        if (!match) { el.textContent = raw; return }
+        const numStr = match[1].replace(/,/g, '');
+        const kSuffix = match[2]; // 'k' or ''
+        const rest = match[3];    // '/day', '%', etc.
+        const num = parseFloat(numStr);
         if (isNaN(num)) { el.textContent = raw; return }
-        const isInt = Number.isInteger(num);
+        const isFloat = !Number.isInteger(num) || kSuffix === 'k';
         const suffix = el.getAttribute('data-suffix') || '';
         const prefix = el.getAttribute('data-prefix') || '';
         const dur = 800;
         const start = performance.now();
         function step(now) {
           const p = Math.min((now - start) / dur, 1);
-          const ease = 1 - Math.pow(1 - p, 3); /* easeOutCubic */
+          const ease = 1 - Math.pow(1 - p, 3);
           const cur = num * ease;
-          el.textContent = prefix + (isInt ? fN(Math.round(cur)) : cur.toFixed(1)) + suffix;
+          const display = isFloat ? cur.toFixed(1) : fN(Math.round(cur));
+          el.textContent = prefix + display + kSuffix + rest + suffix;
           if (p < 1) requestAnimationFrame(step);
-          else el.textContent = prefix + (isInt ? fN(num) : num.toFixed(1)) + suffix;
+          else el.textContent = prefix + (isFloat ? num.toFixed(1) : fN(num)) + kSuffix + rest + suffix;
         }
         requestAnimationFrame(step);
       });
