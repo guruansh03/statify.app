@@ -4689,8 +4689,8 @@
       </div>
       <div class="npc-stats-grid" id="npc-stats-grid">
         <div class="npc-stat-cell">
-          <div class="npc-stat-lbl">POPULARITY</div>
-          <div class="npc-stat-val" id="npc-stat-popularity">—</div>
+          <div class="npc-stat-lbl">FIRST HEARD</div>
+          <div class="npc-stat-val" id="npc-stat-first-heard" style="font-size:.7rem">—</div>
         </div>
         <div class="npc-stat-cell">
           <div class="npc-stat-lbl">YOUR STREAMS</div>
@@ -4706,7 +4706,7 @@
         </div>
       </div>
       <div class="npc-stat-bar-wrap">
-        <div class="npc-stat-bar-lbl">POPULARITY SCORE</div>
+        <div class="npc-stat-bar-lbl">LISTENING SHARE OF THIS TRACK</div>
         <div class="npc-stat-bar-bg"><div class="npc-stat-bar-fill" id="npc-stat-bar"></div></div>
       </div>
     </div>
@@ -4720,8 +4720,8 @@
       </div>
       <div class="npc-artist-stats-grid">
         <div class="npc-stat-cell">
-          <div class="npc-stat-lbl">POPULARITY</div>
-          <div class="npc-stat-val" id="npc-artist-popularity">&#8212;</div>
+          <div class="npc-stat-lbl">FIRST HEARD</div>
+          <div class="npc-stat-val" id="npc-artist-first-heard" style="font-size:.7rem">&#8212;</div>
         </div>
         <div class="npc-stat-cell">
           <div class="npc-stat-lbl">YOUR PLAYS</div>
@@ -4732,12 +4732,12 @@
           <div class="npc-stat-val" id="npc-artist-minutes">&#8212;</div>
         </div>
         <div class="npc-stat-cell">
-          <div class="npc-stat-lbl">FOLLOWERS</div>
-          <div class="npc-stat-val" id="npc-artist-followers">&#8212;</div>
+          <div class="npc-stat-lbl">UNIQUE SONGS</div>
+          <div class="npc-stat-val" id="npc-artist-unique-songs">&#8212;</div>
         </div>
       </div>
       <div class="npc-stat-bar-wrap">
-        <div class="npc-stat-bar-lbl">ARTIST POPULARITY</div>
+        <div class="npc-stat-bar-lbl">ARTIST LISTENING SHARE</div>
         <div class="npc-stat-bar-bg"><div class="npc-stat-bar-fill" id="npc-artist-pop-bar"></div></div>
       </div>
       <div class="npc-artist-genre-row" id="npc-artist-genres"></div>
@@ -6616,13 +6616,18 @@
       }
     }
 
+    function fmtDate(isoStr) {
+      if (!isoStr) return '—';
+      const d = new Date(isoStr);
+      return d.toLocaleDateString(undefined, { day:'numeric', month:'short', year:'2-digit' });
+    }
+
     function renderTrackStats() {
       const track = SP._currentTrackData;
       const wrap = document.getElementById('npc-stats-wrap');
       if (!track || !wrap) return;
       wrap.style.display = 'block';
 
-      const popularity = track.popularity ?? 0;
       const durMs = track.duration_ms || 0;
       const durMin = Math.round(durMs / 60000 * 10) / 10;
 
@@ -6630,13 +6635,17 @@
       const trackName = (track.name || '').toLowerCase();
       const artistName = (track.artists?.[0]?.name || '').toLowerCase();
       const now = new Date();
+      const allData = typeof S !== 'undefined' ? S : [];
 
-      let filtered = (typeof S !== 'undefined' ? S : []).filter(x => {
+      // All-time filtered (for first heard — always lifetime)
+      const allFiltered = allData.filter(x => {
         const n = (x.track || '').toLowerCase();
         const a = (x.artist || '').toLowerCase();
         return n === trackName && a.includes(artistName.split(' ')[0]);
       });
 
+      // Period filtered (for streams/minutes)
+      let filtered = allFiltered.slice();
       if (SP._statPeriod === 'year') {
         const cutoff = new Date(now.getFullYear(), 0, 1).toISOString();
         filtered = filtered.filter(x => x.ts && x.ts >= cutoff);
@@ -6645,35 +6654,34 @@
         filtered = filtered.filter(x => x.ts && x.ts >= cutoff);
       }
 
+      // First heard — earliest timestamp across all time
+      const timestamps = allFiltered.map(x => x.ts).filter(Boolean).sort();
+      const firstHeard = timestamps.length ? fmtDate(timestamps[0]) : (allData.length ? 'NOT YET' : '—');
+
       const streams = filtered.length;
       const minutes = streams > 0
         ? Math.round(filtered.reduce((a, x) => a + (x.ms || durMs), 0) / 60000)
         : '—';
 
-      document.getElementById('npc-stat-popularity').textContent = popularity + '/100';
-      document.getElementById('npc-stat-streams').textContent = streams > 0 ? streams.toLocaleString() : (typeof S !== 'undefined' && S.length ? '0' : '—');
+      // Listening share bar: this track's streams / total streams (period)
+      const totalStreams = filtered.length > 0 ? allData.filter(x => {
+        if (SP._statPeriod === 'year') { const c = new Date(now.getFullYear(),0,1).toISOString(); return !x.ts || x.ts >= c; }
+        if (SP._statPeriod === 'month') { const c = new Date(now.getFullYear(),now.getMonth(),1).toISOString(); return !x.ts || x.ts >= c; }
+        return true;
+      }).length : 1;
+      const sharePct = streams > 0 ? Math.min(100, (streams / totalStreams) * 100 * 10) : 0;
+
+      document.getElementById('npc-stat-first-heard').textContent = firstHeard;
+      document.getElementById('npc-stat-streams').textContent = streams > 0 ? streams.toLocaleString() : (allData.length ? '0' : '—');
       document.getElementById('npc-stat-minutes').textContent = minutes !== '—' ? minutes + ' min' : '—';
       document.getElementById('npc-stat-duration').textContent = durMin + ' min';
       const bar = document.getElementById('npc-stat-bar');
-      if (bar) bar.style.width = popularity + '%';
+      if (bar) bar.style.width = sharePct + '%';
     }
 
     async function fetchTrackStats(track) {
       SP._currentTrackData = track;
-      renderTrackStats(); // render immediately with what we have
-      // Fetch full track object to get popularity (not included in currently-playing)
-      if (track && track.id && SP.accessToken && SP.tokenExpiry > Date.now()) {
-        try {
-          const res = await fetch('https://api.spotify.com/v1/tracks/' + track.id, {
-            headers: { Authorization: 'Bearer ' + SP.accessToken }
-          });
-          if (res.ok) {
-            const full = await res.json();
-            SP._currentTrackData = Object.assign({}, track, { popularity: full.popularity });
-            renderTrackStats();
-          }
-        } catch(e) {}
-      }
+      renderTrackStats();
       if (track && track.artists && track.artists[0] && track.artists[0].id) {
         fetchArtistStats(track.artists[0].id, track.artists[0].name);
       }
@@ -6723,31 +6731,18 @@
         }
       }
 
-      // Popularity
-      const pop = artist ? (artist.popularity ?? 0) : null;
-      const popEl = document.getElementById('npc-artist-popularity');
-      if (popEl) popEl.textContent = pop !== null ? pop + '/100' : '—';
-      const popBar = document.getElementById('npc-artist-pop-bar');
-      if (popBar) popBar.style.width = pop !== null ? pop + '%' : '0%';
-
-      // Followers
-      const followEl = document.getElementById('npc-artist-followers');
-      if (followEl) {
-        if (artist && artist.followers && artist.followers.total) {
-          const f = artist.followers.total;
-          followEl.textContent = f >= 1000000 ? (f/1000000).toFixed(1) + 'M'
-            : f >= 1000 ? (f/1000).toFixed(1) + 'K' : f.toString();
-        } else {
-          followEl.textContent = '—';
-        }
-      }
-
-      // Local listening stats from uploaded history
+      // Local listening stats
       const now = new Date();
+      const allData = typeof S !== 'undefined' ? S : [];
       const artistLower = (artistName || '').toLowerCase();
-      let localData = (typeof S !== 'undefined' ? S : []).filter(x =>
+
+      // All-time for artist (used for first heard + unique songs — always lifetime)
+      const allArtistData = allData.filter(x =>
         (x.artist || '').toLowerCase().includes(artistLower.split(' ')[0])
       );
+
+      // Period-filtered for plays/minutes
+      let localData = allArtistData.slice();
       if (SP._statPeriod === 'year') {
         const cutoff = new Date(now.getFullYear(), 0, 1).toISOString();
         localData = localData.filter(x => x.ts && x.ts >= cutoff);
@@ -6760,14 +6755,40 @@
         ? Math.round(localData.reduce((a, x) => a + (x.ms || 180000), 0) / 60000)
         : null;
 
+      // First heard — always all-time earliest
+      const artistTimestamps = allArtistData.map(x => x.ts).filter(Boolean).sort();
+      const artistFirstHeard = artistTimestamps.length ? fmtDate(artistTimestamps[0]) : (allData.length ? 'NOT YET' : '—');
+
+      // Unique songs played (all-time)
+      const uniqueSongs = new Set(allArtistData.map(x => (x.track||'').toLowerCase())).size;
+
+      // Listening share bar: artist plays / total plays (period)
+      const totalPeriodPlays = localData.length > 0 ? (SP._statPeriod === 'lifetime' || SP._statPeriod === undefined
+        ? allData.length
+        : allData.filter(x => {
+            if (SP._statPeriod === 'year') { const c = new Date(now.getFullYear(),0,1).toISOString(); return !x.ts || x.ts >= c; }
+            if (SP._statPeriod === 'month') { const c = new Date(now.getFullYear(),now.getMonth(),1).toISOString(); return !x.ts || x.ts >= c; }
+            return true;
+          }).length) : 1;
+      const artistSharePct = plays > 0 ? Math.min(100, (plays / totalPeriodPlays) * 100 * 5) : 0;
+
+      // Render
+      const firstEl = document.getElementById('npc-artist-first-heard');
+      if (firstEl) firstEl.textContent = artistFirstHeard;
+
       const playsEl = document.getElementById('npc-artist-plays');
-      if (playsEl) playsEl.textContent = plays > 0 ? plays.toLocaleString()
-        : (typeof S !== 'undefined' && S.length ? '0' : '—');
+      if (playsEl) playsEl.textContent = plays > 0 ? plays.toLocaleString() : (allData.length ? '0' : '—');
 
       const minEl = document.getElementById('npc-artist-minutes');
       if (minEl) minEl.textContent = minutes !== null ? minutes + ' min' : '—';
 
-      // Genres
+      const uniqueEl = document.getElementById('npc-artist-unique-songs');
+      if (uniqueEl) uniqueEl.textContent = uniqueSongs > 0 ? uniqueSongs.toString() : (allData.length ? '0' : '—');
+
+      const popBar = document.getElementById('npc-artist-pop-bar');
+      if (popBar) popBar.style.width = artistSharePct + '%';
+
+      // Genres from Spotify
       const genresEl = document.getElementById('npc-artist-genres');
       if (genresEl) {
         const genres = artist && artist.genres ? artist.genres.slice(0, 4) : [];
