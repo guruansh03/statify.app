@@ -1786,6 +1786,8 @@
       border-radius: 12px;
       padding: 40px;
       max-width: 460px;
+      margin-left: auto;
+      margin-right: auto;
       position: relative;
       overflow: hidden;
       transition: background .55s, border-color .55s
@@ -4624,7 +4626,7 @@
         <div class="sl">Search History</div>
         <div class="coll-arrow">▼</div>
       </div>
-      <div class="coll-body" id="yt-search-body" style="display:none">
+      <div class="coll-body collapsed" id="yt-search-body">
         <div class="panel rv mb40" style="padding:24px">
           <p class="pt" style="margin-bottom:4px">What you searched for</p>
           <p style="font-size:.72rem;color:var(--muted);font-family:var(--mono);margin-bottom:16px">Your top searches reveal your biggest rabbit holes</p>
@@ -4639,7 +4641,7 @@
         <div class="sl">Subscriptions</div>
         <div class="coll-arrow">▼</div>
       </div>
-      <div class="coll-body" id="yt-subs-body" style="display:none">
+      <div class="coll-body collapsed" id="yt-subs-body">
         <div class="panel rv mb40" style="padding:24px">
           <p class="pt" style="margin-bottom:4px">Channels you subscribe to</p>
           <p style="font-size:.72rem;color:var(--muted);font-family:var(--mono);margin-bottom:16px">Cross-referenced with your watch history</p>
@@ -4662,7 +4664,7 @@
         <div class="sl">Your Comments</div>
         <div class="coll-arrow">▼</div>
       </div>
-      <div class="coll-body" id="yt-comments-body" style="display:none">
+      <div class="coll-body collapsed" id="yt-comments-body">
         <div class="panel rv mb40" style="padding:24px">
           <p class="pt" style="margin-bottom:4px">Your comment history</p>
           <p style="font-size:.72rem;color:var(--muted);font-family:var(--mono);margin-bottom:16px">How active you are in the comments</p>
@@ -4677,7 +4679,7 @@
         <div class="sl">Your Playlists</div>
         <div class="coll-arrow">▼</div>
       </div>
-      <div class="coll-body" id="yt-playlists-body" style="display:none">
+      <div class="coll-body collapsed" id="yt-playlists-body">
         <div class="panel rv mb40" style="padding:24px">
           <p class="pt" style="margin-bottom:4px">Your curated playlists</p>
           <p style="font-size:.72rem;color:var(--muted);font-family:var(--mono);margin-bottom:16px">Videos you saved across all your playlists</p>
@@ -5483,7 +5485,7 @@
       const body = document.getElementById('yt-search-body');
       if (!ytSearchData.length) { if(sec) sec.style.display='none'; return; }
       if(sec) sec.style.display='';
-      if(body) body.style.display='';
+      if(body) body.classList.remove('collapsed');
 
       const total = ytSearchData.length;
       const qMap = {};
@@ -5517,7 +5519,7 @@
       const body = document.getElementById('yt-subs-body');
       if (!ytSubscriptions.length) { if(sec) sec.style.display='none'; return; }
       if(sec) sec.style.display='';
-      if(body) body.style.display='';
+      if(body) body.classList.remove('collapsed');
 
       const total = ytSubscriptions.length;
       // Cross ref with watch history
@@ -5559,7 +5561,7 @@
       const body = document.getElementById('yt-comments-body');
       if (!ytComments.length) { if(sec) sec.style.display='none'; return; }
       if(sec) sec.style.display='';
-      if(body) body.style.display='';
+      if(body) body.classList.remove('collapsed');
 
       const total = ytComments.length;
       const lengths = ytComments.map(c=>c.text.length);
@@ -5587,7 +5589,7 @@
       const entries = Object.entries(ytPlaylists).filter(([,v])=>v.length>0);
       if (!entries.length) { if(sec) sec.style.display='none'; return; }
       if(sec) sec.style.display='';
-      if(body) body.style.display='';
+      if(body) body.classList.remove('collapsed');
 
       const el = document.getElementById('yt-playlists-content');
       if (!el) return;
@@ -5667,8 +5669,19 @@
     ═══════════════════════════════════════ */
     function fmt(ms) { const h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000); if (h >= 1000) return Math.round(h / 24) + 'd'; if (h > 0) return h + 'h ' + m + 'm'; return m + 'm' }
     function fN(n) { return n >= 10000 ? (n / 1000).toFixed(1) + 'k' : n.toLocaleString() }
-    function accentColor() { return isYT ? '#FF0000' : '#1DB954' }
-    function accentRgb() { return isYT ? '255,0,0' : '29,185,84' }
+    function accentColor() {
+      const custom = document.documentElement.style.getPropertyValue('--g');
+      if (custom && custom.trim()) return custom.trim();
+      return isYT ? '#FF0000' : '#1DB954';
+    }
+    function accentRgb() {
+      const ac = accentColor();
+      if (ac === '#FF0000') return '255,0,0';
+      if (ac === '#1DB954') return '29,185,84';
+      // Parse hex to rgb
+      const r = parseInt(ac.slice(1,3),16), g = parseInt(ac.slice(3,5),16), b = parseInt(ac.slice(5,7),16);
+      return isNaN(r) ? '29,185,84' : `${r},${g},${b}`;
+    }
 
     /* ═══════════════════════════════════════
        MAIN RENDER (Spotify + YT Watch)
@@ -5925,7 +5938,18 @@
     <div style="font-family:var(--mono);font-size:.62rem;color:var(--muted);margin-top:3px">${isYT ? `${uA} channels · ${uT} unique videos` : `${fmt(tm)} of listening time · ${uA} artists`}</div>
     <div class="wcbars">${bars.map(b => `<div class="wcbar" style="height:${Math.round((b / mxB) * 100)}%"></div>`).join('')}</div>
     <div class="wcdiv"></div>
-    <div class="wcrow"><div class="wcc"><div class="wcc-l">TOP ${isYT ? 'CHANNEL' : 'ARTIST'}</div><div class="wcc-v">${tA ? tA[0] : '—'}</div><div class="wcc-s">${tA ? tA[1] + ' ' + unit : ''}</div></div><div class="wcc" style="text-align:right"><div class="wcc-l">TOP ${isYT ? 'VIDEO' : 'TRACK'}</div><div class="wcc-v" style="font-size:.82rem">${tT ? tT[0].split('||')[0] : '—'}</div><div class="wcc-s">${tT ? tT[1] + ' plays' : ''}</div></div></div>
+    <div class="wcrow" style="gap:12px">
+    <div class="wcc" style="flex:1;min-width:0">
+      <div class="wcc-l">TOP ${isYT ? 'CHANNEL' : 'ARTIST'}</div>
+      <div class="wcc-v" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${tA ? tA[0] : '—'}</div>
+      <div class="wcc-s">${tA ? tA[1] + ' ' + unit : ''}</div>
+    </div>
+    <div class="wcc" style="flex:1;min-width:0;border-left:1px solid var(--border);padding-left:12px">
+      <div class="wcc-l">TOP ${isYT ? 'VIDEO' : 'TRACK'}</div>
+      <div class="wcc-v" style="font-size:.76rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">${tT ? tT[0].split('||')[0] : '—'}</div>
+      <div class="wcc-s" style="margin-top:3px">${tT ? '<span style=\'color:var(--g);font-weight:700\'>' + tT[1] + '</span> ' + unit : ''}</div>
+    </div>
+    </div>
     <div class="wcrow"><div class="wcc"><div class="wcc-l">UNIQUE ${isYT ? 'VIDEOS' : 'TRACKS'}</div><div class="wcc-v">${fN(uT)}</div></div><div class="wcc" style="text-align:center"><div class="wcc-l">${isYT ? 'CHANNELS' : 'SKIP RATE'}</div><div class="wcc-v">${isYT ? fN(uA) : sk + '%'}</div></div><div class="wcc" style="text-align:right"><div class="wcc-l">PEAK HOUR</div><div class="wcc-v">${peakHlbl}</div></div></div>
     ${top3A.length ? `<div style="margin-bottom:10px"><div class="wcc-l" style="margin-bottom:6px">TOP 3 ${isYT ? 'CHANNELS' : 'ARTISTS'}</div><div style="display:flex;gap:6px;flex-wrap:wrap">${top3A.map((a, i) => `<span style="font-family:var(--mono);font-size:.62rem;padding:3px 9px;border-radius:2px;background:rgba(${ar},.1);border:1px solid rgba(${ar},.2);color:${ac}">${i + 1}. ${a}</span>`).join('')}</div></div>` : ''}
     <div class="wcftr"><span class="wcfl">statify · ${new Date().toLocaleDateString()}</span><span class="wcfr">Your data, your story</span></div>`;
@@ -5974,10 +5998,7 @@
         const topVids = Object.entries(
           S.filter(x => x.artist === a).reduce((acc, x) => { acc[x.track] = (acc[x.track]||0)+1; return acc; }, {})
         ).sort((a,b)=>b[1]-a[1]).slice(0,5);
-        const tipHtml = topVids.map(([t,c])=>`<div style='white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px;padding:2px 0'><span style='color:var(--g);font-weight:700;margin-right:6px'>${c}×</span>${t.length>36?t.slice(0,35)+'…':t}</div>`).join('');
-        const tipContent = `<div style='font-family:var(--mono);font-size:.68rem;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em'>${a} — top ${isYT?'videos':'tracks'}</div>${tipHtml}`;
-        const tipKey = 'art_' + (++_tipId); _tipStore[tipKey] = tipContent;
-        return `<div class="ri" onmouseenter="showTipId(event,'${tipKey}')" onmouseleave="hideTip()"><span class="rn ${i < 3 ? 't3' : ''}">${String(i + 1).padStart(2, '0')}</span><div class="ri-info"><div class="ri-name">${a}</div><div class="ri-sub">${isYT ? v.count + ' videos watched' : fmt(v.ms) + ' total'}</div></div><div class="rc"><div class="rc-n">${v.count}</div><div class="rc-l">${unit}</div></div>${!isYT ? `<div style="width:6px"></div><div class="rc rc-b"><div class="rc-n">${fmt(v.ms)}</div><div class="rc-l">TIME</div></div>` : ''}</div>`;
+        return `<div class="ri"><span class="rn ${i < 3 ? 't3' : ''}">${String(i + 1).padStart(2, '0')}</span><div class="ri-info"><div class="ri-name">${a}</div><div class="ri-sub">${isYT ? v.count + ' videos watched' : fmt(v.ms) + ' total'}</div></div><div class="rc"><div class="rc-n">${v.count}</div><div class="rc-l">${unit}</div></div>${!isYT ? `<div style="width:6px"></div><div class="rc rc-b"><div class="rc-n">${fmt(v.ms)}</div><div class="rc-l">TIME</div></div>` : ''}</div>`;
       }).join('');
       document.querySelectorAll('.sart-btn').forEach(b => b.classList.toggle('act', b.dataset.sort === sortArt));
     }
@@ -6589,7 +6610,6 @@
       pop.classList.toggle('show');
     }
     function setAccent(idx, silent) {
-      if (document.body.classList.contains('yt-theme')) return; /* YT uses its own red */
       const c = ACCENT_COLORS[idx];
       document.documentElement.style.setProperty('--g', c.hex);
       document.documentElement.style.setProperty('--g2', c.hex);
