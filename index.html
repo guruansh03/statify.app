@@ -4616,6 +4616,73 @@
         </div>
       </div><!-- end compare collapsible -->
 
+
+      <!-- ═══════ SEARCH HISTORY ═══════ -->
+      <div class="coll-header rv" id="yt-search-section" style="display:none" onclick="toggleColl(this)">
+        <div class="sl">Search History</div>
+        <div class="coll-arrow">▼</div>
+      </div>
+      <div class="coll-body" id="yt-search-body" style="display:none">
+        <div class="panel rv mb40" style="padding:24px">
+          <p class="pt" style="margin-bottom:4px">What you searched for</p>
+          <p style="font-size:.72rem;color:var(--muted);font-family:var(--mono);margin-bottom:16px">Your top searches reveal your biggest rabbit holes</p>
+          <div id="yt-search-stats" class="sg" style="margin-bottom:20px"></div>
+          <div class="sl" style="margin-bottom:10px">Top Search Terms</div>
+          <div id="yt-search-list" class="rl" style="border:1px solid var(--border);border-radius:4px"></div>
+        </div>
+      </div>
+
+      <!-- ═══════ SUBSCRIPTIONS ═══════ -->
+      <div class="coll-header rv" id="yt-subs-section" style="display:none" onclick="toggleColl(this)">
+        <div class="sl">Subscriptions</div>
+        <div class="coll-arrow">▼</div>
+      </div>
+      <div class="coll-body" id="yt-subs-body" style="display:none">
+        <div class="panel rv mb40" style="padding:24px">
+          <p class="pt" style="margin-bottom:4px">Channels you subscribe to</p>
+          <p style="font-size:.72rem;color:var(--muted);font-family:var(--mono);margin-bottom:16px">Cross-referenced with your watch history</p>
+          <div id="yt-subs-stats" class="sg" style="margin-bottom:20px"></div>
+          <div class="tc" style="margin-top:16px">
+            <div>
+              <div class="sl" style="margin-bottom:10px">Actually Watch</div>
+              <div id="yt-subs-watched" class="rl" style="border:1px solid var(--border);border-radius:4px"></div>
+            </div>
+            <div>
+              <div class="sl" style="margin-bottom:10px">Subscribed But Ghost</div>
+              <div id="yt-subs-ghost" class="rl" style="border:1px solid var(--border);border-radius:4px"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════ COMMENTS ═══════ -->
+      <div class="coll-header rv" id="yt-comments-section" style="display:none" onclick="toggleColl(this)">
+        <div class="sl">Your Comments</div>
+        <div class="coll-arrow">▼</div>
+      </div>
+      <div class="coll-body" id="yt-comments-body" style="display:none">
+        <div class="panel rv mb40" style="padding:24px">
+          <p class="pt" style="margin-bottom:4px">Your comment history</p>
+          <p style="font-size:.72rem;color:var(--muted);font-family:var(--mono);margin-bottom:16px">How active you are in the comments</p>
+          <div id="yt-comments-stats" class="sg" style="margin-bottom:20px"></div>
+          <div class="sl" style="margin-bottom:10px">Recent Comments</div>
+          <div id="yt-comments-list"></div>
+        </div>
+      </div>
+
+      <!-- ═══════ PLAYLISTS ═══════ -->
+      <div class="coll-header rv" id="yt-playlists-section" style="display:none" onclick="toggleColl(this)">
+        <div class="sl">Your Playlists</div>
+        <div class="coll-arrow">▼</div>
+      </div>
+      <div class="coll-body" id="yt-playlists-body" style="display:none">
+        <div class="panel rv mb40" style="padding:24px">
+          <p class="pt" style="margin-bottom:4px">Your curated playlists</p>
+          <p style="font-size:.72rem;color:var(--muted);font-family:var(--mono);margin-bottom:16px">Videos you saved across all your playlists</p>
+          <div id="yt-playlists-content"></div>
+        </div>
+      </div>
+
       <div><button class="rbtn" onclick="goHome()">↩ Load different files</button></div>
     </div><!-- end yt-watch-dash -->
 
@@ -4846,6 +4913,11 @@
     let dashboardOpen = false; // is dashboard showing?
     let ytMusicData = [];      // parsed music library CSV rows
     let ytWatchData = [];      // parsed watch history events
+    let ytSearchData = [];     // parsed search history
+    let ytSubscriptions = [];  // parsed subscriptions.csv
+    let ytComments = [];       // parsed comments.csv
+    let ytLiveChats = [];      // parsed live chats csv
+    let ytPlaylists = {};      // keyed by playlist name
     let genreCI = null;        // genre chart instance
     let cmpCI = null;          // compare chart instance
 
@@ -5002,65 +5074,177 @@
       for (const fi of f) r.push(new Promise(res => { const rd = new FileReader(); rd.onload = () => res({ name: fi.name, content: rd.result, type: fi.name.split('.').pop().toLowerCase() }); rd.readAsText(fi) }));
       Promise.all(r).then(res => { showLoader('PARSING...'); setTimeout(() => { parseYTFiles(res); showYTDash(false) }, 600) });
     }
+    function parseCSVRows(content) {
+      const lines = content.split('\n');
+      if (!lines.length) return [];
+      const header = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g,'').toLowerCase());
+      const rows = [];
+      for (let i = 1; i < lines.length; i++) {
+        // handle quoted fields with commas inside
+        const cols = [];
+        let cur = ''; let inQ = false;
+        for (const ch of lines[i]) {
+          if (ch === '"') { inQ = !inQ; }
+          else if (ch === ',' && !inQ) { cols.push(cur.trim()); cur = ''; }
+          else cur += ch;
+        }
+        cols.push(cur.trim());
+        if (cols.length < 2) continue;
+        const row = {};
+        header.forEach((h, idx) => { row[h] = (cols[idx]||'').replace(/^"|"$/g,''); });
+        rows.push(row);
+      }
+      return rows;
+    }
+
     function parseYTFiles(files) {
-      S = []; ytMusicData = [];
+      S = []; ytMusicData = []; ytSearchData = []; ytSubscriptions = []; ytComments = []; ytLiveChats = []; ytPlaylists = {};
       for (const { name, content, type } of files) {
         const ln = name.toLowerCase();
+
+        // ── WATCH HISTORY HTML ──
         if (type === 'html' && ln.includes('watch')) {
-          // Parse watch-history.html
           const parser = new DOMParser();
           const doc = parser.parseFromString(content, 'text/html');
-          const items = doc.querySelectorAll('.content-cell:first-child');
-          items.forEach(item => {
-            const links = item.querySelectorAll('a');
-            const title = links[0]?.textContent?.trim() || 'Unknown';
-            const channel = links[1]?.textContent?.trim() || 'Unknown';
-            const timeText = item.textContent;
-            const timeMatch = timeText.match(/(\w+ \d+, \d{4}.*?(?:AM|PM))/);
-            if (timeMatch) {
-              const ts = new Date(timeMatch[1]);
-              if (!isNaN(ts)) S.push({ ts: ts.toISOString(), artist: channel, track: title, channel, ms: 0, skipped: false, platform: '', fullMs: 0 });
+          // Real Google Takeout format: div.outer-cell > div.content-cell
+          // Each entry: "Watched [title link]\n[channel link]\nApr 17, 2026, 2:32:22 AM GMT+05:30"
+          // Strategy: find all <a> tags that are inside cells and pair with timestamp text
+          const cells = doc.querySelectorAll('div.outer-cell, div[class*="outer-cell"]');
+          cells.forEach(cell => {
+            const links = cell.querySelectorAll('a');
+            if (links.length < 1) return;
+            const title = links[0]?.textContent?.trim();
+            const channel = links[1]?.textContent?.trim() || links[0]?.textContent?.trim();
+            const txt = cell.textContent || '';
+            // Match timestamp: "Apr 17, 2026, 2:32:22 AM GMT+05:30" or "Apr 17, 2026, 2:32 AM GMT+05:30"
+            const m = txt.match(/([A-Z][a-z]{2} \d{1,2}, \d{4}, \d{1,2}:\d{2}(?::\d{2})? [AP]M)/);
+            if (title && m) {
+              const ts = new Date(m[1]);
+              if (!isNaN(ts)) S.push({ ts: ts.toISOString(), artist: channel||title, track: title, channel: channel||title, ms: 0, skipped: false, platform: '', fullMs: 0 });
             }
           });
-          // Fallback: try div.outer-cell structure
+          // Fallback 1: content-cell divs (old format)
           if (!S.length) {
-            const cells = doc.querySelectorAll('div');
-            cells.forEach(d => {
-              if (d.className && d.className.includes && d.className.includes('content-cell')) {
-                const a = d.querySelectorAll('a');
-                const title = a[0]?.textContent?.trim();
-                const ch = a[1]?.textContent?.trim();
-                const txt = d.textContent;
-                const m = txt.match(/(\w{3} \d{1,2}, \d{4},? \d{1,2}:\d{2}:\d{2} [AP]M)/);
-                if (title && ch && m) { const ts = new Date(m[1]); if (!isNaN(ts)) S.push({ ts: ts.toISOString(), artist: ch, track: title, channel: ch, ms: 0, skipped: false, platform: '', fullMs: 0 }); }
+            doc.querySelectorAll('div.content-cell').forEach(cell => {
+              const links = cell.querySelectorAll('a');
+              if (!links.length) return;
+              const title = links[0]?.textContent?.trim();
+              const channel = links[1]?.textContent?.trim();
+              const txt = cell.textContent || '';
+              const m = txt.match(/([A-Z][a-z]{2} \d{1,2}, \d{4},? \d{1,2}:\d{2}(?::\d{2})? [AP]M)/);
+              if (title && m) {
+                const ts = new Date(m[1]);
+                if (!isNaN(ts)) S.push({ ts: ts.toISOString(), artist: channel||title, track: title, channel: channel||title, ms: 0, skipped: false, platform: '', fullMs: 0 });
               }
             });
           }
-        } else if (type === 'csv' && (ln.includes('music-library') || ln.includes('music_library'))) {
-          // Parse music-library-songs.csv
-          const lines = content.split('\n');
-          const header = lines[0]?.split(',').map(h => h.trim().toLowerCase().replace(/"/g, ''));
-          for (let i = 1; i < lines.length; i++) {
-            const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
-            if (cols.length < 2) continue;
-            const row = {};
-            header.forEach((h, idx) => { row[h] = cols[idx] || '' });
-            if (row.title || row['song title'] || row['track title']) {
-              ytMusicData.push({
-                title: row.title || row['song title'] || row['track title'] || 'Unknown',
-                artist: row.artist || row['artist name'] || 'Unknown',
-                album: row.album || row['album title'] || ''
-              });
-            }
+          // Fallback 2: brute-force every <a> tag with a sibling timestamp
+          if (!S.length) {
+            const allAs = doc.querySelectorAll('a[href*="youtube.com/watch"], a[href*="youtu.be"]');
+            allAs.forEach(a => {
+              const title = a.textContent?.trim();
+              const parent = a.closest('div') || a.parentElement;
+              const channelA = parent?.querySelectorAll('a')?.[1];
+              const channel = channelA?.textContent?.trim() || '';
+              const txt = parent?.textContent || '';
+              const m = txt.match(/([A-Z][a-z]{2} \d{1,2}, \d{4},? \d{1,2}:\d{2}(?::\d{2})? [AP]M)/);
+              if (title && m) {
+                const ts = new Date(m[1]);
+                if (!isNaN(ts)) S.push({ ts: ts.toISOString(), artist: channel||title, track: title, channel: channel||title, ms: 0, skipped: false, platform: '', fullMs: 0 });
+              }
+            });
           }
+        }
+
+        // ── SEARCH HISTORY HTML ──
+        else if (type === 'html' && ln.includes('search')) {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(content, 'text/html');
+          const cells = doc.querySelectorAll('div.outer-cell, div[class*="outer-cell"], div.content-cell');
+          cells.forEach(cell => {
+            const links = cell.querySelectorAll('a');
+            const query = links[0]?.textContent?.trim();
+            const txt = cell.textContent || '';
+            const m = txt.match(/([A-Z][a-z]{2} \d{1,2}, \d{4},? \d{1,2}:\d{2}(?::\d{2})? [AP]M)/);
+            if (query && m) {
+              const ts = new Date(m[1]);
+              if (!isNaN(ts)) ytSearchData.push({ ts: ts.toISOString(), query });
+            }
+          });
+          // Fallback: find search links
+          if (!ytSearchData.length) {
+            doc.querySelectorAll('a[href*="search_query"], a[href*="q="]').forEach(a => {
+              const query = a.textContent?.trim();
+              const parent = a.closest('div') || a.parentElement;
+              const txt = parent?.textContent || '';
+              const m = txt.match(/([A-Z][a-z]{2} \d{1,2}, \d{4},? \d{1,2}:\d{2}(?::\d{2})? [AP]M)/);
+              if (query && m) {
+                const ts = new Date(m[1]);
+                if (!isNaN(ts)) ytSearchData.push({ ts: ts.toISOString(), query });
+              }
+            });
+          }
+        }
+
+        // ── SUBSCRIPTIONS CSV ──
+        else if (type === 'csv' && ln.includes('subscription')) {
+          parseCSVRows(content).forEach(row => {
+            const name = row['channel title'] || row['name'] || row['title'] || '';
+            const url = row['channel url'] || row['url'] || '';
+            const id = row['channel id'] || '';
+            if (name) ytSubscriptions.push({ name, url, id });
+          });
+        }
+
+        // ── COMMENTS CSV ──
+        else if (type === 'csv' && ln.includes('comment')) {
+          parseCSVRows(content).forEach(row => {
+            const text = row['comment text'] || row['content'] || row['text'] || '';
+            const ts = row['date'] || row['timestamp'] || row['published at'] || '';
+            const videoId = row['video id'] || row['url'] || '';
+            if (text) ytComments.push({ text, ts, videoId });
+          });
+        }
+
+        // ── LIVE CHATS CSV ──
+        else if (type === 'csv' && (ln.includes('live chat') || ln.includes('live_chat'))) {
+          parseCSVRows(content).forEach(row => {
+            const msg = row['message'] || row['text'] || row['content'] || '';
+            const ts = row['date'] || row['timestamp'] || '';
+            const channel = row['channel'] || row['channel title'] || '';
+            if (msg) ytLiveChats.push({ msg, ts, channel });
+          });
+        }
+
+        // ── PLAYLIST CSVs ──
+        else if (type === 'csv' && (ln.includes('video') || ln.includes('playlist') || ln.includes('nostalgia') || ln.includes('goosebump') || ln.includes('peak') || ln.includes('music-video') || ln.includes('watch later'))) {
+          const rows = parseCSVRows(content);
+          const playlistName = name.replace(/-videos\.csv$/i,'').replace(/\.csv$/i,'').replace(/-/g,' ').trim();
+          if (!ytPlaylists[playlistName]) ytPlaylists[playlistName] = [];
+          rows.forEach(row => {
+            const title = row['video title'] || row['title'] || row['name'] || '';
+            const channel = row['channel title'] || row['channel'] || '';
+            const url = row['video url'] || row['url'] || '';
+            if (title) ytPlaylists[playlistName].push({ title, channel, url });
+          });
+        }
+
+        // ── MUSIC LIBRARY CSV ──
+        else if (type === 'csv' && (ln.includes('music-library') || ln.includes('music_library'))) {
+          parseCSVRows(content).forEach(row => {
+            const title = row.title || row['song title'] || row['track title'] || '';
+            if (title) ytMusicData.push({
+              title,
+              artist: row.artist || row['artist name'] || 'Unknown',
+              album: row.album || row['album title'] || ''
+            });
+          });
         }
       }
       ytWatchData = [...S];
     }
 
-    /* ═══════════════════════════════════════
-       SHOW / HIDE
-    ═══════════════════════════════════════ */
+
     function loadDemo() {
       showLoader('GENERATING DEMO...');
       if (isYT) {
@@ -5128,7 +5312,7 @@
           }
         });
       }
-      S = []; lib = null; tkMap = {}; top50open = false; ytMusicData = []; ytWatchData = [];
+      S = []; lib = null; tkMap = {}; top50open = false; ytMusicData = []; ytWatchData = []; ytSearchData = []; ytSubscriptions = []; ytComments = []; ytLiveChats = []; ytPlaylists = {};
       if (mci) { mci.destroy(); mci = null }
       if (typeof genreCI !== 'undefined' && genreCI) { genreCI.destroy(); genreCI = null }
       if (typeof cmpCI !== 'undefined' && cmpCI) { cmpCI.destroy(); cmpCI = null }
@@ -5167,7 +5351,6 @@
        RENDER YT WATCH HISTORY
     ═══════════════════════════════════════ */
     function renderYTWatch(demo) {
-      // Adapt labels for YT context
       document.getElementById('top50Label').textContent = 'Your Top 50 Videos';
       document.getElementById('topArtistLabel').textContent = 'Top Channels';
       document.getElementById('heatmapTitle').textContent = 'When do you watch most?';
@@ -5177,6 +5360,143 @@
       document.getElementById('decPlatSection').style.display = 'none';
       render(demo);
       document.getElementById('hbadge').textContent = demo ? 'DEMO MODE — SAMPLE YOUTUBE DATA' : 'YOUR YOUTUBE WATCH HISTORY';
+      renderYTSearch();
+      renderYTSubscriptions();
+      renderYTComments();
+      renderYTPlaylists();
+    }
+
+    function renderYTSearch() {
+      const sec = document.getElementById('yt-search-section');
+      const body = document.getElementById('yt-search-body');
+      if (!ytSearchData.length) { if(sec) sec.style.display='none'; return; }
+      if(sec) sec.style.display='';
+      if(body) body.style.display='';
+
+      const total = ytSearchData.length;
+      const qMap = {};
+      ytSearchData.forEach(x => {
+        const q = (x.query||'').toLowerCase().trim();
+        if (q) qMap[q] = (qMap[q]||0) + 1;
+      });
+      const topQ = Object.entries(qMap).sort((a,b)=>b[1]-a[1]);
+      const uniqueQ = topQ.length;
+
+      // Stats grid
+      const statsEl = document.getElementById('yt-search-stats');
+      if (statsEl) statsEl.innerHTML = [
+        { n: fN(total), l: 'TOTAL SEARCHES', s: 'tracked in history' },
+        { n: fN(uniqueQ), l: 'UNIQUE TERMS', s: 'different searches' },
+        { n: topQ[0] ? '"'+topQ[0][0]+'"' : '—', l: 'TOP SEARCH', s: topQ[0] ? topQ[0][1]+' times' : '' },
+      ].map(c=>`<div class="sc"><div class="sc-val">${c.n}</div><div class="sc-lbl">${c.l}</div><div class="sc-sub">${c.s}</div></div>`).join('');
+
+      // Top search list
+      const listEl = document.getElementById('yt-search-list');
+      if (listEl) listEl.innerHTML = topQ.slice(0,20).map((([q,cnt],i)=>`
+        <div class="ri" style="padding:10px 16px">
+          <span class="rn" style="color:var(--muted);font-size:.72rem;font-family:var(--mono);width:24px">${i+1}</span>
+          <div style="flex:1;font-size:.85rem;font-weight:600">${q}</div>
+          <span style="font-family:var(--mono);font-size:.72rem;color:var(--g)">${cnt}x</span>
+        </div>`)).join('');
+    }
+
+    function renderYTSubscriptions() {
+      const sec = document.getElementById('yt-subs-section');
+      const body = document.getElementById('yt-subs-body');
+      if (!ytSubscriptions.length) { if(sec) sec.style.display='none'; return; }
+      if(sec) sec.style.display='';
+      if(body) body.style.display='';
+
+      const total = ytSubscriptions.length;
+      // Cross ref with watch history
+      const watchedChannels = new Set(S.map(x=>(x.channel||'').toLowerCase()));
+      const watched = ytSubscriptions.filter(s => watchedChannels.has((s.name||'').toLowerCase()));
+      const ghost = ytSubscriptions.filter(s => !watchedChannels.has((s.name||'').toLowerCase()));
+      const watchPct = total ? Math.round((watched.length/total)*100) : 0;
+
+      const statsEl = document.getElementById('yt-subs-stats');
+      if (statsEl) statsEl.innerHTML = [
+        { n: fN(total), l: 'TOTAL SUBS', s: 'channels subscribed' },
+        { n: fN(watched.length), l: 'ACTUALLY WATCHED', s: watchPct+'% of subs' },
+        { n: fN(ghost.length), l: 'GHOST SUBS', s: 'subbed, never watched' },
+      ].map(c=>`<div class="sc"><div class="sc-val">${c.n}</div><div class="sc-lbl">${c.l}</div><div class="sc-sub">${c.s}</div></div>`).join('');
+
+      // Get watch counts for watched channels
+      const chanCounts = {};
+      S.forEach(x => { const ch=(x.channel||'').toLowerCase(); chanCounts[ch]=(chanCounts[ch]||0)+1; });
+
+      const watchedEl = document.getElementById('yt-subs-watched');
+      if (watchedEl) watchedEl.innerHTML = watched.sort((a,b)=>(chanCounts[(b.name||'').toLowerCase()]||0)-(chanCounts[(a.name||'').toLowerCase()]||0)).slice(0,15).map((s,i)=>`
+        <div class="ri" style="padding:10px 16px">
+          <span class="rn" style="color:var(--muted);font-size:.72rem;font-family:var(--mono);width:24px">${i+1}</span>
+          <div style="flex:1;font-size:.85rem;font-weight:600">${s.name}</div>
+          <span style="font-family:var(--mono);font-size:.72rem;color:var(--g)">${chanCounts[(s.name||'').toLowerCase()]||0} views</span>
+        </div>`).join('');
+
+      const ghostEl = document.getElementById('yt-subs-ghost');
+      if (ghostEl) ghostEl.innerHTML = ghost.slice(0,15).map((s,i)=>`
+        <div class="ri" style="padding:10px 16px">
+          <span class="rn" style="color:var(--muted);font-size:.72rem;font-family:var(--mono);width:24px">${i+1}</span>
+          <div style="flex:1;font-size:.85rem;font-weight:600;color:var(--muted)">${s.name}</div>
+          <span style="font-family:var(--mono);font-size:.72rem;color:var(--muted)">0 views</span>
+        </div>`).join('');
+    }
+
+    function renderYTComments() {
+      const sec = document.getElementById('yt-comments-section');
+      const body = document.getElementById('yt-comments-body');
+      if (!ytComments.length) { if(sec) sec.style.display='none'; return; }
+      if(sec) sec.style.display='';
+      if(body) body.style.display='';
+
+      const total = ytComments.length;
+      const lengths = ytComments.map(c=>c.text.length);
+      const avgLen = Math.round(lengths.reduce((a,b)=>a+b,0)/total);
+      const longest = ytComments.reduce((a,b)=>b.text.length>a.text.length?b:a, ytComments[0]);
+
+      const statsEl = document.getElementById('yt-comments-stats');
+      if (statsEl) statsEl.innerHTML = [
+        { n: fN(total), l: 'TOTAL COMMENTS', s: 'left by you' },
+        { n: avgLen, l: 'AVG LENGTH', s: 'characters per comment' },
+        { n: fN(longest?.text?.length||0), l: 'LONGEST COMMENT', s: 'characters' },
+      ].map(c=>`<div class="sc"><div class="sc-val">${c.n}</div><div class="sc-lbl">${c.l}</div><div class="sc-sub">${c.s}</div></div>`).join('');
+
+      const listEl = document.getElementById('yt-comments-list');
+      if (listEl) listEl.innerHTML = ytComments.slice(0,10).map(c=>`
+        <div style="padding:12px 16px;border:1px solid var(--border);border-radius:4px;margin-bottom:8px">
+          <div style="font-size:.82rem;color:var(--text2);line-height:1.6;margin-bottom:6px">"${c.text.slice(0,200)}${c.text.length>200?'…':''}"</div>
+          ${c.ts ? '<div style="font-family:var(--mono);font-size:.6rem;color:var(--muted)">'+new Date(c.ts).toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"})+'</div>' : ''}
+        </div>`).join('');
+    }
+
+    function renderYTPlaylists() {
+      const sec = document.getElementById('yt-playlists-section');
+      const body = document.getElementById('yt-playlists-body');
+      const entries = Object.entries(ytPlaylists).filter(([,v])=>v.length>0);
+      if (!entries.length) { if(sec) sec.style.display='none'; return; }
+      if(sec) sec.style.display='';
+      if(body) body.style.display='';
+
+      const el = document.getElementById('yt-playlists-content');
+      if (!el) return;
+      el.innerHTML = entries.map(([name, vids])=>`
+        <div style="margin-bottom:24px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <span style="font-family:var(--mono);font-size:.72rem;color:var(--g);letter-spacing:.1em;text-transform:uppercase">${name}</span>
+            <span style="font-family:var(--mono);font-size:.62rem;color:var(--muted)">${fN(vids.length)} videos</span>
+          </div>
+          <div style="border:1px solid var(--border);border-radius:4px">
+            ${vids.slice(0,8).map((v,i)=>`
+              <div class="ri" style="padding:8px 14px">
+                <span style="color:var(--muted);font-size:.68rem;font-family:var(--mono);width:20px">${i+1}</span>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${v.title}</div>
+                  ${v.channel?'<div style="font-size:.68rem;color:var(--muted);font-family:var(--mono)">'+v.channel+'</div>':''}
+                </div>
+              </div>`).join('')}
+            ${vids.length>8?'<div style="padding:8px 14px;font-family:var(--mono);font-size:.62rem;color:var(--muted)">+'+fN(vids.length-8)+' more</div>':''}
+          </div>
+        </div>`).join('');
     }
 
     /* ═══════════════════════════════════════
@@ -5690,7 +6010,7 @@
       gsap.to(dzTags, {
         opacity: 0, duration: .15, onComplete: () => {
           dzTags.innerHTML = isYT
-            ? '<span class="ftag">watch-history.html</span><span class="ftag">music-library-songs.csv</span>'
+            ? '<span class="ftag">watch-history.html</span><span class="ftag">search-history.html</span><span class="ftag">subscriptions.csv</span><span class="ftag">comments.csv</span><span class="ftag">live chats.csv</span><span class="ftag">playlist CSVs</span>'
             : '<span class="ftag">StreamingHistory_music_0.json</span><span class="ftag">StreamingHistory_music_1.json</span><span class="ftag">YourLibrary.json</span>';
           gsap.fromTo(Array.from(dzTags.children), { opacity: 0, y: 6 }, { opacity: 1, y: 0, duration: .3, stagger: .06, ease: 'power2.out' });
         }
