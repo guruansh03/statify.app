@@ -5940,14 +5940,14 @@
     <div class="wcdiv"></div>
     <div class="wcrow" style="gap:12px">
     <div class="wcc" style="flex:1;min-width:0">
-      <div class="wcc-l">TOP ${isYT ? 'CHANNEL' : 'ARTIST'}</div>
+      <div class="wcc-l">${isYT ? '📺 TOP CHANNEL' : '🎤 TOP ARTIST'}</div>
       <div class="wcc-v" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${tA ? tA[0] : '—'}</div>
-      <div class="wcc-s">${tA ? tA[1] + ' ' + unit : ''}</div>
+      <div class="wcc-s">${tA ? tA[1] + ' ' + unit + ' watched' : ''}</div>
     </div>
     <div class="wcc" style="flex:1;min-width:0;border-left:1px solid var(--border);padding-left:12px">
-      <div class="wcc-l">TOP ${isYT ? 'VIDEO' : 'TRACK'}</div>
-      <div class="wcc-v" style="font-size:.76rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">${tT ? tT[0].split('||')[0] : '—'}</div>
-      <div class="wcc-s" style="margin-top:3px">${tT ? '<span style=\'color:var(--g);font-weight:700\'>' + tT[1] + '</span> ' + unit : ''}</div>
+      <div class="wcc-l">${isYT ? '🎬 TOP VIDEO' : '🎵 TOP TRACK'}</div>
+      <div class="wcc-v" style="font-size:.74rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">${tT ? tT[0].split('||')[0] : '—'}</div>
+      <div class="wcc-s" style="margin-top:3px">${tT ? '<span style=\'color:var(--g);font-weight:700\'>' + tT[1] + '×</span> plays' : ''}</div>
     </div>
     </div>
     <div class="wcrow"><div class="wcc"><div class="wcc-l">UNIQUE ${isYT ? 'VIDEOS' : 'TRACKS'}</div><div class="wcc-v">${fN(uT)}</div></div><div class="wcc" style="text-align:center"><div class="wcc-l">${isYT ? 'CHANNELS' : 'SKIP RATE'}</div><div class="wcc-v">${isYT ? fN(uA) : sk + '%'}</div></div><div class="wcc" style="text-align:right"><div class="wcc-l">PEAK HOUR</div><div class="wcc-v">${peakHlbl}</div></div></div>
@@ -6481,8 +6481,8 @@
       cmpCI = new Chart(ctx, {
         type: 'line', data: {
           labels: days, datasets: [
-            { label: pA, data: days.map(d => dMapA[d] || 0), borderColor: ac, borderWidth: 2, fill: false, tension: .4, pointRadius: 2 },
-            { label: pB, data: days.map(d => dMapB[d] || 0), borderColor: '#5b9cf6', borderWidth: 2, fill: false, tension: .4, pointRadius: 2, borderDash: [4, 3] }
+            { label: pA, data: days.map(d => dMapA[d] || 0), borderColor: ac, borderWidth: 2.5, fill: false, tension: .4, pointRadius: 2, pointBackgroundColor: ac },
+            { label: pB, data: days.map(d => dMapB[d] || 0), borderColor: '#5b9cf6', borderWidth: 2.5, fill: false, tension: .4, pointRadius: 2, pointBackgroundColor: '#5b9cf6', borderDash: [5, 4] }
           ]
         }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#888', font: { family: 'Space Mono', size: 10 } } } }, scales: { x: { ticks: { color: '#666', font: { family: 'Space Mono', size: 9 } }, grid: { color: '#1a1a1a' } }, y: { ticks: { color: '#666', font: { family: 'Space Mono', size: 9 } }, grid: { color: '#1a1a1a' }, beginAtZero: true } } }
       });
