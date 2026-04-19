@@ -4181,6 +4181,8 @@
       max-height: 0; opacity: 0; pointer-events: none
     }
 
+    body.yt-theme #live-super-wrap { display: none !important; }
+
     /* YT theme overrides */
     body.yt-theme #np-bar { background: var(--s1) }
     body.yt-theme .npb-play,
@@ -6307,14 +6309,14 @@
       header.classList.toggle('collapsed');
       const body = header.nextElementSibling;
       if (body && body.classList.contains('coll-body')) {
-        const isCollapsing = !body.classList.toggle('collapsed'); // toggle returns new state; true=collapsed
-        // Reset inline maxHeight so CSS transition takes over
+        body.classList.toggle('collapsed');
         if (body.classList.contains('collapsed')) {
           body.style.maxHeight = '';
         } else {
           body.style.maxHeight = 'none';
         }
       }
+      setTimeout(() => { if (typeof ScrollTrigger !== 'undefined') ScrollTrigger.refresh(true); }, 400);
     }
 
     /* ═══════════════════════════════════════
@@ -6895,12 +6897,15 @@
       if (!body) return;
       const collapsed = body.classList.toggle('collapsed');
       if (chev) chev.classList.toggle('open', !collapsed);
+      /* Recalculate scroll positions after height change */
+      setTimeout(() => { if (typeof ScrollTrigger !== 'undefined') ScrollTrigger.refresh(true); }, 350);
     }
 
     function toggleLivePanel() {
       SP.livePanelCollapsed = !SP.livePanelCollapsed;
       document.getElementById('liveBody').classList.toggle('collapsed', SP.livePanelCollapsed);
       document.getElementById('liveChevron').classList.toggle('open', !SP.livePanelCollapsed);
+      setTimeout(() => { if (typeof ScrollTrigger !== 'undefined') ScrollTrigger.refresh(true); }, 350);
     }
 
     /* ── Bar / panel open/close ── */
@@ -7593,6 +7598,7 @@
       SP._plPanelCollapsed = !SP._plPanelCollapsed;
       document.getElementById('plBody').style.display = SP._plPanelCollapsed ? 'none' : '';
       document.getElementById('playlistsChevron').classList.toggle('open', !SP._plPanelCollapsed);
+      setTimeout(() => { if (typeof ScrollTrigger !== 'undefined') ScrollTrigger.refresh(true); }, 350);
     }
 
     /* Hook into connect / disconnect / dashboard show */
