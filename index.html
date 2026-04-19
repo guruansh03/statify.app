@@ -3671,9 +3671,9 @@
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(160px,1fr));
       gap: 10px; padding: 10px 18px 14px; overflow: hidden;
-      max-height: 0; transition: max-height .35s cubic-bezier(.4,0,.2,1), padding .35s
+      max-height: 0; overflow: hidden; transition: padding .35s
     }
-    .pl-grid.open { max-height: 2000px; padding: 10px 18px 14px }
+    .pl-grid.open { max-height: none; padding: 10px 18px 14px }
     .pl-card {
       background: var(--s2); border: 1px solid var(--border);
       border-radius: 5px; overflow: hidden; cursor: default;
