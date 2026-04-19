@@ -3436,7 +3436,7 @@
 
     .live-panel-inner {
       background: var(--s1); border: 1px solid var(--border);
-      border-radius: var(--r); overflow: hidden
+      border-radius: var(--r); overflow: visible
     }
 
     .live-header {
@@ -4165,9 +4165,9 @@
     .live-super-chevron.open { transform: rotate(0deg) }
     .live-super-chevron:not(.open) { transform: rotate(-90deg) }
     .live-super-body {
-      overflow: hidden;
-      max-height: 4000px;
-      transition: max-height .4s ease, opacity .3s ease;
+      overflow: visible;
+      max-height: none;
+      transition: opacity .3s ease;
       opacity: 1
     }
     .live-super-body.collapsed {
