@@ -903,6 +903,14 @@
       opacity: .06
     }
 
+    .sc-sub {
+      font-family: var(--mono);
+      font-size: .58rem;
+      color: var(--muted);
+      margin-top: 4px;
+      line-height: 1.4
+    }
+
     /* ═══════════ COLS ═══════════ */
     .tc {
       display: grid;
@@ -6089,31 +6097,40 @@
       gsap.registerPlugin(ScrollTrigger);
       /* Kill old triggers to prevent stacking on re-render */
       ScrollTrigger.getAll().forEach(t => t.kill());
+      /* Reset any leftover inline opacity from previous render */
+      document.querySelectorAll('.rv,.panel,.pc,.dc,.ac,.dr,.pi,.ri,.sc').forEach(el => {
+        el.style.opacity = ''; el.style.transform = '';
+      });
       gsap.from('.hero-badge', { opacity: 0, y: 16, duration: .5, delay: .1 });
       gsap.from('.hero-title', { opacity: 0, y: 28, duration: .7, delay: .2, ease: 'power3.out' });
       gsap.from('.hero-sub', { opacity: 0, y: 14, duration: .5, delay: .32 });
       gsap.from('.waveform', { opacity: 0, duration: .6, delay: .44 });
       gsap.fromTo('.sc', { opacity: 0, y: 22, scale: .96 }, { opacity: 1, y: 0, scale: 1, duration: .42, stagger: .05, delay: .5, ease: 'back.out(1.5)' });
+      function animBars(c) { c.querySelectorAll('[data-target]').forEach((b, i) => { const t = parseFloat(b.dataset.target) || 0; gsap.to(b, { width: t + '%', duration: 1.2 + i * .04, delay: i * .05, ease: 'power3.out' }) }) }
+      /* Set initial hidden state BEFORE creating triggers */
+      document.querySelectorAll('.rv').forEach(el => gsap.set(el, { opacity: 0, y: 14 }));
+      document.querySelectorAll('.panel,.pc,.dc,.ac,.dr,.pi').forEach(el => gsap.set(el, { opacity: 0, y: 14 }));
+      document.querySelectorAll('.ri').forEach(el => gsap.set(el, { opacity: 0, x: -8 }));
+      /* ScrollTrigger for .rv */
       document.querySelectorAll('.rv').forEach(el => {
         ScrollTrigger.create({ trigger: el, start: 'top 92%', onEnter: () => gsap.to(el, { opacity: 1, y: 0, duration: .5, ease: 'power2.out' }), once: true });
       });
-      function animBars(c) { c.querySelectorAll('[data-target]').forEach((b, i) => { const t = parseFloat(b.dataset.target) || 0; gsap.to(b, { width: t + '%', duration: 1.2 + i * .04, delay: i * .05, ease: 'power3.out' }) }) }
+      /* ScrollTrigger for panels/cards */
       document.querySelectorAll('.panel,.pc,.dc,.ac,.dr,.pi').forEach(el => {
         ScrollTrigger.create({ trigger: el, start: 'top 95%', onEnter: () => { gsap.to(el, { opacity: 1, y: 0, duration: .45, ease: 'power2.out' }); animBars(el) }, once: true });
-        gsap.set(el, { opacity: 0, y: 14 });
       });
+      /* ScrollTrigger for list rows */
       document.querySelectorAll('.ri').forEach((el, i) => {
         ScrollTrigger.create({ trigger: el, start: 'top 96%', onEnter: () => gsap.to(el, { opacity: 1, x: 0, duration: .3, delay: (i % 15) * .035, ease: 'power2.out' }), once: true });
-        gsap.set(el, { opacity: 0, x: -8 });
       });
-      /* Force-reveal elements that are already in viewport */
+      /* Force-reveal elements already in viewport after layout settles */
       setTimeout(() => {
         ScrollTrigger.refresh(true);
-        document.querySelectorAll('[data-target]').forEach(b => { const r = b.getBoundingClientRect(); if (r.top < window.innerHeight) { gsap.to(b, { width: parseFloat(b.dataset.target) + '%', duration: 1.2, ease: 'power3.out' }) } });
-        document.querySelectorAll('.ri').forEach((el, i) => { const r = el.getBoundingClientRect(); if (r.top < window.innerHeight) gsap.to(el, { opacity: 1, x: 0, duration: .3, delay: i * .025, ease: 'power2.out' }) });
         document.querySelectorAll('.rv').forEach(el => { const r = el.getBoundingClientRect(); if (r.top < window.innerHeight) gsap.to(el, { opacity: 1, y: 0, duration: .4, ease: 'power2.out' }) });
         document.querySelectorAll('.panel,.pc,.dc,.ac,.dr,.pi').forEach(el => { const r = el.getBoundingClientRect(); if (r.top < window.innerHeight) { gsap.to(el, { opacity: 1, y: 0, duration: .4, ease: 'power2.out' }); animBars(el) } });
-      }, 700);
+        document.querySelectorAll('.ri').forEach((el, i) => { const r = el.getBoundingClientRect(); if (r.top < window.innerHeight) gsap.to(el, { opacity: 1, x: 0, duration: .3, delay: i * .025, ease: 'power2.out' }) });
+        document.querySelectorAll('[data-target]').forEach(b => { const r = b.getBoundingClientRect(); if (r.top < window.innerHeight) { gsap.to(b, { width: parseFloat(b.dataset.target) + '%', duration: 1.2, ease: 'power3.out' }) } });
+      }, 900);
     }
 
     /* ═══════════════════════════════════════
