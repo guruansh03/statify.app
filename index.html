@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Statify — Spotify Data Analyzer</title>
+  <title>Statify — Spotify</title>
   <link rel="icon" type="image/svg+xml"
     href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%23080808' stroke='%231DB954' stroke-width='4'/%3E%3Ccircle cx='50' cy='50' r='8' fill='%231DB954'/%3E%3Ccircle cx='50' cy='50' r='20' fill='none' stroke='%231DB954' stroke-width='3'/%3E%3C/svg%3E">
   <link rel="manifest" href="manifest.json">
@@ -4273,7 +4273,7 @@
 
     /* ── 4. Seasonal Personality ── */
     .seasonal-radar-wrap { display: flex; justify-content: center; align-items: center }
-    .seasonal-radar-wrap canvas { width: 100% !important; max-width: 280px !important }
+    .seasonal-radar-wrap canvas { width: 100% !important; max-width: 420px !important }
     .seasonal-details { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px }
     .season-card { background: var(--s2); border-radius: var(--r); padding: 12px; border-top: 2px solid transparent }
     .season-card-name { font-family: var(--mono); font-size: .56rem; letter-spacing: .1em; margin-bottom: 6px }
@@ -5321,6 +5321,7 @@
                 <button class="sort-btn pl-sort-btn" data-sort="newest" onclick="setPlSort('newest',this)">NEWEST</button>
                 <button class="sort-btn pl-sort-btn" data-sort="name" onclick="setPlSort('name',this)">A–Z</button>
                 <button class="sort-btn pl-sort-btn" data-sort="tracks" onclick="setPlSort('tracks',this)">TRACKS</button>
+                <button class="sort-btn pl-sort-btn" style="margin-left:auto" onclick="fetchAllPlaylists()">↻ Refresh</button>
               </div>
               <input class="pl-search" id="pl-search" type="text" placeholder="Search playlists…" oninput="renderPlaylists()">
             </div>
@@ -9968,7 +9969,7 @@
         artistData[x.artist].count++;
       });
 
-      const entries = Object.entries(artistData).sort((a,b)=>b[1].count-a[1].count).slice(0,50);
+      const entries = Object.entries(artistData).sort((a,b)=>b[1].count-a[1].count).filter(([a])=>a&&a!=='Unknown').slice(0,25);
       if (entries.length < 5) { el.innerHTML = '<div class="p2-empty">Need more artists.</div>'; return; }
 
       // Convert first dates to numeric (days from earliest)
@@ -10120,7 +10121,7 @@
       const seasonIcons = { Winter:'❄', Spring:'✿', Summer:'☀', Autumn:'🍂' };
 
       el.innerHTML = `
-        <div class="seasonal-radar-wrap"><canvas id="seasonalRadar" height="260"></canvas></div>
+        <div class="seasonal-radar-wrap"><canvas id="seasonalRadar" height="320"></canvas></div>
         <div class="seasonal-details">${seasonList.map(s=>{
           const topArtists = Object.entries(seasons[s].genres).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([a])=>a);
           const skipPct = seasons[s].count ? Math.round(seasons[s].skips/seasons[s].count*100) : 0;
@@ -10143,7 +10144,7 @@
         options: {
           responsive: true, maintainAspectRatio: false,
           plugins: { legend: { display: false } },
-          scales: { r: { grid:{color:'#242424'}, ticks:{display:false,stepSize:25}, pointLabels:{color:'#aaa',font:{family:'Space Mono',size:10}}, min:0, max:100 } }
+          scales: { r: { grid:{color:'#2a2a2a'}, angleLines:{color:'#2a2a2a'}, ticks:{display:false,stepSize:25}, pointLabels:{color:'#cccccc',font:{family:'Space Mono',size:11}}, min:0, max:100 } }
         }
       });
     }
@@ -10155,15 +10156,14 @@
       const el = document.getElementById('skipContent');
       if (!el || !S.length) { if(el) el.innerHTML='<div class="p2-empty">Not enough data.</div>'; return; }
 
-      // Need skipped data — if no skip data, show note
-      const hasSkips = S.some(x=>x.skipped);
-      if (!hasSkips) { el.innerHTML='<div class="p2-empty">Skip data not available in your export. Spotify only includes skip data in some export formats.</div>'; return; }
+      // Derive skip: use explicit skipped field if available, else ms_played < 30s proxy
+      const isSkipped = x => x.skipped === true || x.skipped === 1 || (x.ms||x.msPlayed||x.ms_played||0) < 30000;
 
       const artistSkips = {};
       S.filter(x=>x.ts&&x.artist).forEach(x=>{
         if (!artistSkips[x.artist]) artistSkips[x.artist]={total:0,skipped:0};
         artistSkips[x.artist].total++;
-        if (x.skipped) artistSkips[x.artist].skipped++;
+        if (isSkipped(x)) artistSkips[x.artist].skipped++;
       });
 
       // Min 10 streams for significance
@@ -10171,7 +10171,7 @@
       const devotion = qualified.filter(x=>x.skipPct<10).sort((a,b)=>a.skipPct-b.skipPct).slice(0,8);
       const regret = qualified.filter(x=>x.skipPct>40).sort((a,b)=>b.skipPct-a.skipPct).slice(0,8);
 
-      if (!devotion.length && !regret.length) { el.innerHTML='<div class="p2-empty">Not enough skip data to analyze.</div>'; return; }
+      if (!devotion.length && !regret.length) { el.innerHTML='<div class="p2-empty">Not enough data to separate finishers from skippers yet.</div>'; return; }
 
       el.innerHTML = `<div class="skip-cols">
         <div>
@@ -10713,7 +10713,7 @@
           plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.raw+' unique tracks' } } },
           scales: {
             x: { grid:{color:'#1e1e1e'}, ticks:{color:'#555',font:{family:'Space Mono',size:9}} },
-            y: { grid:{display:false}, ticks:{color:'#aaa',font:{size:9}} }
+            y: { grid:{display:false}, ticks:{color:'#aaa',font:{size:9},callback:v=>v}, title:{display:true,text:'unique tracks',color:'#666',font:{size:9}} }
           }
         }
       });
@@ -11367,6 +11367,19 @@
     if (h>0) return h+'h '+m+'m'; return m+'m';
   }
   function p4Empty(el, msg) { el.innerHTML=`<div style="color:var(--muted);font-size:.8rem;padding:20px 0">${msg}</div>`; }
+  function toggleFocusExtra(btn) {
+    const list = document.getElementById('focusSessionList');
+    if (!list) return;
+    if (btn.dataset.open === '1') {
+      list.querySelectorAll('.wm-session-extra').forEach(e=>e.remove());
+      btn.textContent = 'Show more';
+      btn.dataset.open = '0';
+    } else {
+      (window._focusExtra||[]).forEach(h=>{ const d=document.createElement('div'); d.innerHTML=h; list.appendChild(d.firstChild); });
+      btn.textContent = 'Show less';
+      btn.dataset.open = '1';
+    }
+  }
   function p4Artist(s) { return s.artist||s.artistName||s.master_metadata_album_artist_name||''; }
   function p4Track(s) { return s.track||s.trackName||s.master_metadata_track_name||''; }
   function p4Ms(s) { return s.ms||s.msPlayed||s.ms_played||0; }
@@ -11490,7 +11503,6 @@
     const bigEras = eras.filter(e=>e.months.length>=2).slice(0,6);
     if (!bigEras.length) { p4Empty(el,'No distinct listening eras detected yet.'); return; }
     const eraColors = ['#1DB954','#5b9cf6','#a78bfa','#f5a623','#e05555','#22d3ee'];
-    const eraNames = ['The Green Era','The Electric Phase','The Midnight Arc','The Amber Run','The Red Chapter','The Cyan Wave'];
     const now = months[months.length-1];
     // Compute streams/unique tracks per era
     const eraStreamData = bigEras.map(era => {
@@ -11508,7 +11520,9 @@
     });
     el.innerHTML = `<div class="chapters-list">${bigEras.map((era,i)=>{
       const color = eraColors[i%eraColors.length];
-      const name = eraNames[i%eraNames.length];
+      const topArtist = Object.entries(era.counts||{}).sort((a,b)=>b[1]-a[1])[0]?.[0]||'Unknown';
+      const eraYear = era.months[0]?era.months[0].slice(0,4):'';
+      const name = `${topArtist} Era${eraYear?' '+eraYear:''}`;
       const isLast = i===bigEras.length-1;
       const startM = era.months[0]; const endM = era.months[era.months.length-1];
       const fmtM = m => { const [y,mo]=m.split('-'); return new Date(+y,+mo-1,1).toLocaleString('default',{month:'short',year:'numeric'}); };
@@ -11776,8 +11790,8 @@
     if (!el) return;
     const streams = p4Streams();
     if (streams.length < 20) { p4Empty(el,'Not enough data.'); return; }
-    const morning = streams.filter(s=>{ const h=p4HourOf(p4Ts(s)); return h>=6&&h<10; });
-    const night = streams.filter(s=>{ const h=p4HourOf(p4Ts(s)); return h>=22||h<4; });
+    const morning = streams.filter(s=>{ const h=p4HourOf(p4Ts(s)); return h>=6&&h<12; });
+    const night = streams.filter(s=>{ const h=p4HourOf(p4Ts(s)); return h>=21||h<5; });
     if (morning.length<3&&night.length<3) { p4Empty(el,'Not enough morning/night streams to build profiles.'); return; }
     function profileOf(arr, label) {
       const artCt={};
@@ -11926,8 +11940,8 @@
     }
     const maxWeek = Math.max(...weekCounts.map(w=>w.cnt), 1);
 
-    // Top 3 recent focus sessions
-    const recentFocus = [...focusSessions].sort((a,b)=>new Date(p4Ts(b[0]))-new Date(p4Ts(a[0]))).slice(0,3);
+    // Top 10 recent focus sessions (show 3 initially, toggle more)
+    const recentFocus = [...focusSessions].sort((a,b)=>new Date(p4Ts(b[0]))-new Date(p4Ts(a[0]))).slice(0,10);
 
     if (!totalFocus) {
       p4Empty(el, 'No focus sessions detected yet. Focus sessions need: 45+ min, <10% skip rate, 3+ repeated tracks.');
@@ -11956,13 +11970,23 @@
   ${topFocusTracks.map(([k,ct],i)=>{const [t,a]=k.split('|||');return`<div class="wm-track-row"><div class="wm-track-rank">${String(i+1).padStart(2,'0')}</div><div class="wm-track-name">${t}</div><div class="wm-track-artist">${a}</div><div class="wm-track-ct">${ct}×</div></div>`;}).join('')}
 </div>
 ${recentFocus.length ? `<div class="wm-profile-label" style="margin-top:16px">RECENT FOCUS SESSIONS</div>
-<div class="wm-session-list">
-  ${recentFocus.map(sess=>{
+<div class="wm-session-list" id="focusSessionList">
+  ${recentFocus.slice(0,3).map(sess=>{
     const dur=Math.round((new Date(p4Ts(sess[sess.length-1]))-new Date(p4Ts(sess[0])))/60000);
     const topT=Object.entries(sess.reduce((m,s)=>{const t=p4Track(s);if(t)m[t]=(m[t]||0)+1;return m;},{})).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([t])=>t).join(' · ');
     return`<div class="wm-session"><div class="wm-session-meta">${fmtDate(p4Ts(sess[0]))} · ${fmtTime(p4Ts(sess[0]))} · ${dur} min · ${sess.length} tracks</div><div class="wm-session-tracks">${topT}</div></div>`;
   }).join('')}
-</div>` : ''}`;
+</div>
+${(()=>{
+  if(recentFocus.length<=3) return '';
+  window._focusExtra = recentFocus.slice(3).map(sess=>{
+    const dur=Math.round((new Date(p4Ts(sess[sess.length-1]))-new Date(p4Ts(sess[0])))/60000);
+    const topT=Object.entries(sess.reduce((m,s)=>{const t=p4Track(s);if(t)m[t]=(m[t]||0)+1;return m;},{})).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([t])=>t).join(' · ');
+    const dateLabel=new Date(p4Ts(sess[0])).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    return '<div class="wm-session wm-session-extra"><div class="wm-session-meta">'+dateLabel+' · '+dur+' min · '+sess.length+' tracks</div><div class="wm-session-tracks">'+topT+'</div></div>';
+  });
+  return '<button class="sort-btn" id="focusMoreBtn" style="margin-top:8px" onclick="toggleFocusExtra(this)">Show '+(recentFocus.length-3)+' more</button>';
+})()}` : ''}`;
   }
 
   /* ────────────────────────────────────────
@@ -12232,7 +12256,7 @@ ${longGameArtists.slice(0,8).map((d,i) => {
       {icon:'🛋️',name:'Comfort Seeker',tier:'epic',on:morningCount>=100,pct:Math.min(100,Math.round(morningCount/100*100)),criteria:'100+ morning streams (5am–9am)'},
       {icon:'🌙',name:'All-Nighter',tier:'epic',on:hasLongNight,pct:hasLongNight?100:Math.min(90,Math.round(Math.max(0,...nightSessions.map(n=>n.ms))/14400000*100)),criteria:'4h+ session starting past midnight'},
       {icon:'💥',name:'Binge Breaker',tier:'legendary',on:burnoutCount>=10,pct:Math.min(100,Math.round(burnoutCount/10*100)),criteria:'10+ artist burnout+recovery cycles detected'},
-      {icon:'🏺',name:'The Ancient',tier:'legendary',on:false,pct:0,criteria:'Pre-1980 track in your top 50 (needs track metadata)'},
+      {icon:'🏺',name:'The Ancient',tier:'legendary',on:(()=>{ const pre1980=['(1979)','(1978)','(1977)','(1976)','(1975)','(1974)','(1973)','(1972)','(1971)','(1970)','(196','(195','(194']; const allTracks=S.map(x=>x.track||x.title||''); return allTracks.some(t=>pre1980.some(y=>t.includes(y)))||false; })(),pct:0,criteria:'Pre-1980 track in your top 50 (needs track metadata)'},
     ];
 
     const tierColor={common:'#aaa',rare:'#5b9cf6',epic:'#a78bfa',legendary:'#f5a623'};
@@ -12465,7 +12489,7 @@ ${longGameArtists.slice(0,8).map((d,i) => {
       const pct=Math.round((c.prog/c.total)*100);
       return `<div class="p5-ch-card${c.done?' done':''}">
   <div class="p5-ch-head">
-    <span class="p5-ch-name">${c.icon} ${c.name}</span>
+    <span class="p5-ch-name" title="${c.icon} ${c.name}" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px;display:inline-block">${c.icon} ${c.name}</span>
     ${c.done?'<span class="p5-pill p5-pill-g">Done!</span>':`<span class="p5-pill p5-pill-m">${c.daysLeft}d left</span>`}
   </div>
   <div class="p5-ch-desc">${c.desc}</div>
@@ -12563,7 +12587,7 @@ ${longGameArtists.slice(0,8).map((d,i) => {
 
     switch(cardType) {
       case 'Top 5 Artists':
-        return `<div class="p6-wc-hero"><div class="p6-wc-big">${top5Artists[0]?top5Artists[0][0].split(' ')[0]:'—'}</div><div class="p6-wc-unit">TOP ARTIST</div></div>
+        return `<div class="p6-wc-hero"><div class="p6-wc-big">${top5Artists[0]?top5Artists[0][0]:'—'}</div><div class="p6-wc-unit">TOP ARTIST</div></div>
 <div class="p6-wc-section"><div class="p6-wc-sec-title">TOP 5 ARTISTS</div>
 ${top5Artists.map((a,i)=>`<div class="p6-wc-art-item"><div class="p6-wc-rank">#${i+1}</div><div class="p6-wc-name">${a[0]}</div><div class="p6-wc-bar-wrap"><div class="p6-wc-bar" style="width:${Math.round(a[1]/maxArt*100)}%"></div></div></div>`).join('')}
 </div>`;
@@ -12581,7 +12605,7 @@ ${stats.topTracks.slice(0,5).map((t,i)=>`<div class="p6-wc-art-item"><div class=
 
       case 'Best Month Ever':
         return `<div class="p6-wc-hero"><div class="p6-wc-big" style="font-size:1.6rem">${stats.bestMonth}</div><div class="p6-wc-unit">BEST MONTH</div></div>
-<div class="p6-wc-stats"><div class="p6-wc-stat"><div class="p6-wc-sv">${stats.hours}h</div><div class="p6-wc-sl">LISTENED</div></div><div class="p6-wc-stat"><div class="p6-wc-sv">${top5Artists[0]?top5Artists[0][0].split(' ')[0]:'—'}</div><div class="p6-wc-sl">TOP ARTIST</div></div></div>`;
+<div class="p6-wc-stats"><div class="p6-wc-stat"><div class="p6-wc-sv">${stats.hours}h</div><div class="p6-wc-sl">LISTENED</div></div><div class="p6-wc-stat"><div class="p6-wc-sv">${top5Artists[0]?top5Artists[0][0]:'—'}</div><div class="p6-wc-sl">TOP ARTIST</div></div></div>`;
 
       case '#1 Fan Of':
         const topArt = top5Artists[0];
@@ -12591,13 +12615,29 @@ ${stats.topTracks.slice(0,5).map((t,i)=>`<div class="p6-wc-art-item"><div class=
 <div style="font-family:var(--mono);font-size:.5rem;color:var(--accent,#1DB954);margin-top:8px">★ YOU ARE THEIR #1 FAN</div>`;
 
       case 'Alter Ego':
+        const _allS = p6S();
+        const _morning = _allS.filter(s=>{ const h=new Date(s.ts||s.endTime||'').getHours(); return h>=6&&h<12; });
+        const _night = _allS.filter(s=>{ const h=new Date(s.ts||s.endTime||'').getHours(); return h>=21||h<5; });
+        const _topOf = arr => { const m={}; arr.forEach(s=>{const a=s.artist||s.channel||''; if(a) m[a]=(m[a]||0)+1;}); return Object.entries(m).sort((a,b)=>b[1]-a[1])[0]?.[0]||'—'; };
+        const _mTop = _topOf(_morning), _nTop = _topOf(_night);
         return `<div class="p6-wc-hero"><div class="p6-wc-big" style="font-size:1.4rem">DAY vs NIGHT</div><div class="p6-wc-unit">ALTER EGO</div></div>
-<div class="p6-wc-stats"><div class="p6-wc-stat"><div class="p6-wc-sv" style="font-size:.8rem">☀ Morning</div><div class="p6-wc-sl">6AM–10AM</div></div><div class="p6-wc-stat"><div class="p6-wc-sv" style="font-size:.8rem">☾ Night</div><div class="p6-wc-sl">10PM–4AM</div></div></div>`;
+<div class="p6-wc-stats"><div class="p6-wc-stat"><div class="p6-wc-sv" style="font-size:.8rem">☀ ${_mTop}</div><div class="p6-wc-sl">6AM–12PM</div></div><div class="p6-wc-stat"><div class="p6-wc-sv" style="font-size:.8rem">☾ ${_nTop}</div><div class="p6-wc-sl">9PM–5AM</div></div></div>`;
 
       case 'Skip + Guilty Pleasure':
         return `<div class="p6-wc-hero"><div class="p6-wc-big">${stats.skipRate}%</div><div class="p6-wc-unit">SKIP RATE</div></div>
 <div class="p6-wc-stats"><div class="p6-wc-stat"><div class="p6-wc-sv">${stats.totalStreams.toLocaleString()}</div><div class="p6-wc-sl">STREAMS</div></div><div class="p6-wc-stat"><div class="p6-wc-sv">${stats.loyalty}%</div><div class="p6-wc-sl">LOYALTY</div></div></div>
 <div class="p6-wc-section"><div class="p6-wc-sec-title">MOST PLAYED</div><div style="font-size:.82rem;color:var(--text)">${top5Artists[0]?top5Artists[0][0]:'—'}</div></div>`;
+
+      case 'Listening DNA':
+        return `<div class="p6-wc-hero"><div class="p6-wc-big" style="font-size:1.2rem">YOUR DNA</div><div class="p6-wc-unit">LISTENING DNA</div></div>
+<div class="p6-wc-stats"><div class="p6-wc-stat"><div class="p6-wc-sv">${stats.totalStreams.toLocaleString()}</div><div class="p6-wc-sl">STREAMS</div></div><div class="p6-wc-stat"><div class="p6-wc-sv">${stats.loyalty}%</div><div class="p6-wc-sl">LOYALTY</div></div></div>
+<div class="p6-wc-section"><div class="p6-wc-sec-title">TOP ARTISTS</div>
+${top5Artists.slice(0,3).map((a,i)=>`<div class="p6-wc-art-item"><div class="p6-wc-rank">#${i+1}</div><div class="p6-wc-name">${a[0]}</div></div>`).join('')}
+</div>`;
+
+      case 'Emotional Weather':
+        return `<div class="p6-wc-hero"><div class="p6-wc-big" style="font-size:1.2rem">⛅ ${stats.skipRate<15?'SUNNY':'STORMY'}</div><div class="p6-wc-unit">EMOTIONAL WEATHER</div></div>
+<div class="p6-wc-stats"><div class="p6-wc-stat"><div class="p6-wc-sv">${stats.skipRate}%</div><div class="p6-wc-sl">SKIP RATE</div></div><div class="p6-wc-stat"><div class="p6-wc-sv">${stats.peakHour}</div><div class="p6-wc-sl">PEAK HOUR</div></div></div>`;
 
       default: // Total Streams + others
         return `<div class="p6-wc-hero"><div class="p6-wc-big">${stats.totalStreams.toLocaleString()}</div><div class="p6-wc-unit">TOTAL STREAMS</div></div>
@@ -12693,7 +12733,7 @@ ${top5Artists.map((a,i)=>`<div class="p6-wc-art-item"><div class="p6-wc-rank">#$
       const sizes = {'IG Story':[1080,1920],'Twitter':[1200,675],'Square':[1080,1080]};
       const [w,h] = sizes[activeSize]||[1080,1080];
       if (typeof html2canvas === 'undefined') { alert('html2canvas not loaded — export requires the full Statify app.'); return; }
-      html2canvas(card, {scale:2,backgroundColor:'#111',width:card.offsetWidth,height:card.offsetHeight}).then(canvas=>{
+      html2canvas(card, {scale:2,backgroundColor:'#111',width:card.offsetWidth,height:card.offsetHeight,windowWidth:card.offsetWidth,windowHeight:card.offsetHeight,letterRendering:true}).then(canvas=>{
         const mime = fmt==='JPEG'?'image/jpeg':fmt==='WEBP'?'image/webp':'image/png';
         const q = fmt==='JPEG'?.92:fmt==='WEBP'?.85:1;
         const url = canvas.toDataURL(mime,q);
@@ -12907,7 +12947,7 @@ ${top5Artists.map((a,i)=>`<div class="p6-wc-art-item"><div class="p6-wc-rank">#$
   }
 
   /* ── helpers ── */
-  function p7S() { return (typeof streams !== 'undefined' && streams) ? streams : []; }
+  function p7S() { return (typeof S !== 'undefined' && S && S.length) ? S : []; }
 
   function p7MonthKey(ts) {
     const d = new Date(ts);
@@ -13320,7 +13360,7 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
       if(!map[k]) map[k]={artist:x.artist,track:x.track,count:0};
       map[k].count++;
     });
-    return Object.values(map).sort((a,b)=>b.count-a.count).slice(0,n);
+    return Object.values(map).filter(x=>x.artist&&x.artist!=='Unknown').sort((a,b)=>b.count-a.count).slice(0,n);
   }
   function p8accentColor() { return getComputedStyle(document.documentElement).getPropertyValue('--g').trim() || '#1DB954'; }
 
@@ -13439,14 +13479,14 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
 
       // origin node
       nodes+=`<circle cx="${cx}" cy="${cy}" r="28" fill="${ac}20" stroke="${ac}" stroke-width="2.5" filter="url(#bf8glow)"/>
-        <text x="${cx}" y="${cy-4}" text-anchor="middle" dominant-baseline="middle" fill="${ac}" font-family="Space Mono,monospace" font-size="7" font-weight="700">${chosen.track.length>12?chosen.track.slice(0,11)+'…':chosen.track}</text>
-        <text x="${cx}" y="${cy+8}" text-anchor="middle" dominant-baseline="middle" fill="${ac}99" font-family="Space Mono,monospace" font-size="6">${chosen.artist.length>10?chosen.artist.slice(0,9)+'…':chosen.artist}</text>`;
+        <text x="${cx}" y="${cy-4}" text-anchor="middle" dominant-baseline="middle" fill="${ac}" font-family="Space Mono,monospace" font-size="7" font-weight="700">${chosen.track.length>16?chosen.track.slice(0,15)+'…':chosen.track}</text>
+        <text x="${cx}" y="${cy+8}" text-anchor="middle" dominant-baseline="middle" fill="${ac}99" font-family="Space Mono,monospace" font-size="6">${chosen.artist.length>13?chosen.artist.slice(0,12)+'…':chosen.artist}</text>`;
 
       // hop 1 positions
       const h1Count = h1.length || 1;
       h1.forEach((h, i) => {
-        const angle = ((i/(h1Count))*Math.PI*1.4) - Math.PI*0.7;
-        const r1x = 240, r1y = cy + Math.sin(angle)*130;
+        const angle = ((i/(h1Count))*Math.PI*1.6) - Math.PI*0.8;
+        const r1x = 240, r1y = cy + Math.sin(angle)*100;
         const col = colors[(i+1)%colors.length];
         const days = Math.round(h.diff/86400000);
         // edge origin→h1
@@ -15459,8 +15499,8 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
 
   /* PDF page renderers — pulled from phase11-preview */
   function p11RenderCover(s){const p=_p11PAL[s];const grad=s==='A'?'linear-gradient(145deg,#080808 0%,#0a1a0f 60%,#080808 100%)':'linear-gradient(145deg,#f5f0eb 0%,#d8f5e5 50%,#f5f0eb 100%)';const arms=Array.from({length:10},(_,i)=>{const a=(i/10)*Math.PI*2,len=18+i%3*9;return `<line x1="40" y1="40" x2="${(40+Math.cos(a)*len).toFixed(1)}" y2="${(40+Math.sin(a)*len).toFixed(1)}" stroke="${p.acc}" stroke-width="1.3" opacity="${(0.3+i/10*0.6).toFixed(2)}"/>`;}).join('');return `<div style="background:${grad};height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:16px;text-align:center"><svg width="80" height="80" viewBox="0 0 80 80"><circle cx="40" cy="40" r="36" fill="none" stroke="${p.acc}" stroke-width="0.7" opacity="0.22"/>${arms}<circle cx="40" cy="40" r="5" fill="${p.acc}"/><circle cx="40" cy="40" r="2.5" fill="${p.acc2}"/></svg><div style="font-family:'Space Mono',monospace;font-size:2rem;color:${p.acc};font-weight:700;line-height:1">2024</div><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.tx};opacity:.5;letter-spacing:.14em">LISTENING REPORT</div><div style="font-family:'Space Mono',monospace;font-size:.3rem;color:${p.mu};letter-spacing:.1em;margin-top:4px">STATIFY · YOUR YEAR IN SOUND</div></div>`;}
-  function p11RenderOverview(s){const p=_p11PAL[s];const S=(typeof streams!=='undefined'?streams:[]);const n=S.length;const hrs=Math.round(S.reduce((a,x)=>a+(x.ms_played||x.msPlayed||0),0)/3600000);const rows=[['TOTAL STREAMS',n.toLocaleString()],['EST. HOURS',hrs||'—'],['TOP ARTIST',(()=>{const m={};S.forEach(x=>{const a=x.artist||x.channel||'?';m[a]=(m[a]||0)+1;});return Object.entries(m).sort((a,b)=>b[1]-a[1])[0]?.[0]||'—';})()],['PEAK DAY','Saturday'],['UNIQUE TRACKS',(()=>{const t=new Set(S.map(x=>x.track||x.title));return t.size||'—';})()],['COUNTRIES','—']];return `<div style="background:${p.bg};padding:12px;height:100%;display:flex;flex-direction:column"><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.acc};letter-spacing:.1em;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid ${p.brd}">OVERVIEW</div>${rows.map(([l,v])=>`<div style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid ${p.brd}"><span style="font-family:'Space Mono',monospace;font-size:.32rem;color:${p.mu}">${l}</span><span style="font-family:'Space Mono',monospace;font-size:.6rem;color:${p.acc};font-weight:700">${v}</span></div>`).join('')}</div>`;}
-  function p11RenderTracks(s){const p=_p11PAL[s];const S=(typeof streams!=='undefined'?streams:[]);const m={};S.forEach(x=>{const k=(x.track||x.title||'?')+'||'+(x.artist||x.channel||'?');m[k]=(m[k]||0)+1;});const top=Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,7);const mx=top[0]?.[1]||1;return `<div style="background:${p.bg2};padding:10px;height:100%;display:flex;flex-direction:column"><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.acc};letter-spacing:.1em;margin-bottom:7px">TOP TRACKS</div>${top.map(([k,cnt],i)=>{const [t,ar]=k.split('||');return `<div style="display:flex;align-items:center;gap:5px;padding:3.5px 0;border-bottom:1px solid ${p.brd}"><span style="font-family:'Space Mono',monospace;font-size:.3rem;color:${p.acc};opacity:.6;width:9px">${i+1}</span><div style="flex:1;overflow:hidden"><div style="font-size:.36rem;color:${p.tx};font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t}</div><div style="font-size:.28rem;color:${p.mu}">${ar}</div></div><div style="width:${((cnt/mx)*50).toFixed(0)}px;height:2px;background:${p.acc};border-radius:1px;flex-shrink:0"></div></div>`;}).join('')}</div>`;}
+  function p11RenderOverview(s){const p=_p11PAL[s];const S=(typeof p7S==='function'?p7S():(typeof streams!=='undefined'?streams:[]));const n=S.length;const hrs=Math.round(S.reduce((a,x)=>a+(x.ms_played||x.msPlayed||0),0)/3600000);const rows=[['TOTAL STREAMS',n.toLocaleString()],['EST. HOURS',hrs||'—'],['TOP ARTIST',(()=>{const m={};S.forEach(x=>{const a=x.artist||x.channel||'?';m[a]=(m[a]||0)+1;});return Object.entries(m).sort((a,b)=>b[1]-a[1])[0]?.[0]||'—';})()],['PEAK DAY','Saturday'],['UNIQUE TRACKS',(()=>{const t=new Set(S.map(x=>x.track||x.title));return t.size||'—';})()],['COUNTRIES','—']];return `<div style="background:${p.bg};padding:12px;height:100%;display:flex;flex-direction:column"><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.acc};letter-spacing:.1em;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid ${p.brd}">OVERVIEW</div>${rows.map(([l,v])=>`<div style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid ${p.brd}"><span style="font-family:'Space Mono',monospace;font-size:.32rem;color:${p.mu}">${l}</span><span style="font-family:'Space Mono',monospace;font-size:.6rem;color:${p.acc};font-weight:700">${v}</span></div>`).join('')}</div>`;}
+  function p11RenderTracks(s){const p=_p11PAL[s];const S=(typeof p7S==='function'?p7S():(typeof streams!=='undefined'?streams:[]));const m={};S.forEach(x=>{const k=(x.track||x.title||'?')+'||'+(x.artist||x.channel||'?');m[k]=(m[k]||0)+1;});const top=Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,7);const mx=top[0]?.[1]||1;return `<div style="background:${p.bg2};padding:10px;height:100%;display:flex;flex-direction:column"><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.acc};letter-spacing:.1em;margin-bottom:7px">TOP TRACKS</div>${top.map(([k,cnt],i)=>{const [t,ar]=k.split('||');return `<div style="display:flex;align-items:center;gap:5px;padding:3.5px 0;border-bottom:1px solid ${p.brd}"><span style="font-family:'Space Mono',monospace;font-size:.3rem;color:${p.acc};opacity:.6;width:9px">${i+1}</span><div style="flex:1;overflow:hidden"><div style="font-size:.36rem;color:${p.tx};font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t}</div><div style="font-size:.28rem;color:${p.mu}">${ar}</div></div><div style="width:${((cnt/mx)*50).toFixed(0)}px;height:2px;background:${p.acc};border-radius:1px;flex-shrink:0"></div></div>`;}).join('')}</div>`;}
   function p11RenderCalendar(s){const p=_p11PAL[s];const cells=Array.from({length:371},()=>Math.random());return `<div style="background:${p.bg};padding:10px;height:100%;display:flex;flex-direction:column"><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.acc};letter-spacing:.1em;margin-bottom:7px">EMOTIONAL CALENDAR</div><div style="display:grid;grid-template-columns:repeat(53,1fr);gap:1.2px;flex:1">${cells.map(v=>`<div style="background:${p.acc};opacity:${(v*0.85+0.08).toFixed(2)};border-radius:1px;aspect-ratio:1"></div>`).join('')}</div><div style="display:flex;justify-content:space-between;margin-top:5px"><span style="font-size:.28rem;color:${p.mu};font-family:'Space Mono',monospace">JAN</span><span style="font-size:.28rem;color:${p.mu};font-family:'Space Mono',monospace">DEC</span></div></div>`;}
   function p11RenderRadar(s){const p=_p11PAL[s];const dims=['LOYALTY','EXPLORER','NIGHTOWL','SKIPPER','BINGE','FOCUS'];const vals=[0.85,0.60,0.90,0.15,0.70,0.50];const cx=60,cy=65,r=42;const pts=dims.map((_,i)=>{const a=(i/6)*Math.PI*2-Math.PI/2;return[(cx+Math.cos(a)*r*vals[i]).toFixed(1),(cy+Math.sin(a)*r*vals[i]).toFixed(1)];});const poly=pts.map(pp=>pp.join(',')).join(' ');const grids=[0.25,0.5,0.75,1].map(f=>`<polygon points="${dims.map((_,i)=>{const a=(i/6)*Math.PI*2-Math.PI/2;return`${(cx+Math.cos(a)*r*f).toFixed(1)},${(cy+Math.sin(a)*r*f).toFixed(1)}`;}).join(' ')}" fill="none" stroke="${p.acc}" stroke-width="0.4" opacity="${(f*0.28).toFixed(2)}"/>`).join('');const spokes=dims.map((_,i)=>{const a=(i/6)*Math.PI*2-Math.PI/2;return`<line x1="${cx}" y1="${cy}" x2="${(cx+Math.cos(a)*r).toFixed(1)}" y2="${(cy+Math.sin(a)*r).toFixed(1)}" stroke="${p.acc}" stroke-width="0.3" opacity="0.2"/>`;}).join('');const labels=dims.map((d,i)=>{const a=(i/6)*Math.PI*2-Math.PI/2;return`<text x="${(cx+Math.cos(a)*(r+10)).toFixed(1)}" y="${(cy+Math.sin(a)*(r+10)+2).toFixed(1)}" font-size="3.6" fill="${p.tx2}" text-anchor="middle" font-family="Space Mono">${d}</text>`;}).join('');return `<div style="background:${p.bg2};height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px"><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.acc};letter-spacing:.1em;margin-bottom:6px">ARCHETYPE · NIGHT OWL</div><svg viewBox="0 0 120 130" style="width:100%;max-height:160px">${grids}${spokes}<polygon points="${poly}" fill="${p.acc}" opacity="0.17" stroke="${p.acc}" stroke-width="1.2"/>${pts.map(pt=>`<circle cx="${pt[0]}" cy="${pt[1]}" r="2" fill="${p.acc}"/>`).join('')}${labels}</svg></div>`;}
   function p11RenderTimeline(s){
