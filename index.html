@@ -4428,7 +4428,7 @@
     .p6-pnav-btn:hover{border-color:var(--accent,#1DB954);color:var(--accent,#1DB954)}
     .p6-pnav-btn.active{background:var(--accent,#1DB954);border-color:var(--accent,#1DB954);color:#000;font-weight:700}
     .p6-poster-stage{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap}
-    .p6-poster-canvas{flex-shrink:0}
+    .p6-poster-canvas{flex-shrink:0;min-height:300px;width:200px;display:flex;align-items:flex-start}
     .p6-poster-info{flex:1;min-width:200px}
     .p6-poster-info-title{font-size:.95rem;font-weight:700;color:var(--text);margin-bottom:6px}
     .p6-poster-info-desc{font-size:.75rem;color:var(--text2);line-height:1.7;margin-bottom:14px}
@@ -5503,6 +5503,11 @@
                 <button class="sort-btn pl-sort-btn" data-sort="tracks" onclick="setPlSort('tracks',this)">TRACKS</button>
                 <button class="sort-btn pl-sort-btn" style="margin-left:auto" onclick="fetchAllPlaylists()">↻ Refresh</button>
               </div>
+              <div class="pl-sort-row" style="margin-top:4px">
+                <button class="sort-btn pl-filter-btn act" data-filter="all" onclick="setPlFilter('all',this)">ALL</button>
+                <button class="sort-btn pl-filter-btn" data-filter="mine" onclick="setPlFilter('mine',this)">MADE BY YOU</button>
+                <button class="sort-btn pl-filter-btn" data-filter="following" onclick="setPlFilter('following',this)">FOLLOWING</button
+              </div>
               <input class="pl-search" id="pl-search" type="text" placeholder="Search playlists…" oninput="renderPlaylists()">
             </div>
             <div id="pl-genre-wrap"></div>
@@ -6235,18 +6240,6 @@
           </div>
         </div>
 
-        <!-- P5-F4: Weekly Challenges -->
-        <div class="coll-header rv" onclick="toggleColl(this)">
-          <div class="sl">Weekly Challenges</div>
-          <div class="coll-arrow">▼</div>
-        </div>
-        <div class="coll-body">
-          <div class="panel rv mb40" style="padding:24px">
-            <p class="pt" style="margin-bottom:4px">3 active challenges · resets every Monday</p>
-            <p class="ps">Discover new artists, maintain a streak, go deep on one artist. Progress tracked from your data.</p>
-            <div id="p5ChallengesContent"></div>
-          </div>
-        </div>
 
       </div><!-- /phase5-wrap -->
 
@@ -9843,6 +9836,8 @@
 
     SP._playlists = [];       // raw list from API (ordered oldest→newest by index)
     SP._plSort = 'oldest';
+    SP._plFilter = 'all';     // 'all' | 'mine' | 'following'
+    SP._userId = null;        // fetched from /v1/me
     SP._plCollapsed = {};     // genre key → bool
 
     /* Genre palette — 12 colours cycling */
@@ -9876,6 +9871,13 @@
 
     async function fetchAllPlaylists() {
       if (!await ensureToken()) return;
+      // Fetch userId for owner filtering
+      if (!SP._userId) {
+        try {
+          const meRes = await fetch('https://api.spotify.com/v1/me', { headers: { Authorization: 'Bearer ' + SP.accessToken } });
+          if (meRes.ok) { const me = await meRes.json(); SP._userId = me.id; }
+        } catch(e) {}
+      }
       const wrap = document.getElementById('pl-genre-wrap');
       if (!wrap) return;
       wrap.innerHTML = '<div class="pl-loading">Fetching playlists…</div>';
@@ -9906,6 +9908,8 @@
 
       /* filter */
       if (q) list = list.filter(p => (p.name||'').toLowerCase().includes(q) || (p.description||'').toLowerCase().includes(q));
+      if (SP._plFilter === 'mine' && SP._userId) list = list.filter(p => p.owner?.id === SP._userId);
+      if (SP._plFilter === 'following' && SP._userId) list = list.filter(p => p.owner?.id !== SP._userId);
 
       /* determine oldest/newest by original index position */
       /* API returns playlists in reverse-chronological (newest first) on some accounts,
@@ -9984,6 +9988,13 @@
       const grid = headerEl.nextElementSibling;
       if (chevron) chevron.classList.toggle('open', !SP._plCollapsed[genre]);
       if (grid) grid.classList.toggle('open', !SP._plCollapsed[genre]);
+    }
+
+    function setPlFilter(key, btn) {
+      SP._plFilter = key;
+      document.querySelectorAll('.pl-filter-btn').forEach(b => b.classList.remove('act'));
+      btn.classList.add('act');
+      renderPlaylists();
     }
 
     function setPlSort(key, btn) {
@@ -10285,8 +10296,8 @@
 
       if (!rediscovered.length) { el.innerHTML='<div class="p2-empty">No tracks with 6+ month gaps found.</div>'; return; }
 
-      const top15 = rediscovered.slice(0,15);
-      el.innerHTML = `<div class="rd-list">${top15.map(r=>`
+      const top20 = rediscovered.slice(0,20);
+      el.innerHTML = `<div class="rd-list">${top20.map(r=>`
         <div class="rd-card">
           <div class="rd-card-top">
             <div>
@@ -10421,11 +10432,11 @@
         const k = x.track+'||'+x.artist;
         if (!trackData[k]) trackData[k]={count:0,lateNight:0,track:x.track,artist:x.artist};
         trackData[k].count++;
-        if (h>=23||h<4) trackData[k].lateNight++;
+        if (h>=22||h<4) trackData[k].lateNight++;
       });
 
       const guilty = Object.values(trackData)
-        .filter(d=>d.count>=20&&d.count>0&&(d.lateNight/d.count)>=0.6)
+        .filter(d=>d.count>=8&&d.count>0&&(d.lateNight/d.count)>=0.45)
         .map(d=>({...d,lnPct:Math.round(d.lateNight/d.count*100)}))
         .sort((a,b)=>b.lnPct-a.lnPct)
         .slice(0,10);
@@ -10924,7 +10935,7 @@
         options: {
           indexAxis: 'y',
           responsive: true, maintainAspectRatio: false, animation: false,
-          plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.raw+' unique tracks' } } },
+          plugins: { legend: { display: false }, tooltip: { callbacks: { title: items => ranked[items[0].dataIndex].artist, label: c => c.raw+' unique tracks' } } },
           scales: {
             x: { grid:{color:'#1e1e1e'}, ticks:{color:'#555',font:{family:'Space Mono',size:9}} },
             y: { grid:{display:false}, ticks:{color:'#aaa',font:{size:9},callback:v=>v}, title:{display:true,text:'unique tracks',color:'#666',font:{size:9}} }
@@ -12383,7 +12394,7 @@ ${longGameArtists.slice(0,8).map((d,i) => {
     p5RenderAchievements();
     p5RenderMilestones();
     p5RenderStreak();
-    p5RenderChallenges();
+    // p5RenderChallenges(); // removed
   }
 
   function p5Streams() { return (typeof S !== 'undefined' ? S : []); }
@@ -12472,6 +12483,22 @@ ${longGameArtists.slice(0,8).map((d,i) => {
       {icon:'🌙',name:'All-Nighter',tier:'epic',on:hasLongNight,pct:hasLongNight?100:Math.min(90,Math.round(Math.max(0,...nightSessions.map(n=>n.ms))/14400000*100)),criteria:'4h+ session starting past midnight'},
       {icon:'💥',name:'Binge Breaker',tier:'legendary',on:burnoutCount>=10,pct:Math.min(100,Math.round(burnoutCount/10*100)),criteria:'10+ artist burnout+recovery cycles detected'},
       {icon:'🏺',name:'The Ancient',tier:'legendary',on:(()=>{ const pre1980=['(1979)','(1978)','(1977)','(1976)','(1975)','(1974)','(1973)','(1972)','(1971)','(1970)','(196','(195','(194']; const allTracks=S.map(x=>x.track||x.title||''); return allTracks.some(t=>pre1980.some(y=>t.includes(y)))||false; })(),pct:0,criteria:'Pre-1980 track in your top 50 (needs track metadata)'},
+      // Stream milestones
+      {icon:'🎧',name:'First 1K',tier:'common',on:totalStreams>=1000,pct:Math.min(100,Math.round(totalStreams/1000*100)),criteria:'Reach 1,000 total streams'},
+      {icon:'🎶',name:'5K Club',tier:'common',on:totalStreams>=5000,pct:Math.min(100,Math.round(totalStreams/5000*100)),criteria:'Reach 5,000 total streams'},
+      {icon:'💽',name:'10K Devotee',tier:'rare',on:totalStreams>=10000,pct:Math.min(100,Math.round(totalStreams/10000*100)),criteria:'Reach 10,000 total streams'},
+      {icon:'🔊',name:'25K Obsessed',tier:'rare',on:totalStreams>=25000,pct:Math.min(100,Math.round(totalStreams/25000*100)),criteria:'Reach 25,000 streams'},
+      {icon:'⚡',name:'50K Maniac',tier:'epic',on:totalStreams>=50000,pct:Math.min(100,Math.round(totalStreams/50000*100)),criteria:'Reach 50,000 streams'},
+      {icon:'🏆',name:'100K Legend',tier:'legendary',on:totalStreams>=100000,pct:Math.min(100,Math.round(totalStreams/100000*100)),criteria:'Reach 100,000 streams'},
+      {icon:'💀',name:'250K Ascended',tier:'legendary',on:totalStreams>=250000,pct:Math.min(100,Math.round(totalStreams/250000*100)),criteria:'Reach 250,000 streams'},
+      // Hours milestones
+      {icon:'⏳',name:'100 Hours',tier:'common',on:totalMs>=360000000,pct:Math.min(100,Math.round(totalMs/360000000*100)),criteria:'100+ hours of listening'},
+      {icon:'⌛',name:'500 Hours',tier:'rare',on:totalMs>=1800000000,pct:Math.min(100,Math.round(totalMs/1800000000*100)),criteria:'500+ hours of listening'},
+      {icon:'🕰️',name:'1000 Hours',tier:'legendary',on:totalMs>=3600000000,pct:Math.min(100,Math.round(totalMs/3600000000*100)),criteria:'1,000+ hours of listening'},
+      // Artist milestones
+      {icon:'🔍',name:'100 Artists',tier:'common',on:uniqueArtists>=100,pct:Math.min(100,Math.round(uniqueArtists/100*100)),criteria:'Discover 100 unique artists'},
+      {icon:'🗂️',name:'500 Artists',tier:'rare',on:uniqueArtists>=500,pct:Math.min(100,Math.round(uniqueArtists/500*100)),criteria:'Discover 500 unique artists'},
+      {icon:'🌐',name:'1K Artists',tier:'epic',on:uniqueArtists>=1000,pct:Math.min(100,Math.round(uniqueArtists/1000*100)),criteria:'Discover 1,000 unique artists'},
     ];
 
     const tierColor={common:'#aaa',rare:'#5b9cf6',epic:'#a78bfa',legendary:'#f5a623'};
@@ -13121,7 +13148,10 @@ ${top5Artists.map((a,i)=>`<div class="p6-wc-art-item"><div class="p6-wc-rank">#$
       if (!poster) return;
       const fmt = document.getElementById('p6PosterFmt')?.value || 'PNG';
       if (typeof html2canvas === 'undefined') { alert('html2canvas not loaded — export requires the full Statify app.'); return; }
-      html2canvas(poster, {scale:4,backgroundColor:null}).then(canvas=>{
+      const _origMargin = poster.style.margin;
+      poster.style.margin = '0';
+      html2canvas(poster, {scale:4, backgroundColor:null, useCORS:true, allowTaint:true, windowWidth:poster.scrollWidth, windowHeight:poster.scrollHeight}).then(canvas=>{
+        poster.style.margin = _origMargin;
         const mime = fmt==='JPEG'?'image/jpeg':fmt==='WEBP'?'image/webp':'image/png';
         const q = fmt==='JPEG'?.92:fmt==='WEBP'?.85:1;
         const url = canvas.toDataURL(mime,q);
@@ -13204,12 +13234,12 @@ ${top5Artists.map((a,i)=>`<div class="p6-wc-art-item"><div class="p6-wc-rank">#$
         const tr = s.trackName || s.track || '';
         m.artists.set(ar, (m.artists.get(ar)||0)+1);
         m.tracks.set(tr, (m.tracks.get(tr)||0)+1);
-        m.ms += (s.msPlayed || s.ms_played || 0);
+        m.ms += (s.ms_played || s.msPlayed || s.ms || s.duration_ms || 0);
       });
       return Object.entries(byMonth).sort((a,b)=>a[0].localeCompare(b[0])).map(([mk,d])=>{
         const topArtist = p7TopN(d.artists,1)[0]?.[0] || '—';
         const topTrack = p7TopN(d.tracks,1)[0]?.[0] || '—';
-        return { mk, label: p7MonthLabel(mk), topArtist, topTrack, streams: d.streams.length, hours: Math.round(d.ms/3600000) };
+        return { mk, label: p7MonthLabel(mk), topArtist, topTrack, streams: d.streams.length, hoursMs: d.ms };
       });
     }
 
@@ -13230,7 +13260,7 @@ ${top5Artists.map((a,i)=>`<div class="p6-wc-art-item"><div class="p6-wc-rank">#$
     <div class="p7-yr-month-sub">Top track: ${m.topTrack}</div>
     <div class="p7-yr-month-stats">
       <div class="p7-yr-stat"><div class="p7-yr-stat-val">${m.streams.toLocaleString()}</div><div class="p7-yr-stat-lbl">STREAMS</div></div>
-      <div class="p7-yr-stat"><div class="p7-yr-stat-val">${m.hours}h</div><div class="p7-yr-stat-lbl">HOURS</div></div>
+      <div class="p7-yr-stat"><div class="p7-yr-stat-val">${m.hoursMs>=3600000?Math.round(m.hoursMs/3600000)+'h':Math.round(m.hoursMs/60000)+'m'}</div><div class="p7-yr-stat-lbl">HOURS</div></div>
     </div>
   </div>`).join('')}
 </div>
@@ -13250,7 +13280,7 @@ ${top5Artists.map((a,i)=>`<div class="p6-wc-art-item"><div class="p6-wc-rank">#$
           p.classList.toggle('done',i<curIdx);
         });
         const m = months[curIdx];
-        document.getElementById('p7YrFsInner').innerHTML = `<div class="p7-yr-month-label">${m.label}</div><div class="p7-yr-month-hero" style="font-size:3rem">${m.topArtist}</div><div class="p7-yr-month-sub" style="font-size:1rem;margin-bottom:24px">Top track: ${m.topTrack}</div><div class="p7-yr-month-stats"><div class="p7-yr-stat"><div class="p7-yr-stat-val" style="font-size:1.5rem">${m.streams.toLocaleString()}</div><div class="p7-yr-stat-lbl">STREAMS</div></div><div class="p7-yr-stat"><div class="p7-yr-stat-val" style="font-size:1.5rem">${m.hours}h</div><div class="p7-yr-stat-lbl">HOURS</div></div></div>`;
+        document.getElementById('p7YrFsInner').innerHTML = `<div class="p7-yr-month-label">${m.label}</div><div class="p7-yr-month-hero" style="font-size:3rem">${m.topArtist}</div><div class="p7-yr-month-sub" style="font-size:1rem;margin-bottom:24px">Top track: ${m.topTrack}</div><div class="p7-yr-month-stats"><div class="p7-yr-stat"><div class="p7-yr-stat-val" style="font-size:1.5rem">${m.streams.toLocaleString()}</div><div class="p7-yr-stat-lbl">STREAMS</div></div><div class="p7-yr-stat"><div class="p7-yr-stat-val" style="font-size:1.5rem">${m.hoursMs>=3600000?Math.round(m.hoursMs/3600000)+'h':Math.round(m.hoursMs/60000)+'m'}</div><div class="p7-yr-stat-lbl">HOURS</div></div></div>`;
       }
 
       window.p7GoMonth = function(i) {
@@ -13379,16 +13409,16 @@ ${top5Artists.map((a,i)=>`<div class="p6-wc-art-item"><div class="p6-wc-rank">#$
     let curMonth = 0;
     let playing = false;
     let timer = null;
-    let speed = 600;
+    let speed = 900;
     let artistColorMap = {};
     let colorIdx = 0;
 
     el.innerHTML = `
 <div class="p7-race-controls">
   <button class="p7-yr-btn play-btn" id="p7RacePlay">▶ PLAY</button>
-  <button class="p7-race-speed act" onclick="p7RaceSpd(600,this)">1×</button>
-  <button class="p7-race-speed" onclick="p7RaceSpd(300,this)">2×</button>
-  <button class="p7-race-speed" onclick="p7RaceSpd(150,this)">4×</button>
+  <button class="p7-race-speed act" onclick="p7RaceSpd(900,this)">1×</button>
+  <button class="p7-race-speed" onclick="p7RaceSpd(450,this)">2×</button>
+  <button class="p7-race-speed" onclick="p7RaceSpd(200,this)">4×</button>
   <div class="p7-race-month-display" id="p7RaceMonth">—</div>
 </div>
 <div class="p7-race-stage" id="p7RaceStage"></div>`;
@@ -13406,13 +13436,31 @@ ${top5Artists.map((a,i)=>`<div class="p6-wc-art-item"><div class="p6-wc-rank">#$
       const max = top10[0]?.[1] || 1;
       top10.forEach(([ar])=>{ if (!artistColorMap[ar]) artistColorMap[ar]=COLORS[colorIdx++%COLORS.length]; });
       document.getElementById('p7RaceMonth').textContent = p7MonthLabel(mk);
-      document.getElementById('p7RaceStage').innerHTML = top10.map(([ar,cnt],i)=>`
-        <div class="p7-race-bar-row">
-          <div class="p7-race-rank">${i+1}</div>
-          <div class="p7-race-artist" title="${ar}">${ar}</div>
-          <div class="p7-race-bar-wrap"><div class="p7-race-bar-fill" style="width:${Math.round(cnt/max*100)}%;background:${artistColorMap[ar]}"></div></div>
-          <div class="p7-race-count">${cnt}</div>
-        </div>`).join('');
+      const stage = document.getElementById('p7RaceStage');
+      // Stable DOM: create rows on first render, update in-place after
+      if (!stage._raceInit) {
+        stage._raceInit = true;
+        stage.innerHTML = Array.from({length:10},(_,i)=>`
+          <div class="p7-race-bar-row" data-race-idx="${i}" style="transition:opacity 0.3s">
+            <div class="p7-race-rank"></div>
+            <div class="p7-race-artist"></div>
+            <div class="p7-race-bar-wrap"><div class="p7-race-bar-fill" style="transition:width 0.5s ease;height:100%"></div></div>
+            <div class="p7-race-count"></div>
+          </div>`).join('');
+      }
+      const rows = stage.querySelectorAll('.p7-race-bar-row');
+      rows.forEach((row, i) => {
+        const [ar, cnt] = top10[i] || ['', 0];
+        row.style.opacity = ar ? '1' : '0';
+        row.querySelector('.p7-race-rank').textContent = ar ? i+1 : '';
+        const artistEl = row.querySelector('.p7-race-artist');
+        artistEl.textContent = ar;
+        artistEl.title = ar;
+        const fill = row.querySelector('.p7-race-bar-fill');
+        fill.style.width = ar ? Math.round(cnt/max*100)+'%' : '0%';
+        fill.style.background = ar ? (artistColorMap[ar]||'#1DB954') : '';
+        row.querySelector('.p7-race-count').textContent = ar ? cnt : '';
+      });
     }
 
     function advance() {
@@ -13605,7 +13653,7 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
         <svg id="bf8-svg" width="100%" viewBox="0 0 780 380" xmlns="http://www.w3.org/2000/svg" style="display:block"></svg>
       </div>
       <div id="bf8-tree-pane" class="bf8-pane">
-        <svg id="bf8-tree-svg" width="100%" viewBox="0 0 780 340" xmlns="http://www.w3.org/2000/svg" style="display:block"></svg>
+        <svg id="bf8-tree-svg" width="100%" viewBox="0 0 780 440" xmlns="http://www.w3.org/2000/svg" style="display:block"></svg>
       </div>
       <div id="bf8-stats" class="bf8-stats-row"></div>`;
 
@@ -13783,23 +13831,23 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
       const ox=28, oy=H/2;
       s += drawRect(ox, oy, originLabel, p8accentColor(), 7);
 
-      const h1Y = h1.length > 1 ? h1.map((_,i)=>{ const spread=60; return oy + (i-(h1.length-1)/2)*spread; }) : [oy];
+      const h1Y = h1.length > 1 ? h1.map((_,i)=>{ const spread=Math.max(70,320/Math.max(h1.length,1)); return oy + (i-(h1.length-1)/2)*spread; }) : [oy];
       h1.forEach((h, i) => {
         const h1x=210, h1y=h1Y[i];
         const days=Math.round(h.diff/86400000);
         const col=colors[(i+1)%colors.length];
         s += bezier(ox+nodeW(originLabel), oy, h1x, h1y, `+${days}d`);
-        s += drawRect(h1x, h1y, h.artist.length>12?h.artist.slice(0,11)+'…':h.artist, col);
+        s += drawRect(h1x, h1y, h.artist.length>15?h.artist.slice(0,14)+'…':h.artist, col);
         const h2List=hop2map[h.artist]||[];
         h2List.forEach((h2,j) => {
-          const h2x=390, h2y=h1y+(j===0?-28:28);
+          const h2x=390, h2y=h1y+(j===0?-40:40);
           const days2=Math.round((h2.ts-h.ts)/86400000);
           const col2=colors[(i*2+j+3)%colors.length];
-          s += bezier(h1x+nodeW(h.artist.length>12?h.artist.slice(0,11)+'…':h.artist), h1y, h2x, h2y, `+${days2}d`);
+          s += bezier(h1x+nodeW(h.artist.length>15?h.artist.slice(0,14)+'…':h.artist), h1y, h2x, h2y, `+${days2}d`);
           s += drawRect(h2x, h2y, h2.artist.length>11?h2.artist.slice(0,10)+'…':h2.artist, col2);
           const h3List=hop3map[h2.artist]||[];
-          h3List.slice(0,1).forEach(h3=>{
-            const h3x=560, h3y=h2y;
+          h3List.slice(0,1).forEach((h3,h3Idx)=>{
+            const h3x=560, h3y=h2y+(h3Idx%2===0?-20:20);
             const days3=Math.round((h3.ts-h2.ts)/86400000);
             const col3=colors[(i*3+j+5)%colors.length];
             const h2label=h2.artist.length>11?h2.artist.slice(0,10)+'…':h2.artist;
