@@ -7973,7 +7973,12 @@
     function renderDecade() {
       const adec = { 'The Weeknd': '2010s', 'Drake': '2010s', 'Kendrick Lamar': '2010s', 'Taylor Swift': '2010s', 'Billie Eilish': '2010s', 'Post Malone': '2010s', 'Travis Scott': '2010s' };
       const dm = { '2020s': 0, '2010s': 0, '2000s': 0, '90s': 0, '80s': 0 };
-      S.forEach(x => { const d = adec[x.artist] || (Math.random() < .6 ? '2010s' : Math.random() < .7 ? '2020s' : '2000s'); dm[d] = (dm[d] || 0) + 1 });
+      // Build per-artist median stream year for fallback decade inference
+      const _artistYears = {};
+      S.forEach(x => { const yr = new Date(x.ts||x.endTime||x.watchedAt||0).getFullYear(); if(yr>1990&&yr<2100){ (_artistYears[x.artist]||(_artistYears[x.artist]=[])).push(yr); } });
+      const _artistDecade = {};
+      Object.entries(_artistYears).forEach(([a,ys])=>{ const med=ys.sort((a,b)=>a-b)[Math.floor(ys.length/2)]; _artistDecade[a]=Math.floor(med/10)*10+'s'; });
+      S.forEach(x => { const d = adec[x.artist] || _artistDecade[x.artist] || '2010s'; dm[d] = (dm[d] || 0) + 1 });
       const tot = Object.values(dm).reduce((a, b) => a + b, 0);
       const cols = ['#1DB954', '#5b9cf6', '#f5a623', '#e05555', '#888'];
       document.getElementById('decChart').innerHTML = Object.entries(dm).map(([e, c], i) => { const p = tot ? Math.round((c / tot) * 100) : 0; return `<div class="dr"><div class="de">${e}</div><div class="dt"><div class="df" data-target="${p}" style="background:${cols[i]}"></div></div><div class="dp">${p}%</div></div>` }).join('');
@@ -14009,15 +14014,16 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
       const sharedArtists = [...myTopArtists].filter(a=>theirArtists.has(a));
       const artistScore = Math.round((sharedArtists.length / Math.max(myTopArtists.size,1)) * 100);
 
-      // genre score: shared top genres (rough)
-      const genreScore = Math.round(30 + Math.random()*40); // fallback estimate
+      // genre score: artist overlap ratio as genre proxy (deterministic)
+      const genreScore = Math.round(30 + (sharedArtists.length / Math.max(myTopArtists.size, 1)) * 70);
 
       // skip similarity: inverse distance
       const theirSkip = data.stats?.skipRate || 0.15;
       const skipScore = Math.round(100 - Math.abs(mySkipRate - theirSkip)*200);
 
-      // peak hour: dummy
-      const hourScore = Math.round(50 + Math.random()*45);
+      // peak hour: deterministic from both profiles
+      const theirPeakHour = data.stats?.peakHour ?? data.peakHour ?? 20;
+      const hourScore = Math.max(0, Math.min(100, Math.round(100 - Math.abs(+myPeakHour - +theirPeakHour) * 8)));
 
       const total = Math.round((artistScore*0.4)+(genreScore*0.2)+(skipScore*0.2)+(hourScore*0.2));
       return { name, sharedArtists: sharedArtists.slice(0,5), artistScore, genreScore: Math.max(0,Math.min(100,genreScore)), skipScore: Math.max(0,Math.min(100,skipScore)), hourScore, total: Math.max(0,Math.min(99,total)) };
@@ -14096,18 +14102,23 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
 
   function p8BuildVenn(friend) {
     const ac = p8accentColor();
-    // My top artists
+
+    // No friend loaded → empty state, don't render fake Venn
+    if (!friend) {
+      return `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:260px;gap:14px;opacity:.7">
+        <svg width="64" height="64" viewBox="0 0 64 64" fill="none"><circle cx="22" cy="32" r="18" stroke="${ac}" stroke-width="2" opacity=".4"/><circle cx="42" cy="32" r="18" stroke="#5b9cf6" stroke-width="2" opacity=".4"/></svg>
+        <div style="font-family:var(--mono);font-size:.7rem;color:var(--text2);text-align:center">Load a friend profile to see your overlap</div>
+        <button class="sbtn" onclick="document.getElementById('tw8-upload-trigger')?.click()" style="font-size:.65rem;padding:6px 16px">Upload Friend Profile</button>
+      </div>`;
+    }
+
     const myArtistMap = {};
     S.filter(x=>x.ts).forEach(x => { myArtistMap[x.artist]=(myArtistMap[x.artist]||0)+1; });
     const myTop = Object.entries(myArtistMap).sort((a,b)=>b[1]-a[1]).slice(0,30).map(([a])=>a);
 
     // Friend's top artists
-    let friendName = 'Friend';
-    let friendTop = ['Drake','SZA','Travis Scott','21 Savage','Gunna','Lil Baby','Future','Nicki Minaj','Cardi B','Metro Boomin'];
-    if (friend) {
-      friendName = friend.name;
-      friendTop = (friend.data.topArtists||[]).slice(0,30).map(a=>a.name||a);
-    }
+    const friendName = friend.name;
+    const friendTop = (friend.data.topArtists||[]).slice(0,30).map(a=>a.name||a);
 
     const mySet = new Set(myTop);
     const frSet = new Set(friendTop);
@@ -14161,9 +14172,9 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
 
     const boosters = [
       { label:'Artist Overlap', val:twinScore, color:ac },
-      { label:'Guilty Pleasures ★', val:friend?Math.round(40+Math.random()*40):38, color:'#f5a623' },
-      { label:'Peak Hour Match', val:friend?Math.round(50+Math.random()*45):62, color:'#5b9cf6' },
-      { label:'Skip Rate Similarity', val:friend?Math.round(40+Math.random()*55):55, color:'#a855f7' },
+      { label:'Guilty Pleasures ★', val:(()=>{ if(!friend) return 38; const KNOWN_POP=['Drake','Taylor Swift','The Weeknd','Ariana Grande','Ed Sheeran','Billie Eilish','Post Malone','Justin Bieber','Olivia Rodrigo','Harry Styles','Dua Lipa','Rihanna','Eminem','Beyoncé','Lady Gaga']; const myNiche=myTop.filter(a=>!KNOWN_POP.includes(a)); const frNiche=(friend.topArtists||[]).map(a=>a.name||a).filter(a=>!KNOWN_POP.includes(a)); const overlap=myNiche.filter(a=>frNiche.includes(a)).length; return Math.min(100,Math.round((overlap/Math.max(myNiche.length,1))*100+20)); })(), color:'#f5a623' },
+      { label:'Peak Hour Match', val:friend?Math.max(0,Math.min(100,Math.round(100-Math.abs(+myPeakHour-(friend.stats?.peakHour??friend.peakHour??20))*8))):62, color:'#5b9cf6' },
+      { label:'Skip Rate Similarity', val:friend?Math.max(0,Math.min(100,Math.round(100-Math.abs(mySkipRate-(friend.stats?.skipRate??0.15))*200))):55, color:'#a855f7' },
     ];
 
     return `${svgStr}
@@ -14434,9 +14445,9 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
       peakHour:  ph + ':00',
       topArtists: topArtists,
       topTracks:  topTracks,
-      topGenre:   'Mixed',
-      loyalty:    Math.round(40 + Math.random()*50),
-      explorer:   Math.round(30 + Math.random()*60),
+      topGenre:   (()=>{ const top5=topArtists.slice(0,5).map(([a])=>a); const scenes=top5.map(a=>(typeof KNOWN!=='undefined'?KNOWN[a]:null)||(typeof inferScene==='function'?inferScene(a):null)).filter(Boolean); if(!scenes.length) return 'Mixed'; const freq={}; scenes.forEach(s=>freq[s]=(freq[s]||0)+1); return Object.entries(freq).sort((a,b)=>b[1]-a[1])[0][0]; })(),
+      loyalty:    (()=>{ const s=p9S(); if(!s.length) return 50; const am={}; s.forEach(x=>{const a=x.artist||'';am[a]=(am[a]||0)+1;}); const top1=Object.values(am).sort((a,b)=>b-a)[0]||0; return Math.min(99,Math.round(top1/s.length*400)); })(),
+      explorer:   (()=>{ const s=p9S(); if(!s.length) return 50; const am={}; s.forEach(x=>{const a=x.artist||'';am[a]=(am[a]||0)+1;}); return Math.min(99,Math.round(Object.keys(am).length/Math.max(s.length,1)*500)); })(),
       archetype:  'Listener'
     };
   }
@@ -14465,9 +14476,9 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
       skipRate:  s.length?Math.round(skipped/s.length*100):0,
       peakHour:  ph+':00',
       topArtists, topTracks,
-      topGenre: 'Mixed',
-      loyalty: Math.round(40+Math.random()*50),
-      explorer: Math.round(30+Math.random()*60),
+      topGenre: (()=>{ const top5=topArtists.slice(0,5).map(([a])=>a); const scenes=top5.map(a=>(typeof KNOWN!=='undefined'?KNOWN[a]:null)||(typeof inferScene==='function'?inferScene(a):null)).filter(Boolean); if(!scenes.length) return 'Mixed'; const freq={}; scenes.forEach(sc=>freq[sc]=(freq[sc]||0)+1); return Object.entries(freq).sort((a,b)=>b[1]-a[1])[0][0]; })(),
+      loyalty: s.length?(()=>{ const am={}; s.forEach(x=>{const a=x.artistName||x.artist||'';am[a]=(am[a]||0)+1;}); const top1=Object.values(am).sort((a,b)=>b-a)[0]||0; return Math.min(99,Math.round(top1/s.length*400)); })():50,
+      explorer: s.length?(()=>{ const am={}; s.forEach(x=>{const a=x.artistName||x.artist||'';am[a]=(am[a]||0)+1;}); return Math.min(99,Math.round(Object.keys(am).length/s.length*500)); })():50,
       archetype: 'Listener'
     };
   }
@@ -15033,7 +15044,7 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
 
     if(!top5.length){
       // Fallback demo data
-      el.innerHTML = buildDemoRabbitHoles();
+      el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:180px;font-family:var(--mono);font-size:.7rem;color:var(--muted);text-align:center;flex-direction:column;gap:8px"><div>No rabbit holes detected in your watch history.</div><div style="font-size:.6rem;opacity:.6">Sessions are rabbit holes when ≥3 videos watched within 20 min of each other.</div></div>';
       return;
     }
 
@@ -15084,11 +15095,36 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
     const chartEl = document.getElementById('p10SpiralChart');
     if(!ringWrap||!chartEl) return;
 
-    // Use demo data — real computation needs oEmbed durations
-    const avgHops = 3.8;
-    const pct = (avgHops/6)*100;
+    // Compute sessions from watch history (gap > 20min = new session)
+    const _S = (typeof streams !== 'undefined' ? streams : []).filter(x=>x.ts||x.endTime||x.watchedAt).sort((a,b)=>new Date(a.ts||a.endTime||a.watchedAt)-new Date(b.ts||b.endTime||b.watchedAt));
+    const GAP_MS = 20*60*1000;
+    const sessions = [];
+    let cur = null;
+    _S.forEach(x => {
+      const t = new Date(x.ts||x.endTime||x.watchedAt).getTime();
+      if(!cur || t - cur.lastT > GAP_MS) { cur = {items:[],lastT:t,month:(x.ts||x.endTime||x.watchedAt||'').slice(0,7)}; sessions.push(cur); }
+      cur.items.push(x); cur.lastT = t;
+    });
+    const multiSessions = sessions.filter(s=>s.items.length>=3);
+
+    if(!multiSessions.length){
+      ringWrap.innerHTML = '<div style="font-family:var(--mono);font-size:.7rem;color:var(--muted);padding:20px;text-align:center">No spiral sessions found in your watch history.</div>';
+      if(window._p10SpiralChart){ window._p10SpiralChart.destroy(); }
+      return;
+    }
+
+    const avgHops = +(multiSessions.reduce((a,s)=>a+new Set(s.items.map(x=>x.artist||x.channel||'?')).size,0)/multiSessions.length).toFixed(1);
+    const pct = Math.min(100,(avgHops/6)*100);
     const circumference = 2*Math.PI*46;
     const offset = circumference*(1-pct/100);
+
+    // Monthly hop counts
+    const monthlyHops = {};
+    multiSessions.forEach(s=>{ const m=s.month; const hops=new Set(s.items.map(x=>x.artist||x.channel||'?')).size; if(!monthlyHops[m]||hops>monthlyHops[m]) monthlyHops[m]=hops; });
+    const monthEntries = Object.entries(monthlyHops).sort().slice(-6);
+
+    const topSessions = multiSessions.sort((a,b)=>b.items.length-a.items.length).slice(0,5);
+    const maxH = Math.max(1,...topSessions.map(s=>new Set(s.items.map(x=>x.artist||x.channel||'?')).size));
 
     ringWrap.innerHTML = `
       <div class="p10-ring-wrap">
@@ -15101,20 +15137,17 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
       </div>
       <div style="flex:1;min-width:140px">
         <div class="p10-bc">
-          <div class="p10-br"><div class="p10-bl">Mar 2024</div><div class="p10-bt"><div class="p10-bf" style="width:80%"></div></div><div class="p10-bv">4 hops</div></div>
-          <div class="p10-br"><div class="p10-bl">Jan 2024</div><div class="p10-bt"><div class="p10-bf" style="width:60%"></div></div><div class="p10-bv">3 hops</div></div>
-          <div class="p10-br"><div class="p10-bl">Nov 2023</div><div class="p10-bt"><div class="p10-bf" style="width:60%"></div></div><div class="p10-bv">3 hops</div></div>
-          <div class="p10-br"><div class="p10-bl">Sep 2023</div><div class="p10-bt"><div class="p10-bf" style="width:100%"></div></div><div class="p10-bv">5 hops</div></div>
-          <div class="p10-br"><div class="p10-bl">Aug 2023</div><div class="p10-bt"><div class="p10-bf" style="width:40%"></div></div><div class="p10-bv">2 hops</div></div>
+          ${topSessions.map(s=>{const hops=new Set(s.items.map(x=>x.artist||x.channel||'?')).size;const pct=Math.round(hops/maxH*100);const label=s.month||'—';return `<div class="p10-br"><div class="p10-bl">${label}</div><div class="p10-bt"><div class="p10-bf" style="width:${pct}%"></div></div><div class="p10-bv">${hops} hops</div></div>`;}).join('')}
         </div>
       </div>
     `;
 
-    const months=['Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun','Jul'];
+    const months = monthEntries.map(([m])=>m.slice(0,7));
+    const hopsData = monthEntries.map(([,h])=>h);
     if(window._p10SpiralChart){ window._p10SpiralChart.destroy(); }
     window._p10SpiralChart = new Chart(chartEl,{
       type:'line',
-      data:{labels:months,datasets:[{data:[2,3,2,4,3,5,3,4,3,4,4,4],borderColor:'#FF0000',backgroundColor:'rgba(255,0,0,.09)',tension:.42,fill:true,pointRadius:4,pointBackgroundColor:'#FF0000',pointBorderColor:'#0a0a0a',pointBorderWidth:2}]},
+      data:{labels:months,datasets:[{data:hopsData,borderColor:'#FF0000',backgroundColor:'rgba(255,0,0,.09)',tension:.42,fill:true,pointRadius:4,pointBackgroundColor:'#FF0000',pointBorderColor:'#0a0a0a',pointBorderWidth:2}]},
       options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#181414',borderColor:'#362828',borderWidth:1,titleColor:'#705050',bodyColor:'#f5f0f0',titleFont:{family:'Space Mono',size:9},bodyFont:{family:'Space Mono',size:10},callbacks:{label:ctx=>`${ctx.parsed.y} hops`}}},scales:{x:{grid:{color:'#2a2020'},ticks:{color:'#705050',font:{family:'Space Mono',size:9}}},y:{grid:{color:'#2a2020'},min:0,max:6,ticks:{stepSize:1,color:'#705050',font:{family:'Space Mono',size:9}}}}}
     });
   }
@@ -15124,7 +15157,7 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
     const el = document.getElementById('p10LoyGrid');
     if(!el) return;
     const S = (typeof streams !== 'undefined' ? streams : []);
-    if(!S.length){ el.innerHTML = buildDemoLoyalty(); return; }
+    if(!S.length){ el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:160px;font-family:var(--mono);font-size:.7rem;color:var(--muted);text-align:center">Upload your YouTube watch history to see channel loyalty.</div>'; return; }
 
     // channel → videos, plays, month-set
     const chMap = {};
@@ -15180,28 +15213,69 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
   function buildGhostTimeline(){
     const el = document.getElementById('p10GhostList');
     if(!el) return;
-    // Subscription data not in watch history → use demo
-    const demo=[
-      {ch:'CGP Grey',sub:'Jan 2019',first:'Aug 2022',yrs:3.6,pct:100,col:'var(--g)'},
-      {ch:'3Blue1Brown',sub:'Mar 2020',first:'Nov 2022',yrs:2.6,pct:72,col:'var(--g)'},
-      {ch:'Wendover Productions',sub:'Jun 2021',first:'Jan 2023',yrs:1.6,pct:44,col:'var(--blue)'},
-      {ch:'Tom Scott',sub:'Sep 2021',first:'Sep 2022',yrs:1.0,pct:28,col:'var(--blue)'},
-      {ch:'Half as Interesting',sub:'Feb 2022',first:'Aug 2022',yrs:0.5,pct:14,col:'var(--muted2)'},
-    ];
-    el.innerHTML = demo.map(d=>`
+
+    const _subs = (typeof ytSubscriptions !== 'undefined' ? ytSubscriptions : []);
+    const _S    = (typeof streams !== 'undefined' ? streams : []);
+
+    if(!_subs.length){
+      el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:160px;font-family:var(--mono);font-size:.7rem;color:var(--muted);text-align:center">Upload your YouTube subscriptions.csv to see ghost subs.</div>';
+      return;
+    }
+
+    // Build first-watch timestamp per channel from watch history
+    const firstWatch = {};
+    _S.forEach(x => {
+      const ch = (x.artist||x.channel||'').toLowerCase().trim();
+      const t  = new Date(x.ts||x.endTime||x.watchedAt||0).getTime();
+      if(ch && t > 0 && (!firstWatch[ch] || t < firstWatch[ch])) firstWatch[ch] = t;
+    });
+
+    // Build ghost entries: subs where channel was never watched
+    const ghosts = _subs.map(s => {
+      const ch   = (s.name||'').trim();
+      const chLo = ch.toLowerCase();
+      const fw   = firstWatch[chLo];
+      return { ch, fw: fw || null };
+    }).filter(x => !x.fw); // ghost = subscribed but never watched
+
+    // Also build "late starter" entries: subbed but first watch was much later
+    const lateStarters = _subs.map(s => {
+      const ch   = (s.name||'').trim();
+      const chLo = ch.toLowerCase();
+      const fw   = firstWatch[chLo];
+      if(!fw) return null;
+      const fwDate = new Date(fw);
+      return { ch, firstWatch: fwDate };
+    }).filter(Boolean).sort((a,b) => b.firstWatch - a.firstWatch).slice(0, 5);
+
+    if(!ghosts.length && !lateStarters.length){
+      el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:160px;font-family:var(--mono);font-size:.7rem;color:var(--muted);text-align:center">No ghost subs found — you watch everything you subscribe to!</div>';
+      return;
+    }
+
+    const display = ghosts.length ? ghosts.slice(0,8) : lateStarters;
+    const maxMs   = lateStarters.length ? (lateStarters[0].firstWatch.getTime() - new Date(_subs[0]?.date||Date.now()).getTime()) : 1;
+
+    el.innerHTML = display.map((d,i) => {
+      const pct  = Math.round(100 - (i / Math.max(display.length-1,1)) * 80);
+      const col  = pct > 70 ? 'var(--g)' : pct > 40 ? 'var(--blue)' : 'var(--muted2)';
+      const label = d.firstWatch
+        ? d.firstWatch.toLocaleDateString('en-US',{month:'short',year:'numeric'})
+        : 'never watched';
+      return `
       <div class="p10-tl-row">
         <div class="p10-tl-left">
           <div class="p10-tl-ch">${d.ch}</div>
           <div class="p10-tl-dates">
-            <div class="p10-tl-date">subbed <span>${d.sub}</span></div>
-            <div class="p10-tl-date">first watch <span>${d.first}</span></div>
+            <div class="p10-tl-date">first watch <span>${label}</span></div>
           </div>
         </div>
         <div class="p10-tl-right">
-          <div class="p10-tl-bar-wrap"><div class="p10-tl-bar" style="width:${d.pct}%;background:${d.col}"></div></div>
-          <div class="p10-tl-val" style="color:${d.col}">${d.yrs} yr${d.yrs!==1?'s':''}</div>
+          <div class="p10-tl-bar-wrap"><div class="p10-tl-bar" style="width:${pct}%;background:${col}"></div></div>
+          <div class="p10-tl-val" style="color:${col}">${d.firstWatch ? '' : '👻'}</div>
         </div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
   }
 
   /* ── 06: VIDEO LENGTH PREFERENCE TREND ── */
@@ -15247,7 +15321,7 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
     const el = document.getElementById('p10RewatchGrid');
     if(!el) return;
     const S = (typeof streams !== 'undefined' ? streams : []);
-    if(!S.length){ el.innerHTML = buildDemoRewatch(); return; }
+    if(!S.length){ el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:160px;font-family:var(--mono);font-size:.7rem;color:var(--muted);text-align:center">Upload your YouTube watch history to see rewatch data.</div>'; return; }
 
     const vidMap = {};
     S.forEach(x=>{
@@ -15263,7 +15337,7 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
       .sort((a,b)=>b[1].count-a[1].count)
       .slice(0,8);
 
-    if(!rewatched.length){ el.innerHTML = buildDemoRewatch(); return; }
+    if(!rewatched.length){ el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:160px;font-family:var(--mono);font-size:.7rem;color:var(--muted);text-align:center">No rewatch patterns found in your watch history.</div>'; return; }
 
     el.innerHTML = rewatched.map(([title,d])=>{
       const sorted=d.dates.sort();
@@ -15708,10 +15782,10 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
   }
 
   /* PDF page renderers — pulled from phase11-preview */
-  function p11RenderCover(s){const p=_p11PAL[s];const grad=s==='A'?'linear-gradient(145deg,#080808 0%,#0a1a0f 60%,#080808 100%)':'linear-gradient(145deg,#f5f0eb 0%,#d8f5e5 50%,#f5f0eb 100%)';const arms=Array.from({length:10},(_,i)=>{const a=(i/10)*Math.PI*2,len=18+i%3*9;return `<line x1="40" y1="40" x2="${(40+Math.cos(a)*len).toFixed(1)}" y2="${(40+Math.sin(a)*len).toFixed(1)}" stroke="${p.acc}" stroke-width="1.3" opacity="${(0.3+i/10*0.6).toFixed(2)}"/>`;}).join('');return `<div style="background:${grad};height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:16px;text-align:center"><svg width="80" height="80" viewBox="0 0 80 80"><circle cx="40" cy="40" r="36" fill="none" stroke="${p.acc}" stroke-width="0.7" opacity="0.22"/>${arms}<circle cx="40" cy="40" r="5" fill="${p.acc}"/><circle cx="40" cy="40" r="2.5" fill="${p.acc2}"/></svg><div style="font-family:'Space Mono',monospace;font-size:2rem;color:${p.acc};font-weight:700;line-height:1">2024</div><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.tx};opacity:.5;letter-spacing:.14em">LISTENING REPORT</div><div style="font-family:'Space Mono',monospace;font-size:.3rem;color:${p.mu};letter-spacing:.1em;margin-top:4px">STATIFY · YOUR YEAR IN SOUND</div></div>`;}
-  function p11RenderOverview(s){const p=_p11PAL[s];const S=(typeof p7S==='function'?p7S():(typeof streams!=='undefined'?streams:[]));const n=S.length;const hrs=Math.round(S.reduce((a,x)=>a+(x.ms_played||x.msPlayed||0),0)/3600000);const rows=[['TOTAL STREAMS',n.toLocaleString()],['EST. HOURS',hrs||'—'],['TOP ARTIST',(()=>{const m={};S.forEach(x=>{const a=x.artist||x.channel||'?';m[a]=(m[a]||0)+1;});return Object.entries(m).sort((a,b)=>b[1]-a[1])[0]?.[0]||'—';})()],['PEAK DAY','Saturday'],['UNIQUE TRACKS',(()=>{const t=new Set(S.map(x=>x.track||x.title));return t.size||'—';})()],['COUNTRIES','—']];return `<div style="background:${p.bg};padding:12px;height:100%;display:flex;flex-direction:column"><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.acc};letter-spacing:.1em;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid ${p.brd}">OVERVIEW</div>${rows.map(([l,v])=>`<div style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid ${p.brd}"><span style="font-family:'Space Mono',monospace;font-size:.32rem;color:${p.mu}">${l}</span><span style="font-family:'Space Mono',monospace;font-size:.6rem;color:${p.acc};font-weight:700">${v}</span></div>`).join('')}</div>`;}
+  function p11RenderCover(s){const p=_p11PAL[s];const grad=s==='A'?'linear-gradient(145deg,#080808 0%,#0a1a0f 60%,#080808 100%)':'linear-gradient(145deg,#f5f0eb 0%,#d8f5e5 50%,#f5f0eb 100%)';const arms=Array.from({length:10},(_,i)=>{const a=(i/10)*Math.PI*2,len=18+i%3*9;return `<line x1="40" y1="40" x2="${(40+Math.cos(a)*len).toFixed(1)}" y2="${(40+Math.sin(a)*len).toFixed(1)}" stroke="${p.acc}" stroke-width="1.3" opacity="${(0.3+i/10*0.6).toFixed(2)}"/>`;}).join('');return `<div style="background:${grad};height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:16px;text-align:center"><svg width="80" height="80" viewBox="0 0 80 80"><circle cx="40" cy="40" r="36" fill="none" stroke="${p.acc}" stroke-width="0.7" opacity="0.22"/>${arms}<circle cx="40" cy="40" r="5" fill="${p.acc}"/><circle cx="40" cy="40" r="2.5" fill="${p.acc2}"/></svg><div style="font-family:'Space Mono',monospace;font-size:2rem;color:${p.acc};font-weight:700;line-height:1">${(()=>{const _S2=(typeof p7S==='function'?p7S():(typeof streams!=='undefined'?streams:[]));const _yrs=_S2.map(x=>new Date(x.ts||x.endTime||x.watchedAt||0).getFullYear()).filter(y=>y>1990&&y<2100);return _yrs.length?Math.max(..._yrs):new Date().getFullYear();})()}</div><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.tx};opacity:.5;letter-spacing:.14em">LISTENING REPORT</div><div style="font-family:'Space Mono',monospace;font-size:.3rem;color:${p.mu};letter-spacing:.1em;margin-top:4px">STATIFY · YOUR YEAR IN SOUND</div></div>`;}
+  function p11RenderOverview(s){const p=_p11PAL[s];const S=(typeof p7S==='function'?p7S():(typeof streams!=='undefined'?streams:[]));const n=S.length;const hrs=Math.round(S.reduce((a,x)=>a+(x.ms_played||x.msPlayed||0),0)/3600000);const rows=[['TOTAL STREAMS',n.toLocaleString()],['EST. HOURS',hrs||'—'],['TOP ARTIST',(()=>{const m={};S.forEach(x=>{const a=x.artist||x.channel||'?';m[a]=(m[a]||0)+1;});return Object.entries(m).sort((a,b)=>b[1]-a[1])[0]?.[0]||'—';})()],['PEAK DAY',(()=>{const dm={};S.forEach(x=>{const d=new Date(x.ts||x.endTime||x.watchedAt||0).getDay();dm[d]=(dm[d]||0)+1;});const best=Object.entries(dm).sort((a,b)=>b[1]-a[1])[0];return best?['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][+best[0]]:'—';})()],['UNIQUE TRACKS',(()=>{const t=new Set(S.map(x=>x.track||x.title));return t.size||'—';})()],['COUNTRIES',(()=>{const cd=(typeof buildCountryData==='function')?buildCountryData():[];return cd.length||'—';})()]];return `<div style="background:${p.bg};padding:12px;height:100%;display:flex;flex-direction:column"><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.acc};letter-spacing:.1em;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid ${p.brd}">OVERVIEW</div>${rows.map(([l,v])=>`<div style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid ${p.brd}"><span style="font-family:'Space Mono',monospace;font-size:.32rem;color:${p.mu}">${l}</span><span style="font-family:'Space Mono',monospace;font-size:.6rem;color:${p.acc};font-weight:700">${v}</span></div>`).join('')}</div>`;}
   function p11RenderTracks(s){const p=_p11PAL[s];const S=(typeof p7S==='function'?p7S():(typeof streams!=='undefined'?streams:[]));const m={};S.forEach(x=>{const k=(x.track||x.title||'?')+'||'+(x.artist||x.channel||'?');m[k]=(m[k]||0)+1;});const top=Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,7);const mx=top[0]?.[1]||1;return `<div style="background:${p.bg2};padding:10px;height:100%;display:flex;flex-direction:column"><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.acc};letter-spacing:.1em;margin-bottom:7px">TOP TRACKS</div>${top.map(([k,cnt],i)=>{const [t,ar]=k.split('||');return `<div style="display:flex;align-items:center;gap:5px;padding:3.5px 0;border-bottom:1px solid ${p.brd}"><span style="font-family:'Space Mono',monospace;font-size:.3rem;color:${p.acc};opacity:.6;width:9px">${i+1}</span><div style="flex:1;overflow:hidden"><div style="font-size:.36rem;color:${p.tx};font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t}</div><div style="font-size:.28rem;color:${p.mu}">${ar}</div></div><div style="width:${((cnt/mx)*50).toFixed(0)}px;height:2px;background:${p.acc};border-radius:1px;flex-shrink:0"></div></div>`;}).join('')}</div>`;}
-  function p11RenderCalendar(s){const p=_p11PAL[s];const cells=Array.from({length:371},()=>Math.random());return `<div style="background:${p.bg};padding:10px;height:100%;display:flex;flex-direction:column"><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.acc};letter-spacing:.1em;margin-bottom:7px">EMOTIONAL CALENDAR</div><div style="display:grid;grid-template-columns:repeat(53,1fr);gap:1.2px;flex:1">${cells.map(v=>`<div style="background:${p.acc};opacity:${(v*0.85+0.08).toFixed(2)};border-radius:1px;aspect-ratio:1"></div>`).join('')}</div><div style="display:flex;justify-content:space-between;margin-top:5px"><span style="font-size:.28rem;color:${p.mu};font-family:'Space Mono',monospace">JAN</span><span style="font-size:.28rem;color:${p.mu};font-family:'Space Mono',monospace">DEC</span></div></div>`;}
+  function p11RenderCalendar(s){const p=_p11PAL[s];const _calS=(typeof p7S==='function'?p7S():(typeof streams!=='undefined'?streams:[]));const _calYear=(()=>{const ys=_calS.map(x=>new Date(x.ts||x.endTime||x.watchedAt||0).getFullYear()).filter(y=>y>1990&&y<2100);return ys.length?Math.max(...ys):new Date().getFullYear();})();const _calStart=new Date(_calYear,0,1);const _calBuckets={};_calS.forEach(x=>{const d=new Date(x.ts||x.endTime||x.watchedAt||0);if(d.getFullYear()===_calYear){const key=Math.floor((d-_calStart)/86400000);_calBuckets[key]=(_calBuckets[key]||0)+1;}});const _calMax=Math.max(1,...Object.values(_calBuckets));const cells=Array.from({length:371},(_,i)=>{const v=_calBuckets[i]||0;return v?v/_calMax:0;});return `<div style="background:${p.bg};padding:10px;height:100%;display:flex;flex-direction:column"><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.acc};letter-spacing:.1em;margin-bottom:7px">EMOTIONAL CALENDAR</div><div style="display:grid;grid-template-columns:repeat(53,1fr);gap:1.2px;flex:1">${cells.map(v=>`<div style="background:${p.acc};opacity:${(v*0.85+0.08).toFixed(2)};border-radius:1px;aspect-ratio:1"></div>`).join('')}</div><div style="display:flex;justify-content:space-between;margin-top:5px"><span style="font-size:.28rem;color:${p.mu};font-family:'Space Mono',monospace">JAN</span><span style="font-size:.28rem;color:${p.mu};font-family:'Space Mono',monospace">DEC</span></div></div>`;}
   function p11RenderRadar(s){
     const p=_p11PAL[s];
     const dims=['LOYALTY','EXPLORER','NIGHTOWL','SKIPPER','BINGE','FOCUS'];
@@ -15786,7 +15860,7 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
   }
   function p11RenderMap(s){const p=_p11PAL[s];const data=buildCountryData().slice(0,14);const dots=data.map(c=>{const x=((c.lon+180)/360)*140+15,y=((90-c.lat)/180)*80+10;return`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(c.size/5+0.4).toFixed(1)}" fill="${p.acc}" opacity="0.85"/>`;}).join('');return `<div style="background:${p.bg};height:100%;display:flex;flex-direction:column;padding:10px"><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.acc};letter-spacing:.1em;margin-bottom:6px">LISTENING MAP</div><div style="flex:1;display:flex;align-items:center"><svg viewBox="0 0 170 100" style="width:100%"><rect width="170" height="100" fill="${p.bg2}" rx="3"/>${dots}</svg></div></div>`;}
   function p11RenderArtists(s){const p=_p11PAL[s];const S=(typeof streams!=='undefined'?streams:[]);const m={};S.forEach(x=>{const a=x.artist||x.channel||'?';m[a]=(m[a]||0)+1;});const top=Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,7);const mx=top[0]?.[1]||1;return `<div style="background:${p.bg2};padding:10px;height:100%;display:flex;flex-direction:column"><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.acc};letter-spacing:.1em;margin-bottom:7px">TOP ARTISTS</div>${top.map(([name,cnt],i)=>`<div style="display:flex;align-items:center;gap:5px;padding:3.5px 0;border-bottom:1px solid ${p.brd}"><span style="font-family:'Space Mono',monospace;font-size:.3rem;color:${p.acc};opacity:.6;width:9px">${i+1}</span><div style="flex:1;overflow:hidden"><div style="font-size:.36rem;color:${p.tx};font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div><div style="font-size:.28rem;color:${p.mu}">${cnt.toLocaleString()} plays</div></div><div style="width:${((cnt/mx)*55).toFixed(0)}px;height:2px;background:${p.acc};border-radius:1px;flex-shrink:0"></div></div>`).join('')}</div>`;}
-  function p11RenderBack(s){const p=_p11PAL[s];const grad=s==='A'?'linear-gradient(180deg,#080808 0%,#0a1a0f 100%)':'linear-gradient(180deg,#f5f0eb 0%,#d4f0e0 100%)';const S=(typeof streams!=='undefined'?streams:[]);const hrs=Math.round(S.reduce((a,x)=>a+(x.ms_played||x.msPlayed||0),0)/3600000)||2847;const uTracks=new Set(S.map(x=>x.track||x.title)).size||1204;return `<div style="background:${grad};height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;text-align:center;gap:9px"><div style="font-family:'Space Mono',monospace;font-size:.55rem;color:${p.acc};letter-spacing:.16em;font-weight:700">STATIFY</div><div style="font-size:.36rem;color:${p.tx2};opacity:.65;line-height:1.7;max-width:110px">Your year in music. Every stream, every moment.</div><div style="font-family:'Space Mono',monospace;font-size:.28rem;color:${p.acc};letter-spacing:.08em">${hrs} HRS · ${uTracks} TRACKS</div><div style="font-family:'Space Mono',monospace;font-size:.24rem;color:${p.mu};letter-spacing:.06em">100% LOCAL · 100% PRIVATE</div></div>`;}
+  function p11RenderBack(s){const p=_p11PAL[s];const grad=s==='A'?'linear-gradient(180deg,#080808 0%,#0a1a0f 100%)':'linear-gradient(180deg,#f5f0eb 0%,#d4f0e0 100%)';const S=(typeof streams!=='undefined'?streams:[]);const hrs=Math.round(S.reduce((a,x)=>a+(x.ms_played||x.msPlayed||0),0)/3600000)||'—';const uTracks=new Set(S.map(x=>x.track||x.title)).size||'—';return `<div style="background:${grad};height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;text-align:center;gap:9px"><div style="font-family:'Space Mono',monospace;font-size:.55rem;color:${p.acc};letter-spacing:.16em;font-weight:700">STATIFY</div><div style="font-size:.36rem;color:${p.tx2};opacity:.65;line-height:1.7;max-width:110px">Your year in music. Every stream, every moment.</div><div style="font-family:'Space Mono',monospace;font-size:.28rem;color:${p.acc};letter-spacing:.08em">${hrs} HRS · ${uTracks} TRACKS</div><div style="font-family:'Space Mono',monospace;font-size:.24rem;color:${p.mu};letter-spacing:.06em">100% LOCAL · 100% PRIVATE</div></div>`;}
 
   window.p11ExportPDF=function(){
     if(typeof window.jspdf==='undefined'){alert('jsPDF not loaded');return;}
