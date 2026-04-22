@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Statify — Spotify</title>
+  <title>Statify</title>
   <link rel="icon" type="image/svg+xml"
     href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%23080808' stroke='%231DB954' stroke-width='4'/%3E%3Ccircle cx='50' cy='50' r='8' fill='%231DB954'/%3E%3Ccircle cx='50' cy='50' r='20' fill='none' stroke='%231DB954' stroke-width='3'/%3E%3C/svg%3E">
   <link rel="manifest" href="manifest.json">
@@ -3478,8 +3478,9 @@
 
     .live-panel-inner {
       background: var(--s1); border: 1px solid var(--border);
-      border-radius: var(--r); overflow: visible
+      border-radius: var(--r); overflow: visible; width: 100%
     }
+    #pl-genre-wrap { width: 100%; }
 
     .live-header {
       display: flex; align-items: center; gap: 10px;
@@ -4428,17 +4429,17 @@
     .p6-pnav-btn:hover{border-color:var(--accent,#1DB954);color:var(--accent,#1DB954)}
     .p6-pnav-btn.active{background:var(--accent,#1DB954);border-color:var(--accent,#1DB954);color:#000;font-weight:700}
     .p6-poster-stage{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap}
-    .p6-poster-canvas{flex-shrink:0;min-height:300px;width:200px;display:flex;align-items:flex-start}
+    .p6-poster-canvas{flex-shrink:0;min-height:300px;width:240px;display:flex;align-items:flex-start}
     .p6-poster-info{flex:1;min-width:200px}
     .p6-poster-info-title{font-size:.95rem;font-weight:700;color:var(--text);margin-bottom:6px}
     .p6-poster-info-desc{font-size:.75rem;color:var(--text2);line-height:1.7;margin-bottom:14px}
     .p6-period-row{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap}
     /* The poster element */
-    .p6-poster{width:200px;border-radius:8px;overflow:hidden;aspect-ratio:2/3;display:flex;flex-direction:column;position:relative}
+    .p6-poster{width:240px;border-radius:8px;overflow:hidden;aspect-ratio:2/3;display:flex;flex-direction:column;position:relative}
     /* Vintage */
     .p6-p-vintage{background:#f2e8d5;padding:13px}
     .p6-p-vintage::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.018) 3px,rgba(0,0,0,.018) 4px);pointer-events:none;z-index:0}
-    .p6-v-inner{border:2px solid #8B6914;padding:9px;height:100%;display:flex;flex-direction:column;justify-content:space-between;position:relative;z-index:1}
+    .p6-v-inner{border:2px solid #8B6914;padding:16px;height:100%;display:flex;flex-direction:column;justify-content:space-between;position:relative;z-index:1}
     .p6-v-top{font-family:var(--mono);font-size:.4rem;color:#5c4a1e;text-align:center;letter-spacing:.18em;text-transform:uppercase;border-bottom:1px solid #8B6914;padding-bottom:4px}
     .p6-v-h1{font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;font-style:italic;color:#2c1810;text-align:center;line-height:1}
     .p6-v-h2{font-size:.82rem;color:#3d2415;text-align:center;margin-top:3px;font-family:'Playfair Display',serif}
@@ -7137,7 +7138,7 @@
           else if (Array.isArray(d) && d[0] && (d[0].endTime || d[0].ts)) { S.push(...d) }
         } catch (e) { }
       }
-      S = S.map(s => ({ ts: s.endTime || s.ts || '', artist: s.artistName || s.master_metadata_album_artist_name || 'Unknown', track: s.trackName || s.master_metadata_track_name || 'Unknown', ms: s.msPlayed || s.ms_played || 0, skipped: s.skipped || false, platform: s.platform || '', fullMs: s.fullMs || 0 }));
+      S = S.map(s => ({ ts: s.endTime || s.ts || s.timestamp || '', artist: s.artistName || s.master_metadata_album_artist_name || s.artist || 'Unknown', track: s.trackName || s.master_metadata_track_name || s.track || 'Unknown', ms: s.msPlayed || s.ms_played || s.ms || 0, skipped: s.skipped || false, platform: s.platform || '', fullMs: s.fullMs || 0 }));
     }
 
     /* ═══════════════════════════════════════
@@ -11695,7 +11696,7 @@
     const el = document.getElementById('chaptersContent');
     if (!el) return;
     const streams = p4Streams();
-    if (streams.length < 50) { p4Empty(el,'Not enough data for chapter detection.'); return; }
+    if (streams.length < 50) { p4Empty(el,'Needs 50+ streams with timestamps for chapter detection.'); return; }
     // Group by month, find dominant artist per 8-week window
     const monthly = {};
     streams.forEach(s => {
@@ -11790,7 +11791,7 @@
     const el = document.getElementById('archetypeContent');
     if (!el) return;
     const streams = p4Streams();
-    if (streams.length < 20) { p4Empty(el,'Not enough data.'); return; }
+    if (streams.length < 20) { p4Empty(el,'Needs 50+ streams with timestamps.'); return; }
     // Compute 6 axes 0-100
     const artMap = p4ArtistMap();
     const artList = Object.values(artMap);
@@ -12015,7 +12016,7 @@
     const el = document.getElementById('alterEgoContent');
     if (!el) return;
     const streams = p4Streams();
-    if (streams.length < 20) { p4Empty(el,'Not enough data.'); return; }
+    if (streams.length < 20) { p4Empty(el,'Needs 50+ streams with timestamps.'); return; }
     const morning = streams.filter(s=>{ const h=p4HourOf(p4Ts(s)); return h>=6&&h<12; });
     const night = streams.filter(s=>{ const h=p4HourOf(p4Ts(s)); return h>=21||h<5; });
     if (morning.length<3&&night.length<3) { p4Empty(el,'Not enough morning/night streams to build profiles.'); return; }
@@ -12105,7 +12106,7 @@
     const el = document.getElementById('workModeContent');
     if (!el) return;
     const streams = p4Streams();
-    if (streams.length < 30) { p4Empty(el, 'Not enough data.'); return; }
+    if (streams.length < 30) { p4Empty(el, 'Needs 50+ streams with timestamps.'); return; }
 
     // Group into sessions: gap > 30min = new session
     const sorted = [...streams].sort((a,b) => new Date(p4Ts(a)) - new Date(p4Ts(b)));
@@ -12276,7 +12277,7 @@ ${(()=>{
     const el = document.getElementById('longGameContent');
     if (!el) return;
     const streams = p4Streams();
-    if (streams.length < 50) { p4Empty(el, 'Not enough data.'); return; }
+    if (streams.length < 50) { p4Empty(el, 'Needs 50+ streams with timestamps.'); return; }
 
     // Build per-artist year map
     const artistData = {};
@@ -12777,6 +12778,14 @@ ${longGameArtists.slice(0,8).map((d,i) => {
 
   function p6FilterPeriod(streams, period) {
     if (period === 'all') return streams;
+    if (period && period.startsWith('month:')) {
+      const ym = period.slice(6); // 'YYYY-MM'
+      return streams.filter(s => { try{ const d=new Date(p6Ts(s)); return d.getFullYear()+'-'+(String(d.getMonth()+1).padStart(2,'0'))===ym; }catch(e){return false;} });
+    }
+    if (period && period.startsWith('year:')) {
+      const yr = parseInt(period.slice(5));
+      return streams.filter(s => { try{ return new Date(p6Ts(s)).getFullYear()===yr; }catch(e){return false;} });
+    }
     const now = new Date();
     const cutoffs = {'1m':30,'6m':182,'1y':365};
     const days = cutoffs[period] || 365;
@@ -12906,12 +12915,31 @@ ${top5Artists.map((a,i)=>`<div class="p6-wc-art-item"><div class="p6-wc-rank">#$
     let activeSize = 'IG Story';
     let activeFmt = 'PNG';
 
+    function getAvailableMonths() {
+      const seen = {};
+      streams.forEach(s => { try{ const d=new Date(p6Ts(s)); const ym=d.getFullYear()+'-'+(String(d.getMonth()+1).padStart(2,'0')); seen[ym]=true; }catch(e){} });
+      return Object.keys(seen).sort().reverse();
+    }
+    function getAvailableYears() {
+      const seen = {};
+      streams.forEach(s => { try{ const y=new Date(p6Ts(s)).getFullYear(); if(y>1990&&y<2100) seen[y]=true; }catch(e){} });
+      return Object.keys(seen).map(Number).sort().reverse();
+    }
+    function getPeriodLabel(p) {
+      if (p==='1m') return '1 MONTH';
+      if (p==='6m') return '6 MONTHS';
+      if (p==='1y') return '1 YEAR';
+      if (p==='all') return 'ALL TIME';
+      if (p && p.startsWith('month:')) { const [yr,mo]=p.slice(6).split('-'); const mn=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][parseInt(mo)-1]; return mn+' '+yr; }
+      if (p && p.startsWith('year:')) return p.slice(5);
+      return p;
+    }
+
     function rebuildCard() {
       const filtered = p6FilterPeriod(streams, activePeriod);
       const stats = p6Stats(filtered);
-      const periodLabel = activePeriod==='1m'?'1 MONTH':activePeriod==='6m'?'6 MONTHS':activePeriod==='1y'?'1 YEAR':'ALL TIME';
       document.getElementById('p6CardInner').innerHTML = p6BuildCard(stats, activeCard, activePeriod);
-      document.getElementById('p6CardPeriod').textContent = periodLabel;
+      document.getElementById('p6CardPeriod').textContent = getPeriodLabel(activePeriod);
     }
 
     el.innerHTML = `
@@ -12928,6 +12956,11 @@ ${top5Artists.map((a,i)=>`<div class="p6-wc-art-item"><div class="p6-wc-rank">#$
       <button class="p6-ttog active" onclick="p6SetPeriod('6m',this)">6m</button>
       <button class="p6-ttog" onclick="p6SetPeriod('1y',this)">1y</button>
       <button class="p6-ttog" onclick="p6SetPeriod('all',this)">all</button>
+      <select class="p6-fmt-select" id="p6MonthSel" onchange="p6SetPeriod(this.value,null)" style="max-width:110px">
+        <option value="">month/year…</option>
+        ${getAvailableYears().map(y=>`<option value="year:${y}">${y}</option>`).join('')}
+        ${getAvailableMonths().map(ym=>{ const [yr,mo]=ym.split('-'); const mn=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(mo)-1]; return `<option value="month:${ym}">${mn} ${yr}</option>`; }).join('')}
+      </select>
     </div>
     <div class="p6-wcard" id="p6Card">
       <div class="p6-wc-glow"></div>
@@ -12958,9 +12991,10 @@ ${top5Artists.map((a,i)=>`<div class="p6-wc-art-item"><div class="p6-wc-rank">#$
       rebuildCard();
     };
     window.p6SetPeriod = function(p, btn) {
+      if (!p) return;
       activePeriod = p;
       document.querySelectorAll('.p6-ttog').forEach(x=>x.classList.remove('active'));
-      btn.classList.add('active');
+      if (btn) { btn.classList.add('active'); const sel=document.getElementById('p6MonthSel'); if(sel) sel.value=''; }
       rebuildCard();
     };
     window.p6SetSize = function(s, btn) {
@@ -13741,7 +13775,7 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
       let edges='', nodes='';
 
       // origin node
-      nodes+=`<circle cx="${cx}" cy="${cy}" r="28" fill="${ac}20" stroke="${ac}" stroke-width="2.5" filter="url(#bf8glow)"/>
+      nodes+=`<circle cx="${cx}" cy="${cy}" r="20" fill="${ac}20" stroke="${ac}" stroke-width="2.5" filter="url(#bf8glow)"/>
         <text x="${cx}" y="${cy-4}" text-anchor="middle" dominant-baseline="middle" fill="${ac}" font-family="Space Mono,monospace" font-size="7" font-weight="700">${chosen.track.length>16?chosen.track.slice(0,15)+'…':chosen.track}</text>
         <text x="${cx}" y="${cy+8}" text-anchor="middle" dominant-baseline="middle" fill="${ac}99" font-family="Space Mono,monospace" font-size="6">${chosen.artist.length>13?chosen.artist.slice(0,12)+'…':chosen.artist}</text>`;
 
@@ -13749,30 +13783,30 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
       const h1Count = h1.length || 1;
       h1.forEach((h, i) => {
         const angle = ((i/(h1Count))*Math.PI*1.6) - Math.PI*0.8;
-        const r1x = 240, r1y = cy + Math.sin(angle)*100;
+        const r1x = 240, r1y = cy + Math.sin(angle)*140;
         const col = colors[(i+1)%colors.length];
         const days = Math.round(h.diff/86400000);
         // edge origin→h1
         const dx=r1x-cx, dy=r1y-cy, len=Math.sqrt(dx*dx+dy*dy);
-        const ex=cx+(dx/len)*30, ey=cy+(dy/len)*30, fx=r1x-(dx/len)*20, fy=r1y-(dy/len)*20;
+        const ex=cx+(dx/len)*22, ey=cy+(dy/len)*22, fx=r1x-(dx/len)*16, fy=r1y-(dy/len)*16;
         const midx=(ex+fx)/2-dy*0.1, midy=(ey+fy)/2+dx*0.1;
         edges+=`<path d="M${ex},${ey} Q${midx},${midy} ${fx},${fy}" stroke="#2e2e2e" stroke-width="1.5" fill="none" marker-end="url(#bf8arr)"/>`;
         edges+=`<text x="${(ex+fx)/2}" y="${(ey+fy)/2-7}" text-anchor="middle" fill="#444" font-family="Space Mono,monospace" font-size="6.5">+${days}d</text>`;
-        nodes+=`<circle cx="${r1x}" cy="${r1y}" r="20" fill="${col}20" stroke="${col}" stroke-width="1.8" filter="url(#bf8glow)"/>`;
+        nodes+=`<circle cx="${r1x}" cy="${r1y}" r="15" fill="${col}20" stroke="${col}" stroke-width="1.8" filter="url(#bf8glow)"/>`;
         nodes+=`<text x="${r1x}" y="${r1y}" text-anchor="middle" dominant-baseline="middle" fill="${col}" font-family="Space Mono,monospace" font-size="6.5" font-weight="700">${h.artist.length>10?h.artist.slice(0,9)+'…':h.artist}</text>`;
 
         // hop 2
         const h2List = hop2map[h.artist]||[];
         h2List.forEach((h2, j) => {
-          const a2 = angle + (j===0?-0.3:0.3);
+          const a2 = angle + (j===0?-0.45:0.45);
           const r2x = 420, r2y = r1y + Math.sin(a2)*60;
           const col2 = colors[(i*2+j+3)%colors.length];
           const days2 = Math.round((h2.ts-h.ts)/86400000);
           const dx2=r2x-r1x, dy2=r2y-r1y, len2=Math.sqrt(dx2*dx2+dy2*dy2);
-          const ex2=r1x+(dx2/len2)*22, ey2=r1y+(dy2/len2)*22, fx2=r2x-(dx2/len2)*16, fy2=r2y-(dy2/len2)*16;
+          const ex2=r1x+(dx2/len2)*17, ey2=r1y+(dy2/len2)*17, fx2=r2x-(dx2/len2)*13, fy2=r2y-(dy2/len2)*13;
           edges+=`<path d="M${ex2},${ey2} L${fx2},${fy2}" stroke="#222" stroke-width="1.2" fill="none" marker-end="url(#bf8arr)"/>`;
           edges+=`<text x="${(ex2+fx2)/2}" y="${(ey2+fy2)/2-6}" text-anchor="middle" fill="#333" font-family="Space Mono,monospace" font-size="6">+${days2}d</text>`;
-          nodes+=`<circle cx="${r2x}" cy="${r2y}" r="15" fill="${col2}18" stroke="${col2}" stroke-width="1.5"/>`;
+          nodes+=`<circle cx="${r2x}" cy="${r2y}" r="11" fill="${col2}18" stroke="${col2}" stroke-width="1.5"/>`;
           nodes+=`<text x="${r2x}" y="${r2y}" text-anchor="middle" dominant-baseline="middle" fill="${col2}" font-family="Space Mono,monospace" font-size="6" font-weight="700">${h2.artist.length>9?h2.artist.slice(0,8)+'…':h2.artist}</text>`;
 
           // hop 3
@@ -13782,9 +13816,9 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
             const col3 = colors[(i*3+j+5)%colors.length];
             const days3 = Math.round((h3.ts-h2.ts)/86400000);
             const dx3=r3x-r2x, len3=Math.sqrt(dx3*dx3);
-            const ex3=r2x+17, fx3=r3x-13;
+            const ex3=r2x+13, fx3=r3x-10;
             edges+=`<path d="M${ex3},${r2y} L${fx3},${r3y}" stroke="#1e1e1e" stroke-width="1" fill="none" marker-end="url(#bf8arr)"/>`;
-            nodes+=`<circle cx="${r3x}" cy="${r3y}" r="12" fill="${col3}15" stroke="${col3}" stroke-width="1.2"/>`;
+            nodes+=`<circle cx="${r3x}" cy="${r3y}" r="9" fill="${col3}15" stroke="${col3}" stroke-width="1.2"/>`;
             nodes+=`<text x="${r3x}" y="${r3y}" text-anchor="middle" dominant-baseline="middle" fill="${col3}" font-family="Space Mono,monospace" font-size="5.5" font-weight="700">${h3.artist.length>8?h3.artist.slice(0,7)+'…':h3.artist}</text>`;
           });
         });
@@ -13815,7 +13849,7 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
     if (treeSvg) {
       const W=780, H=340;
       let s='';
-      function nodeW(label) { return label.length*6.5+18; }
+      function nodeW(label) { return label.length*5.5+18; }
       function drawRect(x, y, label, color, fontSize) {
         const w=nodeW(label), h=22;
         return `<rect x="${x}" y="${y-11}" width="${w}" height="${h}" rx="4" fill="#1a1a1a" stroke="${color}66"/>
@@ -13937,18 +13971,18 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
     const totalScenes = scenes.reduce((s,[,c])=>s+c,0);
 
     // Bubble map SVG
-    const W=700, H=300;
+    const W=700, H=220;
     // Simple manual placement for up to 8 scenes
     const placements = [
-      {x:180,y:150},{x:330,y:120},{x:460,y:160},{x:570,y:110},
-      {x:250,y:240},{x:400,y:250},{x:520,y:240},{x:100,y:200}
+      {x:180,y:110},{x:330,y:90},{x:460,y:120},{x:570,y:80},
+      {x:250,y:185},{x:400,y:190},{x:520,y:180},{x:100,y:155}
     ];
     const maxPct = scenes[0] ? scenes[0][1]/totalScenes : 1;
 
     let svgS = `<defs><filter id="scglow"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
     scenes.slice(0,8).forEach(([scene, count], i) => {
       const pct = count/totalScenes;
-      const r = Math.max(28, Math.min(85, Math.round(pct/maxPct*80)));
+      const r = Math.max(22, Math.min(60, Math.round(pct/maxPct*58)));
       const pos = placements[i] || {x:350+i*60,y:150};
       const color = SCENE_COLORS[scene] || '#3a3a3a';
       svgS += `<circle cx="${pos.x}" cy="${pos.y}" r="${r}" fill="${color}20" stroke="${color}" stroke-width="1.8" filter="url(#scglow)" style="cursor:pointer" onclick="p8SceneClick('${scene}',this)"/>`;
