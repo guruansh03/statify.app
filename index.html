@@ -3852,8 +3852,8 @@
        Pattern: bar shifts left, panel slides in from right
     ══════════════════════════════════════════ */
 
-    /* body padding so content isn't hidden behind bar */
-    body { padding-bottom: 66px }
+    /* body padding so content isn't hidden behind bar — only when bar visible */
+    body:has(#np-bar.visible) { padding-bottom: 66px }
 
     /* ── Context sidebar panel (always in DOM, off-screen right) ── */
     #np-ctx {
@@ -5141,6 +5141,186 @@
     .p10-leg-i{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:.56rem;color:var(--muted)}
     .p10-leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
     .p10-trend-pill{font-family:var(--mono);font-size:.6rem;padding:4px 11px;border-radius:3px;background:rgba(91,156,246,.08);border:1px solid rgba(91,156,246,.2);color:var(--blue)}
+
+    /* ═══════════════════════════════════════════════
+       FIX BLOCK — Visual consistency + Mobile + PWA
+    ═══════════════════════════════════════════════ */
+
+    /* BUG 4 fallback: browsers without :has() support */
+    @supports not (selector(:has(a))) {
+      body { padding-bottom: 0 }
+    }
+
+    /* FIX 11: Uniform label sizing across stat cards and DNA rows */
+    .sc-lbl, .dna-label { font-size: .58rem !important }
+
+    /* FIX 12: Hide hdr-tag on small screens */
+    @media(max-width:640px) {
+      .hdr-tag { display: none }
+    }
+
+    /* FIX 13: np-bar shifted width matches header at 640px breakpoint */
+    @media(max-width:640px) {
+      #np-bar.shifted { right: 260px }
+    }
+
+    /* FIX 14: YT logo-pulse → actual triangle shape */
+    body.yt-theme .logo-pulse {
+      background: transparent !important;
+      border-radius: 0 !important;
+      clip-path: polygon(15% 5%, 15% 95%, 90% 50%);
+      background-color: var(--g) !important
+    }
+
+    /* FIX 15: toggle-locked-tip z-index guard */
+    .toggle-locked-tip { z-index: 200 }
+
+    /* FIX 16: Annual report page checkboxes — larger touch targets */
+    .p11-page-sel input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      min-width: 20px;
+      cursor: pointer
+    }
+    .p11-page-thumb {
+      min-height: 44px
+    }
+
+    /* FIX 17: Dropzone mobile padding */
+    @media(max-width:640px) {
+      #dropzone {
+        padding: 32px 20px;
+        margin: 32px auto 0
+      }
+      #dropzone h2 { font-size: .95rem }
+    }
+
+    /* FIX 18: Butterfly SVG minimum height on mobile */
+    #bf8-svg, #bf8-tree-svg {
+      min-height: 160px
+    }
+    @media(max-width:640px) {
+      #bf8-svg { min-height: 200px }
+      #bf8-tree-svg { min-height: 180px }
+    }
+
+    /* FIX 19: Artist modal stats grid — 2-col on mobile */
+    @media(max-width:540px) {
+      .amstats { grid-template-columns: repeat(2, 1fr) !important }
+    }
+
+    /* ── MOBILE: global dashboard padding ── */
+    @media(max-width:640px) {
+      #dashboard { padding: 0 16px 80px }
+      header { padding: 12px 16px; gap: 10px }
+    }
+
+    /* ── MOBILE: stat cards wrap nicely ── */
+    @media(max-width:500px) {
+      .sg { grid-template-columns: repeat(2, 1fr) }
+    }
+
+    /* ── MOBILE: section panels full-width ── */
+    @media(max-width:640px) {
+      .panel { border-radius: 6px }
+      .pc, .dc, .ac { border-radius: 6px }
+    }
+
+    /* ── MOBILE: wrapped card padding ── */
+    @media(max-width:480px) {
+      #wcard { padding: 24px 18px }
+      .wcb { font-size: 2rem }
+    }
+
+    /* ── MOBILE: hide non-critical header buttons ── */
+    @media(max-width:420px) {
+      #exportBtn { display: none }
+    }
+
+    /* ── MOBILE: theme toggle label text hidden on tiny screens ── */
+    @media(max-width:380px) {
+      .theme-toggle-label { display: none }
+      .theme-toggle { padding: 5px 8px; gap: 5px }
+    }
+
+    /* ── MOBILE: now-playing bar layout ── */
+    @media(max-width:500px) {
+      #np-bar { padding: 0 12px; gap: 10px }
+      .npb-track { font-size: .78rem }
+      .npb-artist { font-size: .62rem }
+      #npb-elapsed, #npb-duration { display: none }
+    }
+
+    /* ── MOBILE: ctx sidebar full-width on phone ── */
+    @media(max-width:480px) {
+      #np-ctx { width: 100vw; right: -100vw }
+      #np-ctx.open { right: 0 }
+      #np-bar.shifted { right: 0 }
+      header.ctx-shifted { margin-right: 0 }
+      #dashboard.ctx-shifted { margin-right: 0 }
+    }
+
+    /* ── MOBILE: p7 bar-race artist label width ── */
+    @media(max-width:480px) {
+      .p7-race-artist { width: 80px }
+      .p7-race-count { width: 28px }
+    }
+
+    /* ── MOBILE: compare mode zones stack vertically ── */
+    @media(max-width:560px) {
+      .p9-zones { flex-direction: column }
+      .p9-vs { transform: rotate(90deg) }
+    }
+
+    /* ── MOBILE: p11 PDF page selector grid ── */
+    @media(max-width:600px) {
+      .p11-pages-grid { grid-template-columns: repeat(2, 1fr) !important }
+    }
+
+    /* ── PWA: safe-area insets for notch/home indicator ── */
+    header {
+      padding-top: max(14px, env(safe-area-inset-top));
+      padding-left: max(40px, env(safe-area-inset-left));
+      padding-right: max(40px, env(safe-area-inset-right))
+    }
+    @media(max-width:640px) {
+      header {
+        padding-left: max(16px, env(safe-area-inset-left));
+        padding-right: max(16px, env(safe-area-inset-right))
+      }
+    }
+    #np-bar {
+      padding-bottom: max(0px, env(safe-area-inset-bottom));
+      height: calc(66px + env(safe-area-inset-bottom))
+    }
+    body:has(#np-bar.visible) {
+      padding-bottom: calc(66px + env(safe-area-inset-bottom))
+    }
+    #dashboard {
+      padding-left: max(40px, env(safe-area-inset-left));
+      padding-right: max(40px, env(safe-area-inset-right))
+    }
+    @media(max-width:640px) {
+      #dashboard {
+        padding-left: max(16px, env(safe-area-inset-left));
+        padding-right: max(16px, env(safe-area-inset-right))
+      }
+    }
+
+    /* ── PWA: touch target minimum for all interactive controls ── */
+    .sort-btn, .wtab, .hbtn, .rbtn, .sbtn, .p7-race-speed,
+    .res-tab, .bf8-vtab, .yt-mtab, .p9-lt-btn {
+      min-height: 36px
+    }
+    .npc-collapse-btn, .amc, .spm-x { min-width: 36px; min-height: 36px }
+
+    /* ── PWA: prevent text size adjust on orientation change ── */
+    html { -webkit-text-size-adjust: 100%; text-size-adjust: 100% }
+
+    /* ── PWA: scrollable sections get momentum scroll ── */
+    .p7-tc-list, .npc-recent, .p3-list, .p2-list {
+      -webkit-overflow-scrolling: touch
+    }
 
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -7338,6 +7518,8 @@
       clearSessionDB().catch(()=>{});
       dashboardOpen = false;
       lockToggle(false);
+      // Bug fix: ensure ctx-shifted state is cleared on home navigation
+      if (typeof _setCtxShift === 'function') _setCtxShift(false);
       // Animate dropzone back in
       gsap.fromTo('#dropzone', { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: .4, delay: .1, ease: 'power2.out' });
     }
@@ -10949,7 +11131,7 @@
       el.innerHTML = `
         <div class="res-tabs-row">
           <button class="res-tab act" onclick="p3Tab('res','cards',this)">PEAK CARDS</button>
-          <button class="res-tab" onclick="p3Tab('res','spark',this)">SPARKLINES</button>
+          <button class="res-tab" onclick="p3Tab('res','spark',this);if(window.p3BuildResSparkIfNeeded)window.p3BuildResSparkIfNeeded();">SPARKLINES</button>
         </div>
         <div id="res-cards-pane" class="res-pane act">
           <div class="res-list">
@@ -10982,7 +11164,8 @@
 
       window._resData = resurrected;
       window._resSparkBuilt = false;
-      document.querySelector('[onclick*="res\',\'spark"]').addEventListener('click', () => {
+      // Use a named global so p3Tab can call it — avoids duplicate listener stacking on re-render
+      window.p3BuildResSparkIfNeeded = function() {
         if (window._resSparkBuilt) return;
         window._resSparkBuilt = true;
         setTimeout(() => {
@@ -11012,7 +11195,7 @@
             }
           });
         },50);
-      });
+      };
     }
 
     /* ──────────────────────────────────────────
@@ -15529,7 +15712,46 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
   function p11RenderOverview(s){const p=_p11PAL[s];const S=(typeof p7S==='function'?p7S():(typeof streams!=='undefined'?streams:[]));const n=S.length;const hrs=Math.round(S.reduce((a,x)=>a+(x.ms_played||x.msPlayed||0),0)/3600000);const rows=[['TOTAL STREAMS',n.toLocaleString()],['EST. HOURS',hrs||'—'],['TOP ARTIST',(()=>{const m={};S.forEach(x=>{const a=x.artist||x.channel||'?';m[a]=(m[a]||0)+1;});return Object.entries(m).sort((a,b)=>b[1]-a[1])[0]?.[0]||'—';})()],['PEAK DAY','Saturday'],['UNIQUE TRACKS',(()=>{const t=new Set(S.map(x=>x.track||x.title));return t.size||'—';})()],['COUNTRIES','—']];return `<div style="background:${p.bg};padding:12px;height:100%;display:flex;flex-direction:column"><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.acc};letter-spacing:.1em;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid ${p.brd}">OVERVIEW</div>${rows.map(([l,v])=>`<div style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid ${p.brd}"><span style="font-family:'Space Mono',monospace;font-size:.32rem;color:${p.mu}">${l}</span><span style="font-family:'Space Mono',monospace;font-size:.6rem;color:${p.acc};font-weight:700">${v}</span></div>`).join('')}</div>`;}
   function p11RenderTracks(s){const p=_p11PAL[s];const S=(typeof p7S==='function'?p7S():(typeof streams!=='undefined'?streams:[]));const m={};S.forEach(x=>{const k=(x.track||x.title||'?')+'||'+(x.artist||x.channel||'?');m[k]=(m[k]||0)+1;});const top=Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,7);const mx=top[0]?.[1]||1;return `<div style="background:${p.bg2};padding:10px;height:100%;display:flex;flex-direction:column"><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.acc};letter-spacing:.1em;margin-bottom:7px">TOP TRACKS</div>${top.map(([k,cnt],i)=>{const [t,ar]=k.split('||');return `<div style="display:flex;align-items:center;gap:5px;padding:3.5px 0;border-bottom:1px solid ${p.brd}"><span style="font-family:'Space Mono',monospace;font-size:.3rem;color:${p.acc};opacity:.6;width:9px">${i+1}</span><div style="flex:1;overflow:hidden"><div style="font-size:.36rem;color:${p.tx};font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t}</div><div style="font-size:.28rem;color:${p.mu}">${ar}</div></div><div style="width:${((cnt/mx)*50).toFixed(0)}px;height:2px;background:${p.acc};border-radius:1px;flex-shrink:0"></div></div>`;}).join('')}</div>`;}
   function p11RenderCalendar(s){const p=_p11PAL[s];const cells=Array.from({length:371},()=>Math.random());return `<div style="background:${p.bg};padding:10px;height:100%;display:flex;flex-direction:column"><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.acc};letter-spacing:.1em;margin-bottom:7px">EMOTIONAL CALENDAR</div><div style="display:grid;grid-template-columns:repeat(53,1fr);gap:1.2px;flex:1">${cells.map(v=>`<div style="background:${p.acc};opacity:${(v*0.85+0.08).toFixed(2)};border-radius:1px;aspect-ratio:1"></div>`).join('')}</div><div style="display:flex;justify-content:space-between;margin-top:5px"><span style="font-size:.28rem;color:${p.mu};font-family:'Space Mono',monospace">JAN</span><span style="font-size:.28rem;color:${p.mu};font-family:'Space Mono',monospace">DEC</span></div></div>`;}
-  function p11RenderRadar(s){const p=_p11PAL[s];const dims=['LOYALTY','EXPLORER','NIGHTOWL','SKIPPER','BINGE','FOCUS'];const vals=[0.85,0.60,0.90,0.15,0.70,0.50];const cx=60,cy=65,r=42;const pts=dims.map((_,i)=>{const a=(i/6)*Math.PI*2-Math.PI/2;return[(cx+Math.cos(a)*r*vals[i]).toFixed(1),(cy+Math.sin(a)*r*vals[i]).toFixed(1)];});const poly=pts.map(pp=>pp.join(',')).join(' ');const grids=[0.25,0.5,0.75,1].map(f=>`<polygon points="${dims.map((_,i)=>{const a=(i/6)*Math.PI*2-Math.PI/2;return`${(cx+Math.cos(a)*r*f).toFixed(1)},${(cy+Math.sin(a)*r*f).toFixed(1)}`;}).join(' ')}" fill="none" stroke="${p.acc}" stroke-width="0.4" opacity="${(f*0.28).toFixed(2)}"/>`).join('');const spokes=dims.map((_,i)=>{const a=(i/6)*Math.PI*2-Math.PI/2;return`<line x1="${cx}" y1="${cy}" x2="${(cx+Math.cos(a)*r).toFixed(1)}" y2="${(cy+Math.sin(a)*r).toFixed(1)}" stroke="${p.acc}" stroke-width="0.3" opacity="0.2"/>`;}).join('');const labels=dims.map((d,i)=>{const a=(i/6)*Math.PI*2-Math.PI/2;return`<text x="${(cx+Math.cos(a)*(r+10)).toFixed(1)}" y="${(cy+Math.sin(a)*(r+10)+2).toFixed(1)}" font-size="3.6" fill="${p.tx2}" text-anchor="middle" font-family="Space Mono">${d}</text>`;}).join('');return `<div style="background:${p.bg2};height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px"><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.acc};letter-spacing:.1em;margin-bottom:6px">ARCHETYPE · NIGHT OWL</div><svg viewBox="0 0 120 130" style="width:100%;max-height:160px">${grids}${spokes}<polygon points="${poly}" fill="${p.acc}" opacity="0.17" stroke="${p.acc}" stroke-width="1.2"/>${pts.map(pt=>`<circle cx="${pt[0]}" cy="${pt[1]}" r="2" fill="${p.acc}"/>`).join('')}${labels}</svg></div>`;}
+  function p11RenderRadar(s){
+    const p=_p11PAL[s];
+    const dims=['LOYALTY','EXPLORER','NIGHTOWL','SKIPPER','BINGE','FOCUS'];
+    // Compute real vals from actual stream data instead of hardcoded placeholders
+    const S=(typeof streams!=='undefined'?streams:[]);
+    let vals=[0.5,0.5,0.5,0.5,0.5,0.5];
+    let archetypeLabel='LISTENER';
+    if(S.length>=20){
+      const artMap={};
+      S.forEach(x=>{const a=x.artist||x.channel||'?';if(!artMap[a])artMap[a]={streams:0};artMap[a].streams++;});
+      const sorted=Object.entries(artMap).sort((a,b)=>b[1].streams-a[1].streams);
+      const top10=sorted.slice(0,10).reduce((acc,e)=>acc+e[1].streams,0);
+      const loyalty=Math.min(1,top10/S.length);
+      const uniqueArtists=sorted.length;
+      const explorer=Math.min(1,uniqueArtists/S.length*20);
+      const lateCount=S.filter(x=>{const ts=x.endTime||x.ts||x.watchedAt||'';if(!ts)return false;const h=new Date(ts).getHours();return h>=22||h<4;}).length;
+      const nightowl=Math.min(1,lateCount/S.length*3);
+      const skipped=S.filter(x=>(x.msPlayed||x.ms_played||0)<30000).length;
+      const skipper=Math.min(1,skipped/S.length*2);
+      const dayCounts={};
+      S.forEach(x=>{const ts=x.endTime||x.ts||x.watchedAt||'';if(!ts)return;const d=new Date(ts).toDateString();dayCounts[d]=(dayCounts[d]||0)+1;});
+      const dayVals=Object.values(dayCounts);
+      const mean=dayVals.reduce((a,b)=>a+b,0)/dayVals.length;
+      const binge=Math.min(1,Math.max(...dayVals)/Math.max(1,mean)/10);
+      const avgDepth=Object.values(artMap).reduce((a,e)=>a+(e.streams>1?1:0),0)/Math.max(1,uniqueArtists);
+      const focus=Math.min(1,avgDepth);
+      vals=[loyalty,explorer,nightowl,skipper,binge,focus];
+      // Determine archetype label from top axes
+      const axNames=['LOYALIST','EXPLORER','NIGHT OWL','SKIPPER','BINGE','FOCUSED'];
+      const topIdx=vals.indexOf(Math.max(...vals));
+      archetypeLabel=axNames[topIdx];
+    }
+    const cx=60,cy=65,r=42;
+    const pts=dims.map((_,i)=>{const a=(i/6)*Math.PI*2-Math.PI/2;return[(cx+Math.cos(a)*r*vals[i]).toFixed(1),(cy+Math.sin(a)*r*vals[i]).toFixed(1)];});
+    const poly=pts.map(pp=>pp.join(',')).join(' ');
+    const grids=[0.25,0.5,0.75,1].map(f=>`<polygon points="${dims.map((_,i)=>{const a=(i/6)*Math.PI*2-Math.PI/2;return`${(cx+Math.cos(a)*r*f).toFixed(1)},${(cy+Math.sin(a)*r*f).toFixed(1)}`;}).join(' ')}" fill="none" stroke="${p.acc}" stroke-width="0.4" opacity="${(f*0.28).toFixed(2)}"/>`).join('');
+    const spokes=dims.map((_,i)=>{const a=(i/6)*Math.PI*2-Math.PI/2;return`<line x1="${cx}" y1="${cy}" x2="${(cx+Math.cos(a)*r).toFixed(1)}" y2="${(cy+Math.sin(a)*r).toFixed(1)}" stroke="${p.acc}" stroke-width="0.3" opacity="0.2"/>`;}).join('');
+    const labels=dims.map((d,i)=>{const a=(i/6)*Math.PI*2-Math.PI/2;return`<text x="${(cx+Math.cos(a)*(r+10)).toFixed(1)}" y="${(cy+Math.sin(a)*(r+10)+2).toFixed(1)}" font-size="3.6" fill="${p.tx2}" text-anchor="middle" font-family="Space Mono">${d}</text>`;}).join('');
+    return `<div style="background:${p.bg2};height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px"><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.acc};letter-spacing:.1em;margin-bottom:6px">ARCHETYPE · ${archetypeLabel}</div><svg viewBox="0 0 120 130" style="width:100%;max-height:160px">${grids}${spokes}<polygon points="${poly}" fill="${p.acc}" opacity="0.17" stroke="${p.acc}" stroke-width="1.2"/>${pts.map(pt=>`<circle cx="${pt[0]}" cy="${pt[1]}" r="2" fill="${p.acc}"/>`).join('')}${labels}</svg></div>`;
+  }
   function p11RenderTimeline(s){
     const p=_p11PAL[s];
     const S=(typeof streams!=='undefined'?streams:[]);
@@ -15550,13 +15772,13 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
       // Peak day
       const peakDay=topBy(sorted,x=>(getTs(x)||'').slice(0,10))[0];
       if(peakDay){events.push([fmtDate(peakDay[0]),'Peak day: '+peakDay[1]+' streams']);}
-      // Unique artists count
-      const uniqArt=new Set(sorted.map(x=>getArtist(x))).size;
-      events.push(['—',uniqArt.toLocaleString()+' unique artists discovered']);
-      // Total hours
+      // Unique artists count — only push if we actually have data
+      const uniqArt=new Set(sorted.map(x=>getArtist(x)).filter(Boolean)).size;
+      if(uniqArt>0){events.push(['—',uniqArt.toLocaleString()+' unique artists discovered']);}
+      // Total hours — only push if non-zero
       const totalMs=sorted.reduce((a,x)=>a+getMs(x),0);
       const hrs=Math.round(totalMs/3600000);
-      events.push(['—',hrs.toLocaleString()+' total hours listened']);
+      if(hrs>0){events.push(['—',hrs.toLocaleString()+' total hours listened']);}
     } else {
       events.push(['—','No data loaded']);
     }
@@ -15633,17 +15855,15 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
 
   <script>
     /* ═══════════════════════════════════════
-       PWA — SERVICE WORKER (cache v2)
-       Caches: GSAP, ScrollTrigger, Chart.js,
-               html2canvas, Three.js (NEW),
-               jsPDF (NEW), JSZip (NEW)
+       PWA — SERVICE WORKER (cache v3)
+       Fix: removed '/' and './manifest.json' which fail on file://
+       Fix: CDN-only cache with stale-while-revalidate
+       Fix: skip registration entirely on file:// protocol
     ═══════════════════════════════════════ */
-    if ('serviceWorker' in navigator) {
+    if ('serviceWorker' in navigator && location.protocol !== 'file:') {
       const SW_BLOB = `
-const CACHE='statify-v2';
-const URLS=[
-  '/',
-  './manifest.json',
+const CACHE='statify-v3';
+const CDN_URLS=[
   'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js',
@@ -15652,15 +15872,38 @@ const URLS=[
   'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
 ];
-self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(URLS)).then(()=>self.skipWaiting())));
-self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
-self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));});
+self.addEventListener('install',e=>e.waitUntil(
+  caches.open(CACHE)
+    .then(c=>Promise.allSettled(CDN_URLS.map(u=>c.add(u))))
+    .then(()=>self.skipWaiting())
+));
+self.addEventListener('activate',e=>e.waitUntil(
+  caches.keys()
+    .then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k))))
+    .then(()=>self.clients.claim())
+));
+self.addEventListener('fetch',e=>{
+  if(e.request.method!=='GET') return;
+  const url=e.request.url;
+  // CDN assets: cache-first (they're versioned/immutable)
+  if(url.includes('cdnjs.cloudflare.com')||url.includes('fonts.googleapis.com')||url.includes('fonts.gstatic.com')){
+    e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{
+      if(res&&res.status===200){
+        const clone=res.clone();
+        caches.open(CACHE).then(c=>c.put(e.request,clone));
+      }
+      return res;
+    })));
+    return;
+  }
+  // Everything else: network-first
+  e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));
+});
 `;
       try {
         const blob = new Blob([SW_BLOB], { type: 'application/javascript' });
         const url  = URL.createObjectURL(blob);
         navigator.serviceWorker.register(url, { scope: './' }).catch(() => {
-          /* blob SW failed (e.g. file:// protocol) — fall back to sw.js file */
           navigator.serviceWorker.register('sw.js').catch(() => {});
         });
       } catch(e) {
