@@ -556,6 +556,10 @@
       transform: scale(.98)
     }
 
+    .paste-btn:hover {
+      background: rgba(255,255,255,.06) !important
+    }
+
     body.yt-theme .demo-btn {
       background: var(--g);
       color: #fff
@@ -5407,8 +5411,10 @@
       <span class="ftag">YourLibrary.json</span>
     </div>
     <div class="or-div"><span>OR</span></div>
-    <button class="demo-btn" id="demoBtn" onclick="event.stopPropagation();loadDemo()">▶&nbsp;Try with demo
-      data</button>
+    <div style="display:flex;gap:10px;margin-bottom:10px">
+      <button class="demo-btn" id="demoBtn" onclick="event.stopPropagation();loadDemo()" style="flex:1">▶&nbsp;Try with demo data</button>
+      <button class="demo-btn paste-btn" onclick="event.stopPropagation();openPasteModal()" style="flex:1;background:none;border:1px solid var(--border2);color:var(--text2);font-size:.75rem">📋&nbsp;Paste JSON</button>
+    </div>
     <p class="drop-hint" id="dzHint">Request data: Spotify → Account → Privacy Settings → Download your data</p>
   </div>
 
@@ -6578,7 +6584,7 @@
           <div class="sl">3D Listening Globe</div>
           <div class="coll-arrow">▼</div>
         </div>
-        <div class="coll-body collapsed" id="p11GlobeBody">
+        <div class="coll-body" id="p11GlobeBody">
           <div class="rv mb40">
             <div class="p11-globe-wrap" id="p11GlobeWrap">
               <canvas id="p11GlobeCanvas"></canvas>
@@ -6609,7 +6615,7 @@
           <div class="sl">Musical Fingerprint</div>
           <div class="coll-arrow">▼</div>
         </div>
-        <div class="coll-body collapsed" id="p11FpBody">
+        <div class="coll-body" id="p11FpBody">
           <div class="rv mb40">
             <div class="p11-fp-wrap">
               <div class="p11-fp-card">
@@ -6678,7 +6684,7 @@
           <div class="sl">Annual Report PDF</div>
           <div class="coll-arrow">▼</div>
         </div>
-        <div class="coll-body collapsed" id="p11PdfBody">
+        <div class="coll-body" id="p11PdfBody">
           <div class="rv mb40">
             <div class="p11-pdf-tabs">
               <button class="p11-pdf-tab act" id="p11TabA" onclick="p11SwitchPDF('A',this)">A — DARK EDITORIAL</button>
@@ -8876,12 +8882,16 @@
       const topArtists = Object.entries(artMap).sort((a,b) => b[1].streams - a[1].streams).slice(0,50).map(([name,v]) => ({ name, ...v }));
       const totalStreams = S.length;
       const totalMs = S.reduce((a,x) => a + (x.msPlayed || 0), 0);
+      const _shrHours = new Array(24).fill(0); S.forEach(x=>{const h=new Date(x.ts||x.endTime||0).getHours(); _shrHours[h]++;});
+      const _shrPeakHour = _shrHours.indexOf(Math.max(..._shrHours));
+      const _shrSkipped = S.filter(x=>(x.ms||0)<30000).length;
+      const _shrSkipRate = S.length ? _shrSkipped/S.length : 0.12;
       const payload = {
         version: 1,
         shareable: true,
         exportedAt: new Date().toISOString(),
         type: isYT ? 'youtube' : 'spotify',
-        stats: { totalStreams, totalMs },
+        stats: { totalStreams, totalMs, peakHour: _shrPeakHour, skipRate: _shrSkipRate },
         top50Tracks: top50,
         topArtists
       };
@@ -14254,7 +14264,7 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
 
     const boosters = [
       { label:'Artist Overlap', val:twinScore, color:ac },
-      { label:'Guilty Pleasures ★', val:(()=>{ if(!friend) return 38; const KNOWN_POP=['Drake','Taylor Swift','The Weeknd','Ariana Grande','Ed Sheeran','Billie Eilish','Post Malone','Justin Bieber','Olivia Rodrigo','Harry Styles','Dua Lipa','Rihanna','Eminem','Beyoncé','Lady Gaga']; const myNiche=myTop.filter(a=>!KNOWN_POP.includes(a)); const frNiche=(friend.topArtists||[]).map(a=>a.name||a).filter(a=>!KNOWN_POP.includes(a)); const overlap=myNiche.filter(a=>frNiche.includes(a)).length; return Math.min(100,Math.round((overlap/Math.max(myNiche.length,1))*100+20)); })(), color:'#f5a623' },
+      { label:'Guilty Pleasures ★', val:(()=>{ if(!friend) return 38; const KNOWN_POP=['Drake','Taylor Swift','The Weeknd','Ariana Grande','Ed Sheeran','Billie Eilish','Post Malone','Justin Bieber','Olivia Rodrigo','Harry Styles','Dua Lipa','Rihanna','Eminem','Beyoncé','Lady Gaga']; const myNiche=myTop.filter(a=>!KNOWN_POP.includes(a)); const frNiche=(friend.data.topArtists||friend.topArtists||[]).map(a=>a.name||a).filter(a=>!KNOWN_POP.includes(a)); const overlap=myNiche.filter(a=>frNiche.includes(a)).length; return Math.min(100,Math.round((overlap/Math.max(myNiche.length,1))*100+20)); })(), color:'#f5a623' },
       { label:'Peak Hour Match', val:friend?Math.max(0,Math.min(100,Math.round(100-Math.abs(+myPeakHour-(friend.stats?.peakHour??friend.peakHour??20))*8))):62, color:'#5b9cf6' },
       { label:'Skip Rate Similarity', val:friend?Math.max(0,Math.min(100,Math.round(100-Math.abs(mySkipRate-(friend.stats?.skipRate??0.15))*200))):55, color:'#a855f7' },
     ];
@@ -15484,6 +15494,104 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
   /* ══════════════════════════════════════════
      PHASE 11 — GLOBE & VISUAL SHOWSTOPPERS
   ══════════════════════════════════════════ */
+  /* ── PASTE JSON MODAL ── */
+  window.openPasteModal = function() {
+    let modal = document.getElementById('pasteJsonModal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'pasteJsonModal';
+      modal.style.cssText = 'position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;padding:20px';
+      modal.innerHTML = `
+        <div style="background:var(--s1);border:1px solid var(--border2);border-radius:8px;padding:28px;width:100%;max-width:580px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-family:var(--mono);font-size:.72rem;color:var(--g);letter-spacing:.12em">PASTE JSON DATA</span>
+            <button onclick="document.getElementById('pasteJsonModal').remove()" style="background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;line-height:1">✕</button>
+          </div>
+          <p style="font-size:.78rem;color:var(--muted);line-height:1.6">Paste the contents of your <code style="background:var(--s3);padding:2px 6px;border-radius:3px;font-family:var(--mono);font-size:.7rem">StreamingHistory_music_0.json</code> (or any Spotify JSON file) directly here.</p>
+          <textarea id="pasteJsonArea" placeholder='[{"endTime":"2024-01-01 12:00","artistName":"Artist","trackName":"Track","msPlayed":230000}, ...]' style="width:100%;height:180px;background:var(--s2);border:1px solid var(--border2);border-radius:4px;padding:12px;color:var(--text);font-family:var(--mono);font-size:.68rem;resize:vertical;outline:none;line-height:1.5"></textarea>
+          <div style="display:flex;gap:10px;justify-content:flex-end">
+            <button onclick="document.getElementById('pasteJsonModal').remove()" style="font-family:var(--mono);font-size:.62rem;padding:8px 18px;background:none;border:1px solid var(--border2);border-radius:3px;color:var(--muted);cursor:pointer">CANCEL</button>
+            <button onclick="window.parsePastedJSON()" style="font-family:var(--mono);font-size:.62rem;padding:8px 18px;background:var(--g);border:none;border-radius:3px;color:#000;font-weight:700;cursor:pointer">LOAD DATA</button>
+          </div>
+        </div>`;
+      document.body.appendChild(modal);
+      modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+    }
+    document.getElementById('pasteJsonArea')?.focus();
+  };
+
+  window.parsePastedJSON = function() {
+    const raw = document.getElementById('pasteJsonArea')?.value?.trim();
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw);
+      document.getElementById('pasteJsonModal')?.remove();
+      // Could be array directly or wrapped
+      const arr = Array.isArray(parsed) ? parsed : (parsed.spotify?.streams || []);
+      if (!arr.length) { showToast('No stream data found in pasted JSON'); return; }
+      showLoader('PARSING PASTED DATA...');
+      setTimeout(() => {
+        // Normalize same as parseFiles
+        S = arr.map(s => ({
+          ts: s.endTime || s.ts || s.timestamp || '',
+          artist: s.artistName || s.master_metadata_album_artist_name || s.artist || 'Unknown',
+          track: s.trackName || s.master_metadata_track_name || s.track || 'Unknown',
+          ms: s.msPlayed || s.ms_played || s.ms || 0,
+          skipped: s.skipped || false,
+          platform: s.platform || '',
+          fullMs: s.fullMs || 0
+        }));
+        saveSessionToDB().catch(()=>{});
+        showDash(false);
+      }, 400);
+    } catch(e) {
+      showToast('Invalid JSON — check format and try again');
+    }
+  };
+
+  /* ── PHASE 11 STYLES ── */
+  (function injectP11Styles(){
+    const s = document.createElement('style');
+    s.textContent = `
+      /* Fingerprint cards */
+      .p11-fp-wrap{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+      @media(max-width:800px){.p11-fp-wrap{grid-template-columns:1fr}}
+      .p11-fp-card{background:var(--s1);border:1px solid var(--border);border-radius:8px;overflow:hidden;display:flex;flex-direction:column}
+      .p11-fp-card-header{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--s2)}
+      .p11-fp-card-title{font-family:var(--mono);font-size:.6rem;color:var(--text2);letter-spacing:.08em}
+      .p11-fp-card-label{font-family:var(--mono);font-size:.52rem;color:var(--muted);letter-spacing:.1em}
+      .p11-fp-svg-area{padding:16px;display:flex;align-items:center;justify-content:center;flex:1}
+      .p11-fp-svg-area svg{width:110px;height:110px}
+      .p11-fp-card-footer{padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+      .p11-fp-export-btn{font-family:var(--mono);font-size:.55rem;padding:5px 12px;background:none;border:1px solid var(--border2);border-radius:3px;color:var(--muted);cursor:pointer;letter-spacing:.06em;transition:all .15s}
+      .p11-fp-export-btn:hover{border-color:var(--g);color:var(--g)}
+      /* PDF tabs */
+      .p11-pdf-tabs{display:flex;gap:0;border:1px solid var(--border2);border-radius:4px;overflow:hidden;margin-bottom:16px;width:fit-content}
+      .p11-pdf-tab{font-family:var(--mono);font-size:.62rem;padding:8px 20px;background:none;border:none;color:var(--muted);cursor:pointer;transition:background .2s,color .2s;letter-spacing:.06em}
+      .p11-pdf-tab:hover{background:var(--s2);color:var(--text)}
+      .p11-pdf-tab.act{background:var(--g);color:#000;font-weight:700}
+      /* PDF preview */
+      .p11-pdf-preview{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px;margin-top:4px}
+      .p11-pdf-page-wrap{position:relative;cursor:pointer;border-radius:4px;overflow:hidden;border:2px solid var(--border2);transition:border-color .2s;aspect-ratio:210/297}
+      .p11-pdf-page-wrap:hover{border-color:var(--g)}
+      .p11-pdf-page-wrap.sel{border-color:var(--g);box-shadow:0 0 0 1px var(--g)}
+      .p11-pdf-page-wrap iframe{width:100%;height:100%;pointer-events:none;transform-origin:top left}
+      .p11-pdf-page-label{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.7);padding:3px 6px;display:flex;justify-content:space-between;align-items:center}
+      .p11-pdf-page-label span{font-family:var(--mono);font-size:.44rem;color:#eee;letter-spacing:.04em}
+      .p11-pdf-page-num{color:var(--muted)!important}
+      .p11-pdf-check{position:absolute;top:5px;right:5px;width:16px;height:16px;border-radius:50%;background:var(--g);display:flex;align-items:center;justify-content:center;font-size:.52rem;color:#000;font-weight:700;opacity:0;transition:opacity .15s}
+      .p11-pdf-page-wrap.sel .p11-pdf-check{opacity:1}
+      /* Meta info */
+      .p11-vmeta{display:flex;flex-wrap:wrap;gap:6px}
+      .p11-vmeta-item{font-family:var(--mono);font-size:.58rem;color:var(--muted);background:var(--s2);border:1px solid var(--border);padding:4px 10px;border-radius:3px}
+      .p11-vmeta-item span{color:var(--text2)}
+      /* Globe legend */
+      .p11-legend-row{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:.58rem;color:var(--muted)}
+      .p11-legend-dot{border-radius:50%;flex-shrink:0}
+    `;
+    document.head.appendChild(s);
+  })();
+
   (function(){
 
   /* ── static artist→country map (top ~60 known) ── */
