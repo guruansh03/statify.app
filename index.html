@@ -4555,7 +4555,8 @@
     .p5-badge.rare.on{background:rgba(91,156,246,.08);border-color:rgba(91,156,246,.35)}
     .p5-badge.epic.on{background:rgba(167,139,250,.08);border-color:rgba(167,139,250,.35)}
     .p5-badge.legendary.on{background:rgba(245,166,35,.08);border-color:rgba(245,166,35,.35)}
-    .p5-badge.locked{opacity:.38}
+    .p5-badge.locked{opacity:.38;isolation:isolate}
+    .p5-badge.locked:hover .p5-badge-tooltip{opacity:1 !important}
     .p5-badge.locked .p5-badge-icon{filter:grayscale(1)}
     .p5-badge-icon{font-size:20px;line-height:1;display:block;margin-bottom:5px}
     .p5-badge-name{font-family:var(--mono);font-size:.5rem;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px}
@@ -6354,15 +6355,15 @@
       <!-- ═══════ PHASE 8 — DISCOVERY & RELATIONSHIP ═══════ -->
       <div id="phase8-wrap" style="display:none">
 
-        <!-- F1: Butterfly Effect -->
+        <!-- F1: Artist Discovery Timeline -->
         <div class="coll-header rv" onclick="toggleColl(this)">
-          <div class="sl">Butterfly Effect</div>
+          <div class="sl">Artist Discovery Timeline</div>
           <div class="coll-arrow">▼</div>
         </div>
         <div class="coll-body">
           <div class="panel rv mb40 p8-section" style="padding:24px">
-            <p class="pt" style="margin-bottom:4px">How one song changed everything</p>
-            <p class="ps">Pick a song from your top 50. See which artists you first heard in the 30 days after — then trace the chain.</p>
+            <p class="pt" style="margin-bottom:4px">When did you first hear them?</p>
+            <p class="ps">Your top 20 artists plotted by first listen date — grouped by month. See your discovery streaks and phases.</p>
             <div id="butterflyContent"></div>
           </div>
         </div>
@@ -13153,6 +13154,21 @@ ${top5Artists.map((a,i)=>`<div class="p6-wc-art-item"><div class="p6-wc-rank">#$
       document.getElementById('p6PosterEl').innerHTML = p6BuildPoster(stats.topArtists, stats.topTracks, stats, activeStyle);
       document.getElementById('p6PosterDesc').textContent = styleDescs[activeStyle]||'';
       document.getElementById('p6PosterStyleName').textContent = activeStyle;
+      // Bug 3 fix: inject stats into info panel
+      const descEl = document.getElementById('p6PosterDesc');
+      if (descEl && stats) {
+        const topArtist = stats.topArtists?.[0]?.[0] || '—';
+        const totalStreams = stats.totalStreams || 0;
+        const totalHours = stats.totalHours ? Math.round(stats.totalHours) : 0;
+        const peakHour = stats.peakHour !== undefined ? stats.peakHour : '—';
+        descEl.innerHTML = `<span style="color:var(--text2)">${styleDescs[activeStyle]||''}</span>
+          <div style="margin-top:10px;display:flex;flex-direction:column;gap:4px;font-family:var(--mono);font-size:.6rem;color:var(--text2)">
+            <div>🎤 <b style="color:var(--text)">${topArtist}</b> · top artist</div>
+            <div>🎵 <b style="color:var(--text)">${totalStreams.toLocaleString()}</b> streams</div>
+            <div>⏱ <b style="color:var(--text)">${totalHours.toLocaleString()}</b> hours</div>
+            <div>🕐 Peak hour: <b style="color:var(--text)">${peakHour}:00</b></div>
+          </div>`;
+      }
     }
 
     el.innerHTML = `
@@ -13203,7 +13219,7 @@ ${top5Artists.map((a,i)=>`<div class="p6-wc-art-item"><div class="p6-wc-rank">#$
       });
     };
 
-    rebuildPoster();
+    setTimeout(rebuildPoster, 0);
   }
 
   /* ── Patch render() to call initPhase6 ── */
@@ -13671,252 +13687,99 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
   }
   function p8accentColor() { return getComputedStyle(document.documentElement).getPropertyValue('--g').trim() || '#1DB954'; }
 
+
+
   /* ════════════════════════════════════════════════════════════
-     F1 — BUTTERFLY EFFECT
-     Selected viz: A (node graph) + B (tree) with toggle
+     F1 — ARTIST DISCOVERY TIMELINE  (replaces Butterfly Effect)
   ════════════════════════════════════════════════════════════ */
   function renderButterfly() {
     const el = document.getElementById('butterflyContent');
-    if (!el || S.length < 50) {
-      if (el) el.innerHTML = '<div class="p3-empty">Need 50+ streams with timestamps.</div>';
+    if (!el || S.length < 10) {
+      if (el) el.innerHTML = '<div class="p3-empty">Need 10+ streams with timestamps.</div>';
       return;
     }
-    const top50 = p8TopTracks(50);
-    // Build select dropdown
-    el.innerHTML = `
-      <div class="bf8-controls">
-        <select class="msel" id="bf8-song-sel" onchange="p8BuildButterfly()">
-          ${top50.map((t,i)=>`<option value="${i}">${t.track} — ${t.artist}</option>`).join('')}
-        </select>
-        <div class="bf8-view-tabs">
-          <button class="bf8-vtab act" onclick="p8BfView('graph',this)">NODE GRAPH</button>
-          <button class="bf8-vtab" onclick="p8BfView('tree',this)">BRANCH TREE</button>
-        </div>
-      </div>
-      <div id="bf8-graph-pane" class="bf8-pane act">
-        <svg id="bf8-svg" width="100%" viewBox="0 0 780 380" xmlns="http://www.w3.org/2000/svg" style="display:block"></svg>
-      </div>
-      <div id="bf8-tree-pane" class="bf8-pane">
-        <svg id="bf8-tree-svg" width="100%" viewBox="0 0 780 440" xmlns="http://www.w3.org/2000/svg" style="display:block"></svg>
-      </div>
-      <div id="bf8-stats" class="bf8-stats-row"></div>`;
-
-    window._bf8Tracks = top50;
-    p8BuildButterfly();
-  }
-
-  function p8BfView(view, btn) {
-    document.querySelectorAll('.bf8-vtab').forEach(b=>b.classList.remove('act'));
-    btn.classList.add('act');
-    document.querySelectorAll('.bf8-pane').forEach(p=>p.classList.remove('act'));
-    const pane = document.getElementById(`bf8-${view}-pane`);
-    if (pane) pane.classList.add('act');
-  }
-
-  function p8BuildButterfly() {
-    const sel = document.getElementById('bf8-song-sel');
-    if (!sel || !window._bf8Tracks) return;
-    const idx = parseInt(sel.value);
-    const chosen = window._bf8Tracks[idx];
-    if (!chosen) return;
-
-    // Find first play of chosen track
-    const sorted = [...S].filter(x=>x.ts&&x.track===chosen.track&&x.artist===chosen.artist).sort((a,b)=>a.ts.localeCompare(b.ts));
-    if (!sorted.length) return;
-    const originTs = new Date(sorted[0].ts);
-
-    // Build per-artist first-heard map overall (for hop logic)
-    const globalFirstHeard = {};
-    [...S].filter(x=>x.ts).sort((a,b)=>a.ts.localeCompare(b.ts)).forEach(x=>{
-      if (!globalFirstHeard[x.artist]) globalFirstHeard[x.artist]=new Date(x.ts);
-    });
-
-    // Hop 1: artists first heard 0-30d after originTs (not the chosen artist)
-    const hop1 = [];
-    const thirtyDays = 30*86400000;
-    const sixtyDays = 60*86400000;
-    const ninetyDays = 90*86400000;
-    Object.entries(globalFirstHeard).forEach(([artist, ts]) => {
-      if (artist === chosen.artist) return;
-      const diff = ts - originTs;
-      if (diff > 0 && diff <= thirtyDays) hop1.push({ artist, ts, diff });
-    });
-    hop1.sort((a,b)=>a.diff-b.diff);
-    const h1 = hop1.slice(0,4);
-
-    // Hop 2: for each hop1 artist, who did you find in the 30d after?
-    const hop2map = {};
-    h1.forEach(h => {
-      const hop2 = [];
-      Object.entries(globalFirstHeard).forEach(([artist, ts]) => {
-        if (artist===chosen.artist || h1.find(x=>x.artist===artist)) return;
-        const diff = ts - h.ts;
-        if (diff > 0 && diff <= thirtyDays) hop2.push({ artist, ts, diff });
-      });
-      hop2map[h.artist] = hop2.sort((a,b)=>a.diff-b.diff).slice(0,2);
-    });
-
-    // Hop 3: from hop2 artists
-    const hop3map = {};
-    Object.values(hop2map).flat().forEach(h2 => {
-      if (hop3map[h2.artist]) return;
-      const hop3 = [];
-      Object.entries(globalFirstHeard).forEach(([artist, ts]) => {
-        if (artist===chosen.artist) return;
-        const diff = ts - h2.ts;
-        if (diff > 0 && diff <= thirtyDays) hop3.push({ artist, ts, diff });
-      });
-      hop3map[h2.artist] = hop3.sort((a,b)=>a.diff-b.diff).slice(0,1);
-    });
-
     const ac = p8accentColor();
-    const colors = [ac,'#5b9cf6','#a855f7','#f5a623','#e05555','#34d399','#f472b6','#38bdf8','#fb923c'];
+    const colors = [ac,'#5b9cf6','#a855f7','#f5a623','#e05555','#34d399','#f472b6','#38bdf8','#fb923c','#fbbf24'];
 
-    // ── NODE GRAPH ──
-    const graphSvg = document.getElementById('bf8-svg');
-    if (graphSvg) {
-      const W=780, H=380, cx=90, cy=H/2;
-      let defs = `<defs>
-        <marker id="bf8arr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-          <path d="M0,0 L6,3 L0,6" fill="none" stroke="#3a3a3a" stroke-width="1.2"/>
-        </marker>
-        <filter id="bf8glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-      </defs>`;
-      let edges='', nodes='';
+    // Build first-heard map per artist
+    const firstHeard = {};
+    const artistStreams = {};
+    [...S].filter(x=>x.ts&&(x.artist||x.channel)).sort((a,b)=>a.ts.localeCompare(b.ts)).forEach(x=>{
+      const a = x.artistName||x.artist||x.channel||'?';
+      if (!firstHeard[a]) firstHeard[a] = x.ts;
+      artistStreams[a] = (artistStreams[a]||0)+1;
+    });
 
-      // origin node
-      nodes+=`<circle cx="${cx}" cy="${cy}" r="20" fill="${ac}20" stroke="${ac}" stroke-width="2.5" filter="url(#bf8glow)"/>
-        <text x="${cx}" y="${cy-4}" text-anchor="middle" dominant-baseline="middle" fill="${ac}" font-family="Space Mono,monospace" font-size="7" font-weight="700">${chosen.track.length>16?chosen.track.slice(0,15)+'…':chosen.track}</text>
-        <text x="${cx}" y="${cy+8}" text-anchor="middle" dominant-baseline="middle" fill="${ac}99" font-family="Space Mono,monospace" font-size="6">${chosen.artist.length>13?chosen.artist.slice(0,12)+'…':chosen.artist}</text>`;
+    // Top 20 artists by stream count
+    const top20 = Object.entries(artistStreams)
+      .sort((a,b)=>b[1]-a[1]).slice(0,20)
+      .map(([name, count]) => ({ name, count, first: firstHeard[name] }))
+      .filter(a=>a.first)
+      .sort((a,b)=>a.first.localeCompare(b.first));
 
-      // hop 1 positions
-      const h1Count = h1.length || 1;
-      h1.forEach((h, i) => {
-        const angle = ((i/(h1Count))*Math.PI*1.6) - Math.PI*0.8;
-        const r1x = 240, r1y = cy + Math.sin(angle)*140;
-        const col = colors[(i+1)%colors.length];
-        const days = Math.round(h.diff/86400000);
-        // edge origin→h1
-        const dx=r1x-cx, dy=r1y-cy, len=Math.sqrt(dx*dx+dy*dy);
-        const ex=cx+(dx/len)*22, ey=cy+(dy/len)*22, fx=r1x-(dx/len)*16, fy=r1y-(dy/len)*16;
-        const midx=(ex+fx)/2-dy*0.1, midy=(ey+fy)/2+dx*0.1;
-        edges+=`<path d="M${ex},${ey} Q${midx},${midy} ${fx},${fy}" stroke="#2e2e2e" stroke-width="1.5" fill="none" marker-end="url(#bf8arr)"/>`;
-        edges+=`<text x="${(ex+fx)/2}" y="${(ey+fy)/2-7}" text-anchor="middle" fill="#444" font-family="Space Mono,monospace" font-size="6.5">+${days}d</text>`;
-        nodes+=`<circle cx="${r1x}" cy="${r1y}" r="15" fill="${col}20" stroke="${col}" stroke-width="1.8" filter="url(#bf8glow)"/>`;
-        nodes+=`<text x="${r1x}" y="${r1y}" text-anchor="middle" dominant-baseline="middle" fill="${col}" font-family="Space Mono,monospace" font-size="6.5" font-weight="700">${h.artist.length>10?h.artist.slice(0,9)+'…':h.artist}</text>`;
+    if (!top20.length) { el.innerHTML = '<div class="p3-empty">No timestamped data found.</div>'; return; }
 
-        // hop 2
-        const h2List = hop2map[h.artist]||[];
-        h2List.forEach((h2, j) => {
-          const a2 = angle + (j===0?-0.45:0.45);
-          const r2x = 420, r2y = r1y + Math.sin(a2)*60;
-          const col2 = colors[(i*2+j+3)%colors.length];
-          const days2 = Math.round((h2.ts-h.ts)/86400000);
-          const dx2=r2x-r1x, dy2=r2y-r1y, len2=Math.sqrt(dx2*dx2+dy2*dy2);
-          const ex2=r1x+(dx2/len2)*17, ey2=r1y+(dy2/len2)*17, fx2=r2x-(dx2/len2)*13, fy2=r2y-(dy2/len2)*13;
-          edges+=`<path d="M${ex2},${ey2} L${fx2},${fy2}" stroke="#222" stroke-width="1.2" fill="none" marker-end="url(#bf8arr)"/>`;
-          edges+=`<text x="${(ex2+fx2)/2}" y="${(ey2+fy2)/2-6}" text-anchor="middle" fill="#333" font-family="Space Mono,monospace" font-size="6">+${days2}d</text>`;
-          nodes+=`<circle cx="${r2x}" cy="${r2y}" r="11" fill="${col2}18" stroke="${col2}" stroke-width="1.5"/>`;
-          nodes+=`<text x="${r2x}" y="${r2y}" text-anchor="middle" dominant-baseline="middle" fill="${col2}" font-family="Space Mono,monospace" font-size="6" font-weight="700">${h2.artist.length>9?h2.artist.slice(0,8)+'…':h2.artist}</text>`;
+    // Group by year-month
+    const groups = {};
+    top20.forEach(a => {
+      const d = new Date(a.first);
+      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(a);
+    });
 
-          // hop 3
-          const h3List = hop3map[h2.artist]||[];
-          h3List.slice(0,1).forEach(h3 => {
-            const r3x = 560, r3y = r2y;
-            const col3 = colors[(i*3+j+5)%colors.length];
-            const days3 = Math.round((h3.ts-h2.ts)/86400000);
-            const dx3=r3x-r2x, len3=Math.sqrt(dx3*dx3);
-            const ex3=r2x+13, fx3=r3x-10;
-            edges+=`<path d="M${ex3},${r2y} L${fx3},${r3y}" stroke="#1e1e1e" stroke-width="1" fill="none" marker-end="url(#bf8arr)"/>`;
-            nodes+=`<circle cx="${r3x}" cy="${r3y}" r="9" fill="${col3}15" stroke="${col3}" stroke-width="1.2"/>`;
-            nodes+=`<text x="${r3x}" y="${r3y}" text-anchor="middle" dominant-baseline="middle" fill="${col3}" font-family="Space Mono,monospace" font-size="5.5" font-weight="700">${h3.artist.length>8?h3.artist.slice(0,7)+'…':h3.artist}</text>`;
-          });
-        });
-      });
+    const sortedKeys = Object.keys(groups).sort();
+    const totalMonths = sortedKeys.length;
 
-      // hop labels
-      const hlabels = [
-        { x:90, label:'ORIGIN' },
-        { x:240, label:'HOP 1 · ≤30d' },
-        { x:420, label:'HOP 2' },
-        { x:560, label:'HOP 3' },
-      ];
-      let hLabelSVG = '';
-      hlabels.forEach(h => {
-        hLabelSVG+=`<text x="${h.x}" y="16" text-anchor="middle" fill="#333" font-family="Space Mono,monospace" font-size="7" letter-spacing="1">${h.label}</text>`;
-        hLabelSVG+=`<line x1="${h.x-40}" y1="22" x2="${h.x+40}" y2="22" stroke="#1e1e1e" stroke-width="1" stroke-dasharray="3,3"/>`;
-      });
+    // Stats
+    const streakMonths = sortedKeys.reduce((acc, k, i, arr) => {
+      if (i===0) return [[k]];
+      const prev = new Date(arr[i-1]+'-01'), cur = new Date(k+'-01');
+      const diff = (cur.getFullYear()-prev.getFullYear())*12+(cur.getMonth()-prev.getMonth());
+      if (diff===1) acc[acc.length-1].push(k); else acc.push([k]);
+      return acc;
+    }, []);
+    const longestStreak = Math.max(...streakMonths.map(s=>s.length));
+    const firstEver = top20[0];
+    const mostRecentDisc = top20[top20.length-1];
 
-      if (!h1.length) {
-        nodes += `<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#444" font-family="Space Mono,monospace" font-size="10">No new artist discoveries found within 30 days after this track</text>`;
-      }
-
-      graphSvg.innerHTML = defs + hLabelSVG + edges + nodes;
-    }
-
-    // ── BRANCH TREE ──
-    const treeSvg = document.getElementById('bf8-tree-svg');
-    if (treeSvg) {
-      const W=780, H=340;
-      let s='';
-      function nodeW(label) { return label.length*5.5+18; }
-      function drawRect(x, y, label, color, fontSize) {
-        const w=nodeW(label), h=22;
-        return `<rect x="${x}" y="${y-11}" width="${w}" height="${h}" rx="4" fill="#1a1a1a" stroke="${color}66"/>
-          <text x="${x+8}" y="${y+1}" dominant-baseline="middle" fill="${color}" font-family="Space Mono,monospace" font-size="${fontSize||7}" font-weight="700">${label}</text>`;
-      }
-      function bezier(x1,y1,x2,y2,label) {
-        const mx=(x1+x2)/2;
-        return `<path d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}" stroke="#2a2a2a" stroke-width="1.5" fill="none"/>
-          <text x="${mx}" y="${(y1+y2)/2-5}" text-anchor="middle" fill="#3a3a3a" font-family="Space Mono,monospace" font-size="6.5">${label}</text>`;
-      }
-
-      const originLabel = `${chosen.track.length>14?chosen.track.slice(0,13)+'…':chosen.track}`;
-      const ox=28, oy=H/2;
-      s += drawRect(ox, oy, originLabel, p8accentColor(), 7);
-
-      const h1Y = h1.length > 1 ? h1.map((_,i)=>{ const spread=Math.max(70,320/Math.max(h1.length,1)); return oy + (i-(h1.length-1)/2)*spread; }) : [oy];
-      h1.forEach((h, i) => {
-        const h1x=210, h1y=h1Y[i];
-        const days=Math.round(h.diff/86400000);
-        const col=colors[(i+1)%colors.length];
-        s += bezier(ox+nodeW(originLabel), oy, h1x, h1y, `+${days}d`);
-        s += drawRect(h1x, h1y, h.artist.length>15?h.artist.slice(0,14)+'…':h.artist, col);
-        const h2List=hop2map[h.artist]||[];
-        h2List.forEach((h2,j) => {
-          const h2x=390, h2y=h1y+(j===0?-40:40);
-          const days2=Math.round((h2.ts-h.ts)/86400000);
-          const col2=colors[(i*2+j+3)%colors.length];
-          s += bezier(h1x+nodeW(h.artist.length>15?h.artist.slice(0,14)+'…':h.artist), h1y, h2x, h2y, `+${days2}d`);
-          s += drawRect(h2x, h2y, h2.artist.length>11?h2.artist.slice(0,10)+'…':h2.artist, col2);
-          const h3List=hop3map[h2.artist]||[];
-          h3List.slice(0,1).forEach((h3,h3Idx)=>{
-            const h3x=560, h3y=h2y+(h3Idx%2===0?-20:20);
-            const days3=Math.round((h3.ts-h2.ts)/86400000);
-            const col3=colors[(i*3+j+5)%colors.length];
-            const h2label=h2.artist.length>11?h2.artist.slice(0,10)+'…':h2.artist;
-            s += bezier(h2x+nodeW(h2label), h2y, h3x, h3y, `+${days3}d`);
-            s += drawRect(h3x, h3y, h3.artist.length>10?h3.artist.slice(0,9)+'…':h3.artist, col3);
-          });
-        });
-      });
-
-      if (!h1.length) {
-        s+=`<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#444" font-family="Space Mono,monospace" font-size="10">No hop-1 discoveries found within 30 days of this track</text>`;
-      }
-      treeSvg.innerHTML = s;
-    }
-
-    // Stats row
-    const statsEl = document.getElementById('bf8-stats');
-    if (statsEl) {
-      const totalHops = h1.length + Object.values(hop2map).flat().length + Object.values(hop3map).flat().length;
-      statsEl.innerHTML = `
-        <div class="bf8-stat-chip"><span class="bf8-sc-val">${h1.length}</span><span class="bf8-sc-lbl">HOP 1 DISCOVERIES</span></div>
-        <div class="bf8-stat-chip"><span class="bf8-sc-val">${Object.values(hop2map).flat().length}</span><span class="bf8-sc-lbl">HOP 2</span></div>
-        <div class="bf8-stat-chip"><span class="bf8-sc-val">${Object.values(hop3map).flat().length}</span><span class="bf8-sc-lbl">HOP 3</span></div>
-        <div class="bf8-stat-chip"><span class="bf8-sc-val" style="color:var(--g)">${totalHops}</span><span class="bf8-sc-lbl">TOTAL CHAIN LENGTH</span></div>`;
-    }
+    el.innerHTML = `
+<div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+  <div class="bf8-stat-chip"><span class="bf8-sc-val" style="color:${ac}">${top20.length}</span><span class="bf8-sc-lbl">TOP ARTISTS MAPPED</span></div>
+  <div class="bf8-stat-chip"><span class="bf8-sc-val">${totalMonths}</span><span class="bf8-sc-lbl">DISCOVERY MONTHS</span></div>
+  <div class="bf8-stat-chip"><span class="bf8-sc-val" style="color:#5b9cf6">${longestStreak}</span><span class="bf8-sc-lbl">LONGEST STREAK</span></div>
+</div>
+<div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+<div style="min-width:${Math.max(600,totalMonths*80)}px;position:relative;padding:16px 0">
+  <!-- Timeline axis -->
+  <div style="display:flex;align-items:flex-start;gap:0;position:relative">
+    ${sortedKeys.map((key, ki) => {
+      const [yr, mo] = key.split('-');
+      const label = new Date(key+'-01').toLocaleString('default',{month:'short'})+' '+yr.slice(2);
+      const artists = groups[key];
+      return `<div style="flex:0 0 ${Math.max(70, 560/totalMonths)}px;display:flex;flex-direction:column;align-items:center;position:relative">
+        <div style="width:1px;background:var(--border);height:${12+artists.length*52}px;position:absolute;top:28px;left:50%;z-index:0"></div>
+        ${artists.map((a,ai)=>{
+          const col = colors[(top20.indexOf(a))%colors.length];
+          return `<div style="position:relative;z-index:1;margin-bottom:6px;margin-top:${ai===0?32:0}px">
+            <div title="${a.name} · first: ${new Date(a.first).toLocaleDateString()} · ${a.count} streams"
+              style="background:var(--s2);border:1.5px solid ${col};border-radius:8px;padding:5px 7px;text-align:center;cursor:default;min-width:60px;transition:border-color .15s">
+              <div style="font-size:9px;font-weight:700;color:${col};font-family:var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:68px">${a.name.length>10?a.name.slice(0,9)+'…':a.name}</div>
+              <div style="font-size:7px;color:var(--muted);font-family:var(--mono);margin-top:2px">${a.count} streams</div>
+            </div>
+          </div>`;
+        }).join('')}
+        <div style="font-family:var(--mono);font-size:.52rem;color:var(--muted);text-align:center;margin-top:6px;white-space:nowrap">${label}</div>
+        <div style="width:8px;height:8px;border-radius:50%;background:var(--border2);border:1.5px solid var(--muted2);margin-top:4px"></div>
+      </div>`;
+    }).join('')}
+  </div>
+</div>
+</div>
+<div style="margin-top:12px;font-family:var(--mono);font-size:.6rem;color:var(--muted);display:flex;gap:16px;flex-wrap:wrap">
+  <span>🎤 First top-20 discovery: <b style="color:var(--text)">${firstEver.name}</b> (${new Date(firstEver.first).toLocaleDateString()})</span>
+  <span>🆕 Most recent: <b style="color:var(--text)">${mostRecentDisc.name}</b> (${new Date(mostRecentDisc.first).toLocaleDateString()})</span>
+</div>`;
   }
 
   /* ════════════════════════════════════════════════════════════
@@ -14183,7 +14046,15 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
     try {
       const text = await file.text();
       const data = JSON.parse(text);
-      if (!data.shareable) { showToast('Not a shareable profile — use Export → Shareable Profile'); return; }
+      if (!data.shareable && !data.streams && !Array.isArray(data)) { showToast('Not a shareable profile — use Export → Shareable Profile'); return; }
+      // If raw streams, compute topArtists on the fly
+      if (!data.topArtists && (data.streams || Array.isArray(data))) {
+        const rawStreams = Array.isArray(data) ? data : (data.streams || data.history || []);
+        const amap = {};
+        rawStreams.forEach(x=>{const a=x.artistName||x.artist||x.channel||'';if(a)amap[a]=(amap[a]||0)+1;});
+        data.topArtists = Object.entries(amap).sort((a,b)=>b[1]-a[1]).slice(0,30).map(([name,count])=>({name,count}));
+        if (!data.name) data.name = 'Friend';
+      }
       const name = file.name.replace('.statify.json','').replace('statify-profile-','') || 'Friend';
       const vwrap = document.getElementById('tw8-venn-wrap');
       if (vwrap) vwrap.innerHTML = p8BuildVenn({ name, data });
@@ -14205,7 +14076,7 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
     }
 
     const myArtistMap = {};
-    S.filter(x=>x.ts).forEach(x => { myArtistMap[x.artist]=(myArtistMap[x.artist]||0)+1; });
+    S.filter(x=>x.ts).forEach(x => { const a=x.artistName||x.artist||x.channel||''; if(a) myArtistMap[a]=(myArtistMap[a]||0)+1; });
     const myTop = Object.entries(myArtistMap).sort((a,b)=>b[1]-a[1]).slice(0,30).map(([a])=>a);
 
     // Friend's top artists
@@ -14616,6 +14487,12 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
     wrap.style.display = '';
     p9RenderLoad();
   }
+
+  /* ── Patch render() to call initPhase9 (Bug 7 fix) ── */
+  (function(){
+    const _orig=render;
+    render=function(demo){_orig(demo);setTimeout(initPhase9,900);};
+  })();
 
   /* ── F1: LOAD UI ── */
   function p9RenderLoad() {
@@ -16077,13 +15954,15 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
           if(idx>1) doc.addPage();
           doc.addImage(canvas.toDataURL('image/jpeg',0.9),'JPEG',0,0,210,297);
           nextPage();
-        });
+        }).catch(()=>{ nextPage(); }); // Bug 11 fix: skip failed page, don't halt chain
       } else {
         if(idx>1) doc.addPage();
         nextPage();
       }
     }
     nextPage();
+    // Bug 11 fix: safety reset if export stalls >60s
+    const _safetyTimer = setTimeout(()=>{if(btn&&btn.disabled){btn.textContent='↓ Export PDF';btn.disabled=false;}},60000);
   };
 
   /* ── INIT ── */
