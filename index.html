@@ -14447,8 +14447,9 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
   }
 
   function p9TwinScore(a, b) {
-    const artistsA = new Set(a.topArtists.map(x=>x[0]));
-    const artistsB = new Set(b.topArtists.map(x=>x[0]));
+    function toNames(arr) { return (arr||[]).map(x=>Array.isArray(x)?x[0]:(x.name||x.artist||'')); }
+    const artistsA = new Set(toNames(a.topArtists));
+    const artistsB = new Set(toNames(b.topArtists));
     const shared = [...artistsA].filter(x=>artistsB.has(x)).length;
     const artistMatch = Math.round(shared / Math.max(artistsA.size, artistsB.size, 1) * 100);
     const peakMatch = a.peakHour===b.peakHour ? 100 : Math.max(0, 100 - Math.abs(parseInt(a.peakHour)-parseInt(b.peakHour))*12);
@@ -14466,8 +14467,9 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
   }
 
   function p9SharedArtists(a, b) {
-    const ma = new Map(a.topArtists);
-    const mb = new Map(b.topArtists);
+    function toTuples(arr) { return (arr||[]).map(x=>Array.isArray(x)?x:[x.name||'',x.count||x.plays||1]); }
+    const ma = new Map(toTuples(a.topArtists));
+    const mb = new Map(toTuples(b.topArtists));
     const shared = [];
     const maxA = a.topArtists[0]?.[1]||1;
     const maxB = b.topArtists[0]?.[1]||1;
@@ -14538,17 +14540,32 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
     r.onload = e => {
       try {
         const data = JSON.parse(e.target.result);
-        // shareable profile format: {name, streams, ...} or raw statify export
+        // Normalize topArtists/topTracks to [name,count] tuple format regardless of source
+        function normalizeTuples(arr) {
+          if (!arr || !arr.length) return [];
+          if (Array.isArray(arr[0])) return arr; // already tuples
+          return arr.map(x => [x.name||x.artist||x.track||String(x), x.count||x.plays||1]);
+        }
         window._p9Profile = {
           name: data.name || file.name.replace('.json',''),
           streams: data.streams || data.history || [],
-          topArtists: data.topArtists || [],
-          topTracks: data.topTracks || [],
+          topArtists: normalizeTuples(data.topArtists),
+          topTracks: normalizeTuples(data.topTracks),
         };
-        // if streams array present, compute stats from it
+        // if streams array present, compute full stats from it (overrides pre-computed)
         if (window._p9Profile.streams.length) {
           const computed = p9FriendStats(window._p9Profile);
           window._p9Profile = { ...window._p9Profile, ...computed };
+        } else if (window._p9Profile.topArtists.length) {
+          // Shareable profile with no raw streams — synthesize missing stats from topArtists
+          window._p9Profile.hours = data.hours || 0;
+          window._p9Profile.streams = data.streams_count || window._p9Profile.topArtists.reduce((a,x)=>a+x[1],0);
+          window._p9Profile.topArtist = window._p9Profile.topArtists[0]?.[0] || '—';
+          window._p9Profile.topTrack = window._p9Profile.topTracks[0]?.[0] || '—';
+          window._p9Profile.skipRate = data.skipRate || 0;
+          window._p9Profile.peakHour = data.peakHour || '0:00';
+          window._p9Profile.loyalty = data.loyalty || 50;
+          window._p9Profile.explorer = data.explorer || 50;
         }
         p9RenderLoad();
       } catch(err) {
@@ -15701,7 +15718,7 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
 
   function buildFpStats(){
     const S=(typeof streams!=='undefined'?streams:[]);
-    if(!S.length) return {loyalty:0.74,skipRate:0.12,peakHour:23,genre:'pop',accent:'var(--g)',accent2:'var(--g2)'};
+    if(!S.length){ const accent=getComputedStyle(document.documentElement).getPropertyValue('--g').trim()||'#1DB954'; const accent2=getComputedStyle(document.documentElement).getPropertyValue('--g2').trim()||'#1ed760'; return {loyalty:0.74,skipRate:0.12,peakHour:23,genre:'pop',accent,accent2}; }
     // loyalty = top artist streams / total
     const artistCounts={};
     S.forEach(x=>{const a=x.artist||x.channel||'?';artistCounts[a]=(artistCounts[a]||0)+1;});
@@ -15714,7 +15731,10 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
     const hourCounts=Array(24).fill(0);
     S.forEach(x=>{const ts=x.ts||x.date||'';const h=ts?new Date(ts).getHours():0;hourCounts[h]++;});
     const peakHour=hourCounts.indexOf(Math.max(...hourCounts));
-    return {loyalty,skipRate,peakHour,accent:'var(--g)',accent2:'var(--g2)'};
+    // Resolve actual hex values — SVG attributes don't support CSS vars
+    const accent = getComputedStyle(document.documentElement).getPropertyValue('--g').trim() || '#1DB954';
+    const accent2 = getComputedStyle(document.documentElement).getPropertyValue('--g2').trim() || '#1ed760';
+    return {loyalty,skipRate,peakHour,accent,accent2};
   }
 
   function buildFingerprints(){
@@ -15805,10 +15825,14 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
   /* ── PDF ── */
   let _p11PdfStyle='A';
   const _p11SelPages=new Set(['cover','overview','tracks','calendar','archetype','timeline','map','artists','back']);
-  const _p11PAL={
-    A:{bg:'#080808',bg2:'#0d0d0d',bg3:'#111',acc:'#1DB954',acc2:'#1ed760',tx:'#f0f0f0',tx2:'#aaa',mu:'#444',brd:'#1e1e1e'},
-    B:{bg:'#f5f0eb',bg2:'#ede8e2',bg3:'#e8e2da',acc:'#1DB954',acc2:'#16a347',tx:'#1a1a1a',tx2:'#444',mu:'#888',brd:'#ccc'},
-  };
+  const _p11PAL=(function(){
+    const acc=getComputedStyle(document.documentElement).getPropertyValue('--g').trim()||'#1DB954';
+    const acc2=getComputedStyle(document.documentElement).getPropertyValue('--g2').trim()||'#1ed760';
+    return {
+      A:{bg:'#080808',bg2:'#0d0d0d',bg3:'#111',acc,acc2,tx:'#f0f0f0',tx2:'#aaa',mu:'#444',brd:'#1e1e1e'},
+      B:{bg:'#f5f0eb',bg2:'#ede8e2',bg3:'#e8e2da',acc,acc2,tx:'#1a1a1a',tx2:'#444',mu:'#888',brd:'#ccc'},
+    };
+  })();
   const _p11Pages=[
     {id:'cover',label:'COVER',num:'01',render:p11RenderCover},
     {id:'overview',label:'OVERVIEW STATS',num:'02',render:p11RenderOverview},
@@ -15936,33 +15960,71 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
     const {jsPDF}=window.jspdf;
     const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
     const pages=_p11Pages.filter(p=>_p11SelPages.has(p.id));
+    if(!pages.length){if(btn){btn.textContent='↓ Export PDF';btn.disabled=false;}return;}
+
+    // Resolve CSS vars once up-front so rendered HTML doesn't rely on them
+    const cs=getComputedStyle(document.documentElement);
+    const resolvedStyle=`
+      <style>
+        *{box-sizing:border-box;font-family:'Space Mono',monospace}
+        body{margin:0;padding:0}
+      </style>
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+    `;
+
     const tmpDiv=document.createElement('div');
-    tmpDiv.style.cssText='position:fixed;left:-9999px;top:0;width:210mm;background:#080808';
+    tmpDiv.style.cssText='position:fixed;left:-9999px;top:0;width:794px;height:1123px;overflow:hidden;background:#080808;';
     document.body.appendChild(tmpDiv);
+
+    const safetyTimer=setTimeout(()=>{
+      try{document.body.removeChild(tmpDiv);}catch(e){}
+      if(btn){btn.textContent='↓ Export PDF';btn.disabled=false;}
+      alert('PDF export timed out. Try selecting fewer pages.');
+    },90000);
+
     let idx=0;
     function nextPage(){
       if(idx>=pages.length){
-        document.body.removeChild(tmpDiv);
+        clearTimeout(safetyTimer);
+        try{document.body.removeChild(tmpDiv);}catch(e){}
         doc.save('statify-annual-report.pdf');
         if(btn){btn.textContent='↓ Export PDF';btn.disabled=false;}
         return;
       }
       const page=pages[idx++];
-      tmpDiv.innerHTML=`<div style="width:210mm;height:297mm;overflow:hidden">${page.render(_p11PdfStyle)}</div>`;
-      if(typeof html2canvas!=='undefined'){
-        html2canvas(tmpDiv,{scale:2,useCORS:true,backgroundColor:_p11PdfStyle==='A'?'#080808':'#f5f0eb'}).then(canvas=>{
-          if(idx>1) doc.addPage();
-          doc.addImage(canvas.toDataURL('image/jpeg',0.9),'JPEG',0,0,210,297);
-          nextPage();
-        }).catch(()=>{ nextPage(); }); // Bug 11 fix: skip failed page, don't halt chain
-      } else {
-        if(idx>1) doc.addPage();
-        nextPage();
-      }
+      if(btn) btn.textContent=`Generating… (${idx}/${pages.length})`;
+      // Render page HTML with explicit pixel dimensions
+      tmpDiv.innerHTML=`<div style="width:794px;height:1123px;overflow:hidden;position:relative">${page.render(_p11PdfStyle)}</div>`;
+      // Wait a frame for layout, then capture
+      requestAnimationFrame(()=>{
+        setTimeout(()=>{
+          if(typeof html2canvas==='undefined'){
+            // fallback: skip page
+            nextPage();
+            return;
+          }
+          html2canvas(tmpDiv,{
+            scale:1.5,
+            useCORS:true,
+            allowTaint:true,
+            backgroundColor:_p11PdfStyle==='A'?'#080808':'#f5f0eb',
+            width:794,
+            height:1123,
+            windowWidth:794,
+            windowHeight:1123,
+            logging:false
+          }).then(canvas=>{
+            if(idx>1) doc.addPage();
+            doc.addImage(canvas.toDataURL('image/jpeg',0.88),'JPEG',0,0,210,297);
+            nextPage();
+          }).catch(err=>{
+            console.warn('Page render failed, skipping:',err);
+            nextPage();
+          });
+        }, 150);
+      });
     }
     nextPage();
-    // Bug 11 fix: safety reset if export stalls >60s
-    const _safetyTimer = setTimeout(()=>{if(btn&&btn.disabled){btn.textContent='↓ Export PDF';btn.disabled=false;}},60000);
   };
 
   /* ── INIT ── */
