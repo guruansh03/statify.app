@@ -6990,6 +6990,8 @@
     function getTrack(x)  { return x.track  || x.title  || x.trackName  || x.master_metadata_track_name  || '?'; }
     function getMs(x)     { return x.ms || x.msPlayed || x.ms_played || 0; }
     function getTs(x)     { return x.ts || x.endTime || ''; }
+    // Expose for cross-script use (phase11 PDF render)
+    window.getArtist = getArtist; window.getTrack = getTrack; window.getMs = getMs; window.getTs = getTs;
 
     // topBy(arr, keyFn) → [[key, count], ...] sorted desc
     function topBy(arr, keyFn) {
@@ -6997,6 +6999,7 @@
       arr.forEach(x => { const k = keyFn(x); if (k) m[k] = (m[k] || 0) + 1; });
       return Object.entries(m).sort((a, b) => b[1] - a[1]);
     }
+    window.topBy = topBy;
 
     // topByObj(arr, keyFn) → [[key, {count,ms}], ...] sorted desc by count
     function topByObj(arr, keyFn) {
@@ -12920,7 +12923,7 @@ ${longGameArtists.slice(0,8).map((d,i) => {
 
   function initPhase6() {
     const wrap = document.getElementById('phase6-wrap');
-    if (!wrap || wrap.style.display !== 'none') return;
+    if (!wrap) return;
     wrap.style.display = '';
     p6RenderWrapped();
     p6RenderPoster();
@@ -13397,7 +13400,8 @@ ${top5Artists.map((a,i)=>`<div class="p6-wc-art-item"><div class="p6-wc-rank">#$
   }
 
   /* ── helpers ── */
-  function p7S() { return (typeof S !== 'undefined' && S && S.length) ? S : []; }
+  function p7S() { return (typeof S !== 'undefined' && S && S.length) ? S : (window.S||[]); }
+  window.p7S = p7S;
 
   function p7MonthKey(ts) {
     const d = new Date(ts);
@@ -15228,7 +15232,7 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
     if(!ringWrap||!chartEl) return;
 
     // Compute sessions from watch history (gap > 20min = new session)
-    const _S = (typeof streams !== 'undefined' ? streams : []).filter(x=>x.ts||x.endTime||x.watchedAt).sort((a,b)=>new Date(a.ts||a.endTime||a.watchedAt)-new Date(b.ts||b.endTime||b.watchedAt));
+    const _S = (window.S||[]).filter(x=>x.ts||x.endTime||x.watchedAt).sort((a,b)=>new Date(a.ts||a.endTime||a.watchedAt)-new Date(b.ts||b.endTime||b.watchedAt));
     const GAP_MS = 20*60*1000;
     const sessions = [];
     let cur = null;
@@ -15347,7 +15351,7 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
     if(!el) return;
 
     const _subs = (typeof ytSubscriptions !== 'undefined' ? ytSubscriptions : []);
-    const _S    = (typeof streams !== 'undefined' ? streams : []);
+    const _S    = (window.S||[]);
 
     if(!_subs.length){
       el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:160px;font-family:var(--mono);font-size:.7rem;color:var(--muted);text-align:center">Upload your YouTube subscriptions.csv to see ghost subs.</div>';
@@ -15877,7 +15881,7 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
     const maxA=Math.max(...Object.values(artistCounts));
     const loyalty=Math.min(maxA/S.length*10,1);
     // skip rate
-    const skipped=S.filter(x=>(x.ms_played||x.msPlayed||0)<30000).length;
+    const skipped=S.filter(x=>(x.ms||x.ms_played||x.msPlayed||0)<30000).length;
     const skipRate=S.length?skipped/S.length:0.12;
     // peak hour
     const hourCounts=Array(24).fill(0);
@@ -16025,15 +16029,15 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
   }
 
   /* PDF page renderers — pulled from phase11-preview */
-  function p11RenderCover(s){const p=_p11PAL[s];const grad=s==='A'?'linear-gradient(145deg,#080808 0%,#0a1a0f 60%,#080808 100%)':'linear-gradient(145deg,#f5f0eb 0%,#d8f5e5 50%,#f5f0eb 100%)';const arms=Array.from({length:10},(_,i)=>{const a=(i/10)*Math.PI*2,len=18+i%3*9;return `<line x1="40" y1="40" x2="${(40+Math.cos(a)*len).toFixed(1)}" y2="${(40+Math.sin(a)*len).toFixed(1)}" stroke="${p.acc}" stroke-width="1.3" opacity="${(0.3+i/10*0.6).toFixed(2)}"/>`;}).join('');return `<div style="background:${grad};height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:16px;text-align:center"><svg width="80" height="80" viewBox="0 0 80 80"><circle cx="40" cy="40" r="36" fill="none" stroke="${p.acc}" stroke-width="0.7" opacity="0.22"/>${arms}<circle cx="40" cy="40" r="5" fill="${p.acc}"/><circle cx="40" cy="40" r="2.5" fill="${p.acc2}"/></svg><div style="font-family:'Space Mono',monospace;font-size:2rem;color:${p.acc};font-weight:700;line-height:1">${(()=>{const _S2=(typeof p7S==='function'?p7S():(typeof streams!=='undefined'?streams:[]));const _yrs=_S2.map(x=>new Date(x.ts||x.endTime||x.watchedAt||0).getFullYear()).filter(y=>y>1990&&y<2100);return _yrs.length?Math.max(..._yrs):new Date().getFullYear();})()}</div><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.tx};opacity:.5;letter-spacing:.14em">LISTENING REPORT</div><div style="font-family:'Space Mono',monospace;font-size:.3rem;color:${p.mu};letter-spacing:.1em;margin-top:4px">STATIFY · YOUR YEAR IN SOUND</div></div>`;}
-  function p11RenderOverview(s){const p=_p11PAL[s];const S=(typeof p7S==='function'?p7S():(typeof streams!=='undefined'?streams:[]));const n=S.length;const hrs=Math.round(S.reduce((a,x)=>a+(x.ms_played||x.msPlayed||0),0)/3600000);const rows=[['TOTAL STREAMS',n.toLocaleString()],['EST. HOURS',hrs||'—'],['TOP ARTIST',(()=>{const m={};S.forEach(x=>{const a=x.artist||x.channel||'?';m[a]=(m[a]||0)+1;});return Object.entries(m).sort((a,b)=>b[1]-a[1])[0]?.[0]||'—';})()],['PEAK DAY',(()=>{const dm={};S.forEach(x=>{const d=new Date(x.ts||x.endTime||x.watchedAt||0).getDay();dm[d]=(dm[d]||0)+1;});const best=Object.entries(dm).sort((a,b)=>b[1]-a[1])[0];return best?['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][+best[0]]:'—';})()],['UNIQUE TRACKS',(()=>{const t=new Set(S.map(x=>x.track||x.title));return t.size||'—';})()],['COUNTRIES',(()=>{const cd=(typeof buildCountryData==='function')?buildCountryData():[];return cd.length||'—';})()]];return `<div style="background:${p.bg};padding:12px;height:100%;display:flex;flex-direction:column"><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.acc};letter-spacing:.1em;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid ${p.brd}">OVERVIEW</div>${rows.map(([l,v])=>`<div style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid ${p.brd}"><span style="font-family:'Space Mono',monospace;font-size:.32rem;color:${p.mu}">${l}</span><span style="font-family:'Space Mono',monospace;font-size:.6rem;color:${p.acc};font-weight:700">${v}</span></div>`).join('')}</div>`;}
-  function p11RenderTracks(s){const p=_p11PAL[s];const S=(typeof p7S==='function'?p7S():(typeof streams!=='undefined'?streams:[]));const m={};S.forEach(x=>{const k=(x.track||x.title||'?')+'||'+(x.artist||x.channel||'?');m[k]=(m[k]||0)+1;});const top=Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,7);const mx=top[0]?.[1]||1;return `<div style="background:${p.bg2};padding:10px;height:100%;display:flex;flex-direction:column"><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.acc};letter-spacing:.1em;margin-bottom:7px">TOP TRACKS</div>${top.map(([k,cnt],i)=>{const [t,ar]=k.split('||');return `<div style="display:flex;align-items:center;gap:5px;padding:3.5px 0;border-bottom:1px solid ${p.brd}"><span style="font-family:'Space Mono',monospace;font-size:.3rem;color:${p.acc};opacity:.6;width:9px">${i+1}</span><div style="flex:1;overflow:hidden"><div style="font-size:.36rem;color:${p.tx};font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t}</div><div style="font-size:.28rem;color:${p.mu}">${ar}</div></div><div style="width:${((cnt/mx)*50).toFixed(0)}px;height:2px;background:${p.acc};border-radius:1px;flex-shrink:0"></div></div>`;}).join('')}</div>`;}
-  function p11RenderCalendar(s){const p=_p11PAL[s];const _calS=(typeof p7S==='function'?p7S():(typeof streams!=='undefined'?streams:[]));const _calYear=(()=>{const ys=_calS.map(x=>new Date(x.ts||x.endTime||x.watchedAt||0).getFullYear()).filter(y=>y>1990&&y<2100);return ys.length?Math.max(...ys):new Date().getFullYear();})();const _calStart=new Date(_calYear,0,1);const _calBuckets={};_calS.forEach(x=>{const d=new Date(x.ts||x.endTime||x.watchedAt||0);if(d.getFullYear()===_calYear){const key=Math.floor((d-_calStart)/86400000);_calBuckets[key]=(_calBuckets[key]||0)+1;}});const _calMax=Math.max(1,...Object.values(_calBuckets));const cells=Array.from({length:371},(_,i)=>{const v=_calBuckets[i]||0;return v?v/_calMax:0;});return `<div style="background:${p.bg};padding:10px;height:100%;display:flex;flex-direction:column"><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.acc};letter-spacing:.1em;margin-bottom:7px">EMOTIONAL CALENDAR</div><div style="display:grid;grid-template-columns:repeat(53,1fr);gap:1.2px;flex:1">${cells.map(v=>`<div style="background:${p.acc};opacity:${(v*0.85+0.08).toFixed(2)};border-radius:1px;aspect-ratio:1"></div>`).join('')}</div><div style="display:flex;justify-content:space-between;margin-top:5px"><span style="font-size:.28rem;color:${p.mu};font-family:'Space Mono',monospace">JAN</span><span style="font-size:.28rem;color:${p.mu};font-family:'Space Mono',monospace">DEC</span></div></div>`;}
+  function p11RenderCover(s){const p=_p11PAL[s];const grad=s==='A'?'linear-gradient(145deg,#080808 0%,#0a1a0f 60%,#080808 100%)':'linear-gradient(145deg,#f5f0eb 0%,#d8f5e5 50%,#f5f0eb 100%)';const arms=Array.from({length:10},(_,i)=>{const a=(i/10)*Math.PI*2,len=18+i%3*9;return `<line x1="40" y1="40" x2="${(40+Math.cos(a)*len).toFixed(1)}" y2="${(40+Math.sin(a)*len).toFixed(1)}" stroke="${p.acc}" stroke-width="1.3" opacity="${(0.3+i/10*0.6).toFixed(2)}"/>`;}).join('');return `<div style="background:${grad};height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:16px;text-align:center"><svg width="80" height="80" viewBox="0 0 80 80"><circle cx="40" cy="40" r="36" fill="none" stroke="${p.acc}" stroke-width="0.7" opacity="0.22"/>${arms}<circle cx="40" cy="40" r="5" fill="${p.acc}"/><circle cx="40" cy="40" r="2.5" fill="${p.acc2}"/></svg><div style="font-family:'Space Mono',monospace;font-size:2rem;color:${p.acc};font-weight:700;line-height:1">${(()=>{const _S2=(window.p7S?window.p7S():(window.S||[]));const _yrs=_S2.map(x=>new Date(x.ts||x.endTime||x.watchedAt||0).getFullYear()).filter(y=>y>1990&&y<2100);return _yrs.length?Math.max(..._yrs):new Date().getFullYear();})()}</div><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.tx};opacity:.5;letter-spacing:.14em">LISTENING REPORT</div><div style="font-family:'Space Mono',monospace;font-size:.3rem;color:${p.mu};letter-spacing:.1em;margin-top:4px">STATIFY · YOUR YEAR IN SOUND</div></div>`;}
+  function p11RenderOverview(s){const p=_p11PAL[s];const S=(window.p7S?window.p7S():(window.S||[]));const n=S.length;const hrs=Math.round(S.reduce((a,x)=>a+(x.ms||x.ms_played||x.msPlayed||0),0)/3600000);const rows=[['TOTAL STREAMS',n.toLocaleString()],['EST. HOURS',hrs||'—'],['TOP ARTIST',(()=>{const m={};S.forEach(x=>{const a=x.artist||x.channel||'?';m[a]=(m[a]||0)+1;});return Object.entries(m).sort((a,b)=>b[1]-a[1])[0]?.[0]||'—';})()],['PEAK DAY',(()=>{const dm={};S.forEach(x=>{const d=new Date(x.ts||x.endTime||x.watchedAt||0).getDay();dm[d]=(dm[d]||0)+1;});const best=Object.entries(dm).sort((a,b)=>b[1]-a[1])[0];return best?['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][+best[0]]:'—';})()],['UNIQUE TRACKS',(()=>{const t=new Set(S.map(x=>x.track||x.title));return t.size||'—';})()],['COUNTRIES',(()=>{const cd=(typeof buildCountryData==='function')?buildCountryData():[];return cd.length||'—';})()]];return `<div style="background:${p.bg};padding:12px;height:100%;display:flex;flex-direction:column"><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.acc};letter-spacing:.1em;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid ${p.brd}">OVERVIEW</div>${rows.map(([l,v])=>`<div style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid ${p.brd}"><span style="font-family:'Space Mono',monospace;font-size:.32rem;color:${p.mu}">${l}</span><span style="font-family:'Space Mono',monospace;font-size:.6rem;color:${p.acc};font-weight:700">${v}</span></div>`).join('')}</div>`;}
+  function p11RenderTracks(s){const p=_p11PAL[s];const S=(window.p7S?window.p7S():(window.S||[]));const m={};S.forEach(x=>{const k=(x.track||x.title||'?')+'||'+(x.artist||x.channel||'?');m[k]=(m[k]||0)+1;});const top=Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,7);const mx=top[0]?.[1]||1;return `<div style="background:${p.bg2};padding:10px;height:100%;display:flex;flex-direction:column"><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.acc};letter-spacing:.1em;margin-bottom:7px">TOP TRACKS</div>${top.map(([k,cnt],i)=>{const [t,ar]=k.split('||');return `<div style="display:flex;align-items:center;gap:5px;padding:3.5px 0;border-bottom:1px solid ${p.brd}"><span style="font-family:'Space Mono',monospace;font-size:.3rem;color:${p.acc};opacity:.6;width:9px">${i+1}</span><div style="flex:1;overflow:hidden"><div style="font-size:.36rem;color:${p.tx};font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t}</div><div style="font-size:.28rem;color:${p.mu}">${ar}</div></div><div style="width:${((cnt/mx)*50).toFixed(0)}px;height:2px;background:${p.acc};border-radius:1px;flex-shrink:0"></div></div>`;}).join('')}</div>`;}
+  function p11RenderCalendar(s){const p=_p11PAL[s];const _calS=(window.p7S?window.p7S():(window.S||[]));const _calYear=(()=>{const ys=_calS.map(x=>new Date(x.ts||x.endTime||x.watchedAt||0).getFullYear()).filter(y=>y>1990&&y<2100);return ys.length?Math.max(...ys):new Date().getFullYear();})();const _calStart=new Date(_calYear,0,1);const _calBuckets={};_calS.forEach(x=>{const d=new Date(x.ts||x.endTime||x.watchedAt||0);if(d.getFullYear()===_calYear){const key=Math.floor((d-_calStart)/86400000);_calBuckets[key]=(_calBuckets[key]||0)+1;}});const _calMax=Math.max(1,...Object.values(_calBuckets));const cells=Array.from({length:371},(_,i)=>{const v=_calBuckets[i]||0;return v?v/_calMax:0;});return `<div style="background:${p.bg};padding:10px;height:100%;display:flex;flex-direction:column"><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.acc};letter-spacing:.1em;margin-bottom:7px">EMOTIONAL CALENDAR</div><div style="display:grid;grid-template-columns:repeat(53,1fr);gap:1.2px;flex:1">${cells.map(v=>`<div style="background:${p.acc};opacity:${(v*0.85+0.08).toFixed(2)};border-radius:1px;aspect-ratio:1"></div>`).join('')}</div><div style="display:flex;justify-content:space-between;margin-top:5px"><span style="font-size:.28rem;color:${p.mu};font-family:'Space Mono',monospace">JAN</span><span style="font-size:.28rem;color:${p.mu};font-family:'Space Mono',monospace">DEC</span></div></div>`;}
   function p11RenderRadar(s){
     const p=_p11PAL[s];
     const dims=['LOYALTY','EXPLORER','NIGHTOWL','SKIPPER','BINGE','FOCUS'];
     // Compute real vals from actual stream data instead of hardcoded placeholders
-    const S=(typeof streams!=='undefined'?streams:[]);
+    const S=(window.S||[]);
     let vals=[0.5,0.5,0.5,0.5,0.5,0.5];
     let archetypeLabel='LISTENER';
     if(S.length>=20){
@@ -16071,7 +16075,7 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
   }
   function p11RenderTimeline(s){
     const p=_p11PAL[s];
-    const S=(typeof streams!=='undefined'?streams:[]);
+    const S=(window.S||[]);
     const events=[];
     if(S.length){
       // Sort by time
@@ -16102,11 +16106,15 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
     return `<div style="background:${p.bg};padding:12px;height:100%;display:flex;flex-direction:column"><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.acc};letter-spacing:.1em;margin-bottom:10px">MILESTONES</div>${events.slice(0,6).map(([d,e])=>`<div style="display:flex;gap:8px;align-items:flex-start;padding-bottom:7px"><div style="width:5px;height:5px;border-radius:50%;background:${p.acc};margin-top:2px;flex-shrink:0"></div><div><div style="font-family:'Space Mono',monospace;font-size:.28rem;color:${p.acc};margin-bottom:1px">${d}</div><div style="font-size:.32rem;color:${p.tx2};line-height:1.4">${e}</div></div></div>`).join('')}</div>`;
   }
   function p11RenderMap(s){const p=_p11PAL[s];const data=buildCountryData().slice(0,14);const dots=data.map(c=>{const x=((c.lon+180)/360)*140+15,y=((90-c.lat)/180)*80+10;return`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(c.size/5+0.4).toFixed(1)}" fill="${p.acc}" opacity="0.85"/>`;}).join('');return `<div style="background:${p.bg};height:100%;display:flex;flex-direction:column;padding:10px"><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.acc};letter-spacing:.1em;margin-bottom:6px">LISTENING MAP</div><div style="flex:1;display:flex;align-items:center"><svg viewBox="0 0 170 100" style="width:100%"><rect width="170" height="100" fill="${p.bg2}" rx="3"/>${dots}</svg></div></div>`;}
-  function p11RenderArtists(s){const p=_p11PAL[s];const S=(typeof streams!=='undefined'?streams:[]);const m={};S.forEach(x=>{const a=x.artist||x.channel||'?';m[a]=(m[a]||0)+1;});const top=Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,7);const mx=top[0]?.[1]||1;return `<div style="background:${p.bg2};padding:10px;height:100%;display:flex;flex-direction:column"><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.acc};letter-spacing:.1em;margin-bottom:7px">TOP ARTISTS</div>${top.map(([name,cnt],i)=>`<div style="display:flex;align-items:center;gap:5px;padding:3.5px 0;border-bottom:1px solid ${p.brd}"><span style="font-family:'Space Mono',monospace;font-size:.3rem;color:${p.acc};opacity:.6;width:9px">${i+1}</span><div style="flex:1;overflow:hidden"><div style="font-size:.36rem;color:${p.tx};font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div><div style="font-size:.28rem;color:${p.mu}">${cnt.toLocaleString()} plays</div></div><div style="width:${((cnt/mx)*55).toFixed(0)}px;height:2px;background:${p.acc};border-radius:1px;flex-shrink:0"></div></div>`).join('')}</div>`;}
-  function p11RenderBack(s){const p=_p11PAL[s];const grad=s==='A'?'linear-gradient(180deg,#080808 0%,#0a1a0f 100%)':'linear-gradient(180deg,#f5f0eb 0%,#d4f0e0 100%)';const S=(typeof streams!=='undefined'?streams:[]);const hrs=Math.round(S.reduce((a,x)=>a+(x.ms_played||x.msPlayed||0),0)/3600000)||'—';const uTracks=new Set(S.map(x=>x.track||x.title)).size||'—';return `<div style="background:${grad};height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;text-align:center;gap:9px"><div style="font-family:'Space Mono',monospace;font-size:.55rem;color:${p.acc};letter-spacing:.16em;font-weight:700">STATIFY</div><div style="font-size:.36rem;color:${p.tx2};opacity:.65;line-height:1.7;max-width:110px">Your year in music. Every stream, every moment.</div><div style="font-family:'Space Mono',monospace;font-size:.28rem;color:${p.acc};letter-spacing:.08em">${hrs} HRS · ${uTracks} TRACKS</div><div style="font-family:'Space Mono',monospace;font-size:.24rem;color:${p.mu};letter-spacing:.06em">100% LOCAL · 100% PRIVATE</div></div>`;}
+  function p11RenderArtists(s){const p=_p11PAL[s];const S=(window.S||[]);const m={};S.forEach(x=>{const a=x.artist||x.channel||'?';m[a]=(m[a]||0)+1;});const top=Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,7);const mx=top[0]?.[1]||1;return `<div style="background:${p.bg2};padding:10px;height:100%;display:flex;flex-direction:column"><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.acc};letter-spacing:.1em;margin-bottom:7px">TOP ARTISTS</div>${top.map(([name,cnt],i)=>`<div style="display:flex;align-items:center;gap:5px;padding:3.5px 0;border-bottom:1px solid ${p.brd}"><span style="font-family:'Space Mono',monospace;font-size:.3rem;color:${p.acc};opacity:.6;width:9px">${i+1}</span><div style="flex:1;overflow:hidden"><div style="font-size:.36rem;color:${p.tx};font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div><div style="font-size:.28rem;color:${p.mu}">${cnt.toLocaleString()} plays</div></div><div style="width:${((cnt/mx)*55).toFixed(0)}px;height:2px;background:${p.acc};border-radius:1px;flex-shrink:0"></div></div>`).join('')}</div>`;}
+  function p11RenderBack(s){const p=_p11PAL[s];const grad=s==='A'?'linear-gradient(180deg,#080808 0%,#0a1a0f 100%)':'linear-gradient(180deg,#f5f0eb 0%,#d4f0e0 100%)';const S=(window.S||[]);const hrs=Math.round(S.reduce((a,x)=>a+(x.ms||x.ms_played||x.msPlayed||0),0)/3600000)||'—';const uTracks=new Set(S.map(x=>x.track||x.title)).size||'—';return `<div style="background:${grad};height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;text-align:center;gap:9px"><div style="font-family:'Space Mono',monospace;font-size:.55rem;color:${p.acc};letter-spacing:.16em;font-weight:700">STATIFY</div><div style="font-size:.36rem;color:${p.tx2};opacity:.65;line-height:1.7;max-width:110px">Your year in music. Every stream, every moment.</div><div style="font-family:'Space Mono',monospace;font-size:.28rem;color:${p.acc};letter-spacing:.08em">${hrs} HRS · ${uTracks} TRACKS</div><div style="font-family:'Space Mono',monospace;font-size:.24rem;color:${p.mu};letter-spacing:.06em">100% LOCAL · 100% PRIVATE</div></div>`;}
 
   window.p11ExportPDF=function(){
     if(typeof window.jspdf==='undefined'){alert('jsPDF not loaded');return;}
+    // Ensure window.S is populated (may not be set if render() hasn't been called yet in this session)
+    if(!window.S || !window.S.length){
+      if(typeof S !== 'undefined' && S && S.length) window.S = S;
+    }
     const btn=document.getElementById('p11PdfExportBtn');
     if(btn){btn.textContent='Generating…';btn.disabled=true;}
     const {jsPDF}=window.jspdf;
@@ -16114,18 +16122,10 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
     const pages=_p11Pages.filter(p=>_p11SelPages.has(p.id));
     if(!pages.length){if(btn){btn.textContent='↓ Export PDF';btn.disabled=false;}return;}
 
-    // Resolve CSS vars once up-front so rendered HTML doesn't rely on them
-    const cs=getComputedStyle(document.documentElement);
-    const resolvedStyle=`
-      <style>
-        *{box-sizing:border-box;font-family:'Space Mono',monospace}
-        body{margin:0;padding:0}
-      </style>
-      <link rel="preconnect" href="https://fonts.googleapis.com">
-    `;
+    const bgColor = _p11PdfStyle==='A'?'#080808':'#f5f0eb';
 
     const tmpDiv=document.createElement('div');
-    tmpDiv.style.cssText='position:fixed;left:-9999px;top:0;width:794px;height:1123px;overflow:hidden;background:#080808;';
+    tmpDiv.style.cssText=`position:fixed;left:0;top:0;width:794px;height:1123px;overflow:hidden;background:${bgColor};pointer-events:none;opacity:0;z-index:9999;`;
     document.body.appendChild(tmpDiv);
 
     const safetyTimer=setTimeout(()=>{
@@ -16147,7 +16147,7 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
       if(btn) btn.textContent=`Generating… (${idx}/${pages.length})`;
       // Wrap: catch synchronous render failures
       try {
-        tmpDiv.innerHTML=`<div style="width:794px;height:1123px;overflow:hidden;position:relative">${page.render(_p11PdfStyle)}</div>`;
+        tmpDiv.innerHTML=`<div style="width:794px;height:1123px;overflow:hidden;position:relative;background:${bgColor}">${page.render(_p11PdfStyle)}</div>`;
       } catch(renderErr) {
         console.warn('Page render threw, skipping:',renderErr);
         nextPage();
@@ -16158,7 +16158,7 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
         console.warn('Page timed out, skipping:',page.id);
         nextPage();
       },30000);
-      // Wait a frame for layout, then capture
+      // Wait for layout + fonts to settle, then capture
       requestAnimationFrame(()=>{
         setTimeout(()=>{
           if(typeof html2canvas==='undefined'){
@@ -16166,8 +16166,11 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
             nextPage();
             return;
           }
+          // Briefly make visible so html2canvas can measure layout correctly
+          tmpDiv.style.opacity='1';
+          requestAnimationFrame(()=>{
           html2canvas(tmpDiv,{
-            scale:1.5,
+            scale:2,
             useCORS:true,
             allowTaint:true,
             backgroundColor:_p11PdfStyle==='A'?'#080808':'#f5f0eb',
@@ -16179,21 +16182,27 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
             onclone:(clonedDoc)=>{
               const cs=getComputedStyle(document.documentElement);
               const root=clonedDoc.documentElement;
-              ['--g','--g2','--bg','--s1','--s2','--s3','--text','--text2','--muted','--border'].forEach(p=>{
+              ['--g','--g2','--bg','--s1','--s2','--s3','--text','--text2','--muted','--border','--border2','--muted2','--red','--blue','--amber'].forEach(p=>{
                 root.style.setProperty(p,cs.getPropertyValue(p).trim());
               });
+              // Ensure clone is visible for capture
+              const clonedEl=clonedDoc.body.querySelector('div');
+              if(clonedEl){ clonedEl.style.opacity='1'; clonedEl.style.pointerEvents='auto'; }
             }
           }).then(canvas=>{
             clearTimeout(pageTimer);
+            tmpDiv.style.opacity='0';
             if(idx>1) doc.addPage();
-            doc.addImage(canvas.toDataURL('image/jpeg',0.88),'JPEG',0,0,210,297);
+            doc.addImage(canvas.toDataURL('image/jpeg',0.92),'JPEG',0,0,210,297);
             nextPage();
           }).catch(err=>{
             clearTimeout(pageTimer);
+            tmpDiv.style.opacity='0';
             console.warn('Page render failed, skipping:',err);
             nextPage();
           });
-        }, 150);
+          }); // end inner rAF
+        }, 400);
       });
     }
     nextPage();
