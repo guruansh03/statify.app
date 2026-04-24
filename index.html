@@ -5653,7 +5653,7 @@
         <div class="rv">
           <div class="sl">Decade Breakdown</div>
           <div class="panel">
-            <p class="pt">Era of your music</p>
+            <p class="pt">Era of your music <span style="font-family:var(--mono);font-size:.58rem;color:var(--muted)">(estimated from stream year — release year unavailable in Spotify data)</span></p>
             <div id="decChart"></div>
           </div>
         </div>
@@ -6912,7 +6912,31 @@
     function rbg() { bgC.width = window.innerWidth; bgC.height = window.innerHeight }
     rbg(); window.addEventListener('resize', rbg);
     for (let i = 0; i < 55; i++)pts.push({ x: Math.random() * window.innerWidth, y: Math.random() * window.innerHeight, r: Math.random() * 1.4 + .3, vx: (Math.random() - .5) * .25, vy: (Math.random() - .5) * .25, a: Math.random() * .4 + .08 });
-    (function ab() { bgX.clearRect(0, 0, bgC.width, bgC.height); const yt = document.body.classList.contains('yt-theme'); pts.forEach(p => { p.x += p.vx; p.y += p.vy; if (p.x < 0) p.x = bgC.width; if (p.x > bgC.width) p.x = 0; if (p.y < 0) p.y = bgC.height; if (p.y > bgC.height) p.y = 0; bgX.beginPath(); bgX.arc(p.x, p.y, p.r, 0, Math.PI * 2); bgX.fillStyle = yt ? `rgba(255,0,0,${p.a})` : `rgba(29,185,84,${p.a})`; bgX.fill() }); requestAnimationFrame(ab) })();
+    let _bgRafId = null, _bgRunning = false;
+    function startBgCanvas() {
+      if (_bgRunning) return;
+      _bgRunning = true;
+      (function ab() {
+        if (!_bgRunning) return;
+        bgX.clearRect(0, 0, bgC.width, bgC.height);
+        const yt = document.body.classList.contains('yt-theme');
+        pts.forEach(p => {
+          p.x += p.vx; p.y += p.vy;
+          if (p.x < 0) p.x = bgC.width; if (p.x > bgC.width) p.x = 0;
+          if (p.y < 0) p.y = bgC.height; if (p.y > bgC.height) p.y = 0;
+          bgX.beginPath(); bgX.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          bgX.fillStyle = yt ? `rgba(255,0,0,${p.a})` : `rgba(29,185,84,${p.a})`;
+          bgX.fill();
+        });
+        _bgRafId = requestAnimationFrame(ab);
+      })();
+    }
+    function stopBgCanvas() {
+      _bgRunning = false;
+      if (_bgRafId) { cancelAnimationFrame(_bgRafId); _bgRafId = null; }
+      bgX.clearRect(0, 0, bgC.width, bgC.height);
+    }
+    startBgCanvas();
 
     /* ═══════════════════════════════════════
        DND
@@ -7133,13 +7157,50 @@
       showLoader('READING FILES...');
       const r = [];
       for (const fi of f) r.push(new Promise(res => { const rd = new FileReader(); rd.onload = () => res({ name: fi.name, content: rd.result }); rd.readAsText(fi) }));
-      Promise.all(r).then(res => { showLoader('PARSING...'); setTimeout(() => { parseFiles(res); saveSessionToDB().catch(()=>{}); showDash(false) }, 600) });
+      Promise.all(r).then(res => {
+        showLoader('PARSING...');
+        // P1 fix: parse JSON in a Web Worker to avoid main-thread freeze on large files
+        const workerSrc = `
+          self.onmessage = function(e) {
+            const results = e.data.map(({name, content}) => {
+              try { return {name, data: JSON.parse(content), ok: true}; }
+              catch(err) { return {name, data: null, ok: false}; }
+            });
+            self.postMessage(results);
+          };
+        `;
+        const blob = new Blob([workerSrc], {type: 'application/javascript'});
+        const workerUrl = URL.createObjectURL(blob);
+        const worker = new Worker(workerUrl);
+        worker.onmessage = function(e) {
+          worker.terminate();
+          URL.revokeObjectURL(workerUrl);
+          parseFiles(e.data);
+          saveSessionToDB().catch(()=>{});
+          showDash(false);
+        };
+        worker.onerror = function() {
+          // Fallback: parse synchronously if Worker fails
+          worker.terminate();
+          URL.revokeObjectURL(workerUrl);
+          parseFiles(res.map(({name, content}) => {
+            try { return {name, data: JSON.parse(content), ok: true}; }
+            catch(e) { return {name, data: null, ok: false}; }
+          }));
+          saveSessionToDB().catch(()=>{});
+          showDash(false);
+        };
+        worker.postMessage(res.map(({name, content}) => ({name, content})));
+      });
     }
     function parseFiles(res) {
       S = []; lib = null;
-      for (const { name, content } of res) {
+      // res can be raw {name,content} (fallback) or pre-parsed {name,data,ok} (worker path)
+      for (const item of res) {
         try {
-          const d = JSON.parse(content), ln = name.toLowerCase();
+          const d = item.ok !== undefined ? item.data : JSON.parse(item.content);
+          if (!d) continue;
+          const ln = item.name.toLowerCase();
           if (ln.includes('streaminghistory') || ln.includes('streaming_history')) { if (Array.isArray(d)) S.push(...d) }
           else if (ln.includes('yourlibrary') || ln.includes('your_library')) { lib = d }
           else if (Array.isArray(d) && d[0] && (d[0].endTime || d[0].ts)) { S.push(...d) }
@@ -7450,6 +7511,14 @@
       document.getElementById('loader').style.display = 'flex';
       document.getElementById('lmsg').textContent = m;
     }
+    /* P6 fix: debounced ScrollTrigger.refresh — coalesces rapid calls into one */
+    let _stRefreshTimer = null;
+    function debouncedSTRefresh(delay) {
+      clearTimeout(_stRefreshTimer);
+      _stRefreshTimer = setTimeout(() => {
+        if (typeof ScrollTrigger !== 'undefined') debouncedSTRefresh();
+      }, delay || 350);
+    }
     function showDash(d) {
       setTimeout(() => {
         document.getElementById('loader').style.display = 'none';
@@ -7521,6 +7590,8 @@
       lockToggle(false);
       // Bug fix: ensure ctx-shifted state is cleared on home navigation
       if (typeof _setCtxShift === 'function') _setCtxShift(false);
+      // P3 fix: resume bg particles on landing page
+      startBgCanvas();
       // Animate dropzone back in
       gsap.fromTo('#dropzone', { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: .4, delay: .1, ease: 'power2.out' });
     }
@@ -7773,12 +7844,44 @@
     ═══════════════════════════════════════ */
     function render(demo) {
       if (!S.length) return;
-      const tot = S.reduce((a, x) => a + x.ms, 0), n = S.length;
-      const uT = new Set(S.map(x => x.track + '||' + x.artist)).size, uA = new Set(S.map(x => x.artist)).size;
-      const sk = S.filter(x => x.skipped).length;
-      const dates = S.map(x => x.ts).filter(Boolean).sort();
-      const d0 = dates[0]?.slice(0, 10) || '—', d1 = dates[dates.length - 1]?.slice(0, 10) || '—';
-      const span = dates.length > 1 ? Math.max(1, Math.round((new Date(d1) - new Date(d0)) / 86400000)) : 1;
+      stopBgCanvas(); // P3 fix: no need to run particles while dashboard is shown
+      /* P5 fix: single O(n) pass to build stats cache — replaces 15+ individual iterations */
+      const _SC = window._SC = (function() {
+        let tot = 0, sk = 0;
+        const trackSet = new Set(), artistSet = new Set(), daySet = new Set();
+        const tkMap_ = {}, aMap_ = {}, hC_ = new Array(24).fill(0), dC_ = new Array(7).fill(0);
+        const dC2_ = {}, mM_ = {}, vCounts_ = {};
+        const dates_ = [];
+        for (const x of S) {
+          const ms = getMs(x);
+          tot += ms;
+          if (x.skipped) sk++;
+          const tk = x.track + '||' + x.artist;
+          trackSet.add(tk); artistSet.add(x.artist);
+          const k2 = tk;
+          if (!tkMap_[k2]) tkMap_[k2] = { count: 0, ms: 0 };
+          tkMap_[k2].count++; tkMap_[k2].ms += ms;
+          if (!aMap_[x.artist]) aMap_[x.artist] = { count: 0, ms: 0 };
+          aMap_[x.artist].count++; aMap_[x.artist].ms += ms;
+          if (x.ts) {
+            dates_.push(x.ts);
+            const d = new Date(x.ts);
+            if (!isNaN(d)) { hC_[d.getHours()]++; dC_[d.getDay()]++; }
+            const day = x.ts.slice(0, 10); daySet.add(day); dC2_[day] = (dC2_[day] || 0) + 1;
+            const mo = x.ts.slice(0, 7); if (mo) mM_[mo] = (mM_[mo] || 0) + 1;
+          }
+          vCounts_[x.track] = (vCounts_[x.track] || 0) + 1;
+        }
+        dates_.sort();
+        const d0 = dates_[0]?.slice(0, 10) || '—', d1 = dates_[dates_.length - 1]?.slice(0, 10) || '—';
+        const span_ = dates_.length > 1 ? Math.max(1, Math.round((new Date(d1) - new Date(d0)) / 86400000)) : 1;
+        return { tot, n: S.length, sk, uT: trackSet.size, uA: artistSet.size,
+          d0, d1, span: span_, tkMap: tkMap_, aMap: aMap_,
+          hC: hC_, dC: dC_, dC2: dC2_, mM: mM_, vCounts: vCounts_,
+          daySet, dates: dates_ };
+      })();
+      const { tot, n, sk, d0, d1, span } = _SC;
+      const tot_ = tot; // alias used by inner functions
       const ac = accentColor(), ar = accentRgb();
       /* HERO */
       if (!isYT) document.getElementById('hbadge').textContent = demo ? 'DEMO MODE — SAMPLE DATA' : 'YOUR SPOTIFY DATA';
@@ -7791,34 +7894,33 @@
       const timeLabel = isYT ? 'VIDEOS WATCHED' : 'TOTAL STREAMS';
       const cards = [
         { l: timeLabel, v: fN(n), i: '♫' },
-        { l: isYT ? 'DAYS ACTIVE' : 'LISTENING TIME', v: isYT ? fN(new Set(S.map(x => x.ts?.slice(0, 10)).filter(Boolean)).size) : fmt(tot), i: '◷' },
+        { l: isYT ? 'DAYS ACTIVE' : 'LISTENING TIME', v: isYT ? fN(_SC.daySet.size) : fmt(tot), i: '◷' },
         { l: 'DAILY AVERAGE', v: isYT ? Math.round(n / span) + '/day' : fmt(tot / span), i: '⏤' },
-        { l: isYT ? 'UNIQUE VIDEOS' : 'UNIQUE TRACKS', v: fN(uT), i: '♪' },
-        { l: isYT ? 'CHANNELS' : 'UNIQUE ARTISTS', v: fN(uA), i: '◉' },
-        { l: isYT ? 'RE-WATCHED' : 'SKIP RATE', v: isYT ? (() => { const vCounts = {}; S.forEach(x => { vCounts[x.track] = (vCounts[x.track]||0)+1; }); const rewatched = Object.values(vCounts).filter(c=>c>1).length; return fN(rewatched) })() : ((sk / n) * 100).toFixed(1) + '%', i: isYT ? '↩' : '»' },
+        { l: isYT ? 'UNIQUE VIDEOS' : 'UNIQUE TRACKS', v: fN(_SC.uT), i: '♪' },
+        { l: isYT ? 'CHANNELS' : 'UNIQUE ARTISTS', v: fN(_SC.uA), i: '◉' },
+        { l: isYT ? 'RE-WATCHED' : 'SKIP RATE', v: isYT ? fN(Object.values(_SC.vCounts).filter(c => c > 1).length) : ((sk / n) * 100).toFixed(1) + '%', i: isYT ? '↩' : '»' },
         { l: 'DAYS TRACKED', v: span, i: '▦' },
         { l: 'LIBRARY', v: lib ? fN((lib.tracks || []).length) : (isYT && ytMusicData.length ? fN(ytMusicData.length) : '—'), i: '♥' }
       ];
       document.getElementById('statGrid').innerHTML = cards.map(c => `<div class="sc"><div class="sc-lbl">${c.l}</div><div class="sc-val" data-count="${c.v}">${c.v}</div><div class="sc-ico">${c.i}</div></div>`).join('');
       animateCountUp();
-      /* TOP 50 */
-      tkMap = {}; S.forEach(x => { const k = x.track + '||' + x.artist; if (!tkMap[k]) tkMap[k] = { count: 0, ms: 0 }; tkMap[k].count++; tkMap[k].ms += x.ms });
+      /* TOP 50 — use cache */
+      tkMap = _SC.tkMap;
       renderTop50();
-      /* TOP ARTISTS */
-      const aMap = {}; S.forEach(x => { if (!aMap[x.artist]) aMap[x.artist] = { count: 0, ms: 0 }; aMap[x.artist].count++; aMap[x.artist].ms += x.ms });
+      /* TOP ARTISTS — use cache */
+      const aMap = _SC.aMap;
       renderTopArtists(aMap);
-      /* HEATMAP */
-      const hC = new Array(24).fill(0); S.forEach(x => { if (!x.ts) return; const d = new Date(x.ts); if (!isNaN(d)) hC[d.getHours()]++ });
+      /* HEATMAP — use cache */
+      const hC = _SC.hC;
       const mxH = Math.max(...hC);
       document.getElementById('hmlb').innerHTML = Array.from({ length: 24 }, (_, i) => `<div class="hmlb">${i.toString().padStart(2, '0')}</div>`).join('');
       document.getElementById('hmg').innerHTML = hC.map((c, h) => { const al = mxH ? c / mxH : 0; const bg = al < .02 ? 'var(--s3)' : `rgba(${ar},${(.08 + al * .92).toFixed(2)})`; return `<div class="hmc" style="background:${bg}" onmouseenter="showTip(event,'${h}:00<br>${c} ${isYT ? 'videos' : 'streams'}')" onmouseleave="hideTip()"></div>` }).join('');
-      /* DAY BARS */
-      const dN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], dC = new Array(7).fill(0);
-      S.forEach(x => { if (!x.ts) return; const d = new Date(x.ts); if (!isNaN(d)) dC[d.getDay()]++ });
+      /* DAY BARS — use cache */
+      const dN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], dC = _SC.dC;
       const mxD = Math.max(...dC);
       document.getElementById('dayBars').innerHTML = dC.map((c, i) => `<div class="br"><div class="bl">${dN[i]}</div><div class="bt"><div class="bf" data-target="${mxD ? (c / mxD * 100) : 0}"></div></div><div class="bv">${c}</div></div>`).join('');
-      /* MONTHLY */
-      const years = [...new Set(S.map(x => x.ts.slice(0, 4)).filter(Boolean))].sort();
+      /* MONTHLY — use cache */
+      const years = [...new Set(_SC.dates.map(ts => ts.slice(0, 4)).filter(Boolean))].sort();
       const ys = document.getElementById('mysel'); ys.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join(''); ys.value = years[years.length - 1] || '';
       renderMonthly(); renderMonthChart();
       /* SECTIONS */
@@ -7829,9 +7931,8 @@
       renderWrapped('alltime'); renderFunFacts(); renderDNA();
       /* NEW SECTIONS */
       renderCalendar(); renderGenre(); renderJourney(); renderCompare();
-      /* Set date picker to most active day */
-      const dC2 = {}; S.forEach(x => { if (!x.ts) return; const d = x.ts.slice(0, 10); dC2[d] = (dC2[d] || 0) + 1 });
-      const topDay2 = Object.entries(dC2).sort((a, b) => b[1] - a[1])[0];
+      /* Set date picker to most active day — use cache */
+      const topDay2 = Object.entries(_SC.dC2).sort((a, b) => b[1] - a[1])[0];
       if (topDay2) document.getElementById('dayDate').value = topDay2[0];
       renderYourDay();
     }
@@ -7843,15 +7944,15 @@
       const yr = document.getElementById('mysel').value, mo = document.getElementById('mmsel').value;
       const pf = mo ? `${yr}-${mo}` : yr;
       const fl = S.filter(x => x.ts && x.ts.startsWith(pf));
-      const tm = fl.reduce((a, x) => a + x.ms, 0);
+      const tm = fl.reduce((a, x) => a + getMs(x), 0);
       const label = isYT ? 'VIDEOS' : 'STREAMS';
       document.getElementById('mstats').innerHTML = `<div class="ms"><div class="ms-l">${label}</div><div class="ms-v">${fN(fl.length)}</div></div><div class="ms"><div class="ms-l">${isYT ? 'UNIQUE VIDEOS' : 'LISTEN TIME'}</div><div class="ms-v">${isYT ? fN(new Set(fl.map(x => x.track)).size) : fmt(tm)}</div></div><div class="ms"><div class="ms-l">${isYT ? 'CHANNELS' : 'UNIQUE TRACKS'}</div><div class="ms-v">${fN(new Set(fl.map(x => isYT ? x.artist : x.track)).size)}</div></div>`;
-      const tm2 = {}; fl.forEach(x => { const k = x.track + '||' + x.artist; if (!tm2[k]) tm2[k] = { count: 0, ms: 0 }; tm2[k].count++; tm2[k].ms += x.ms });
+      const tm2 = {}; fl.forEach(x => { const k = x.track + '||' + x.artist; if (!tm2[k]) tm2[k] = { count: 0, ms: 0 }; tm2[k].count++; tm2[k].ms += getMs(x) });
       const top = Object.entries(tm2).sort((a, b) => sortMon === 'time' ? b[1].ms - a[1].ms : b[1].count - a[1].count).slice(0, 8);
       document.getElementById('mtracks').innerHTML = top.length ? top.map(([k, v], i) => { const [t, a] = k.split('||'); return `<div class="ri"><span class="rn ${i < 3 ? 't3' : ''}">${String(i + 1).padStart(2, '0')}</span><div class="ri-info"><div class="ri-name">${t}</div><div class="ri-sub">${a}</div></div><div class="rc"><div class="rc-n">${v.count}</div><div class="rc-l">${isYT ? 'WATCHES' : 'STREAMS'}</div></div>${!isYT ? `<div style="width:6px"></div><div class="rc rc-b"><div class="rc-n">${fmt(v.ms)}</div><div class="rc-l">TIME</div></div>` : ''}</div>` }).join('') : '<div style="padding:18px;text-align:center;font-family:var(--mono);font-size:.72rem;color:var(--muted)">No data for this period</div>';
     }
     function renderMonthChart() {
-      const mM = {}; S.forEach(x => { if (!x.ts) return; const m = x.ts.slice(0, 7); if (m) mM[m] = (mM[m] || 0) + 1 });
+      const mM = (window._SC && window._SC.mM) || (() => { const m = {}; S.forEach(x => { if (!x.ts) return; const mo = x.ts.slice(0, 7); if (mo) m[mo] = (m[mo] || 0) + 1 }); return m; })();
       const mE = Object.entries(mM).sort((a, b) => a[0].localeCompare(b[0]));
       if (mci) mci.destroy();
       const ac = accentColor();
@@ -7901,7 +8002,7 @@
       let sess = [], cs = 1, ls = 0, last = null, tc = 0, sc = 0;
       sorted.forEach(x => { const t = new Date(x.ts).getTime(); if (last && t - last < 20 * 60 * 1000) cs++; else { if (cs > 1) { sess.push(cs); if (cs > ls) ls = cs; tc += cs; sc++ } cs = 1 } last = t });
       const avgSL = sc ? Math.round(tc / sc) : 0;
-      const days = new Set(S.map(x => x.ts?.slice(0, 10)).filter(Boolean));
+      const days = (window._SC && window._SC.daySet) || new Set(S.map(x => x.ts?.slice(0, 10)).filter(Boolean));
       const dl = [...days].sort(); let cStr = 1, mStr = 1;
       for (let i = 1; i < dl.length; i++) { const df = (new Date(dl[i]) - new Date(dl[i - 1])) / 86400000; if (df === 1) cStr++; else { if (cStr > mStr) mStr = cStr; cStr = 1 } }
       if (cStr > mStr) mStr = cStr;
@@ -7940,7 +8041,7 @@
     }
     function openModal(artist) {
       const fl = S.filter(x => x.artist === artist); if (!fl.length) return;
-      const tm = fl.reduce((a, x) => a + x.ms, 0);
+      const tm = fl.reduce((a, x) => a + getMs(x), 0);
       const dates = fl.map(x => x.ts).filter(Boolean).sort();
       const top = topBy(fl, x => x.track).slice(0, 5);
       const skp = Math.round((fl.filter(x => x.skipped).length / fl.length) * 100);
@@ -7985,7 +8086,7 @@
       document.getElementById('decChart').innerHTML = Object.entries(dm).map(([e, c], i) => { const p = tot ? Math.round((c / tot) * 100) : 0; return `<div class="dr"><div class="de">${e}</div><div class="dt"><div class="df" data-target="${p}" style="background:${cols[i]}"></div></div><div class="dp">${p}%</div></div>` }).join('');
     }
     function renderPlatform() {
-      const pM = {}; S.forEach(x => { const p = x.platform || 'Unknown'; if (!pM[p]) pM[p] = { count: 0, ms: 0 }; pM[p].count++; pM[p].ms += x.ms });
+      const pM = {}; S.forEach(x => { const p = x.platform || 'Unknown'; if (!pM[p]) pM[p] = { count: 0, ms: 0 }; pM[p].count++; pM[p].ms += getMs(x) });
       const sorted = Object.entries(pM).sort((a, b) => b[1].count - a[1].count);
       const tot = S.length;
       const icos = { 'iOS': '📱', 'Android': '📱', 'Windows': '💻', 'Web Player': '🌐', 'macOS': '💻', 'Unknown': '❓' };
@@ -8004,8 +8105,8 @@
       let fl = S, label = 'All Time', period = 'Since the beginning';
       const now = new Date();
       if (mode === 'year') { const y = now.getFullYear().toString(); fl = S.filter(x => x.ts && x.ts.startsWith(y)); label = y; period = `Jan – Dec ${y}` }
-      else if (mode === 'month') { const ym = now.toISOString().slice(0, 7); fl = S.filter(x => x.ts && x.ts.startsWith(ym)); const mn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']; label = mn[now.getMonth()] + ' ' + now.getFullYear(); period = 'This month' }
-      const tm = fl.reduce((a, x) => a + x.ms, 0);
+      else if (mode === 'month') { const ym = now.toISOString().slice(0, 7); fl = S.filter(x => x.ts && x.ts.startsWith(ym)); const mn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']; label = mn[now.getMonth()] + ' ' + now.getFullYear(); period = mn[now.getMonth()] + ' ' + now.getFullYear() }
+      const tm = fl.reduce((a, x) => a + getMs(x), 0);
       const artistEntries = topBy(fl, x => x.artist);
       const tA = artistEntries[0];
       const tT = topBy(fl, x => x.track)[0];
@@ -8095,7 +8196,7 @@
        FUN FACTS
     ═══════════════════════════════════════ */
     function renderFunFacts() {
-      const tot = S.reduce((a, x) => a + x.ms, 0);
+      const tot = S.reduce((a, x) => a + getMs(x), 0);
       const totH = tot / 3600000;
       const topA = topBy(S, x => x.artist)[0];
       const topT = topBy(S, x => x.track + '||' + x.artist)[0];
@@ -8179,7 +8280,7 @@
       });
       /* Force-reveal elements already in viewport after layout settles */
       setTimeout(() => {
-        ScrollTrigger.refresh(true);
+        debouncedSTRefresh();
         document.querySelectorAll('.rv').forEach(el => { const r = el.getBoundingClientRect(); if (r.top < window.innerHeight) gsap.to(el, { opacity: 1, y: 0, duration: .4, ease: 'power2.out' }) });
         document.querySelectorAll('.panel,.pc,.dc,.ac,.dr,.pi').forEach(el => { const r = el.getBoundingClientRect(); if (r.top < window.innerHeight) { gsap.to(el, { opacity: 1, y: 0, duration: .4, ease: 'power2.out' }); animBars(el) } });
         document.querySelectorAll('.ri').forEach((el, i) => { const r = el.getBoundingClientRect(); if (r.top < window.innerHeight) gsap.to(el, { opacity: 1, x: 0, duration: .3, delay: i * .025, ease: 'power2.out' }) });
@@ -8436,7 +8537,7 @@
           body.style.maxHeight = 'none';
         }
       }
-      setTimeout(() => { if (typeof ScrollTrigger !== 'undefined') ScrollTrigger.refresh(true); }, 400);
+      setTimeout(() => { if (typeof ScrollTrigger !== 'undefined') debouncedSTRefresh(); }, 400);
     }
 
     /* ═══════════════════════════════════════
@@ -8619,7 +8720,7 @@
       const pA = selA.value, pB = selB.value;
       const fA = S.filter(x => x.ts && x.ts.startsWith(pA)), fB = S.filter(x => x.ts && x.ts.startsWith(pB));
       function stats(fl) {
-        const tot = fl.reduce((a, x) => a + x.ms, 0);
+        const tot = fl.reduce((a, x) => a + getMs(x), 0);
         const uT = new Set(fl.map(x => x.track)).size;
         const uA = new Set(fl.map(x => x.artist)).size;
         const aM = {}; fl.forEach(x => { aM[x.artist] = (aM[x.artist] || 0) + 1 });
@@ -9011,29 +9112,32 @@
     function animateCountUp() {
       document.querySelectorAll('.sc-val[data-count]').forEach(el => {
         const raw = el.getAttribute('data-count');
-        // Extract numeric part and suffix (k, %, /day, etc.)
-        const match = raw.match(/^([0-9,]+\.?[0-9]*)(k?)(.*)$/);
-        if (!match) { el.textContent = raw; return }
-        const numStr = match[1].replace(/,/g, '');
-        const kSuffix = match[2]; // 'k' or ''
-        const rest = match[3];    // '/day', '%', etc.
-        const num = parseFloat(numStr);
-        if (isNaN(num)) { el.textContent = raw; return }
-        const isFloat = !Number.isInteger(num) || kSuffix === 'k';
-        const suffix = el.getAttribute('data-suffix') || '';
-        const prefix = el.getAttribute('data-prefix') || '';
-        const dur = 800;
-        const start = performance.now();
-        function step(now) {
-          const p = Math.min((now - start) / dur, 1);
-          const ease = 1 - Math.pow(1 - p, 3);
-          const cur = num * ease;
-          const display = isFloat ? cur.toFixed(1) : fN(Math.round(cur));
-          el.textContent = prefix + display + kSuffix + rest + suffix;
-          if (p < 1) requestAnimationFrame(step);
-          else el.textContent = prefix + (isFloat ? num.toFixed(1) : fN(num)) + kSuffix + rest + suffix;
+        // Handle compound time strings like "2h 30m", "45m", "3d" — don't mangle them
+        const timeMatch = raw.match(/^(\d+)(h \d+m|h|m|d)$/);
+        if (timeMatch) {
+          const num = parseInt(timeMatch[1], 10), rest = timeMatch[2];
+          const dur = 800, start = performance.now();
+          (function step(now) {
+            const p = Math.min((now - start) / dur, 1), ease = 1 - Math.pow(1 - p, 3);
+            el.textContent = Math.round(num * ease) + rest;
+            if (p < 1) requestAnimationFrame(step); else el.textContent = raw;
+          })(performance.now());
+          return;
         }
-        requestAnimationFrame(step);
+        // Plain number with optional k-suffix and trailing unit (%, /day, etc.)
+        const match = raw.match(/^([0-9,]+\.?[0-9]*)(k?)([^0-9k]*)$/);
+        if (!match) { el.textContent = raw; return; }
+        const numStr = match[1].replace(/,/g, ''), kSuffix = match[2], rest = match[3];
+        const num = parseFloat(numStr);
+        if (isNaN(num)) { el.textContent = raw; return; }
+        const isFloat = numStr.includes('.');
+        const dur = 800, start = performance.now();
+        (function step(now) {
+          const p = Math.min((now - start) / dur, 1), ease = 1 - Math.pow(1 - p, 3), cur = num * ease;
+          el.textContent = (isFloat ? cur.toFixed(1) : fN(Math.round(cur))) + kSuffix + rest;
+          if (p < 1) requestAnimationFrame(step);
+          else el.textContent = (isFloat ? num.toFixed(1) : fN(num)) + kSuffix + rest;
+        })(performance.now());
       });
     }
 
@@ -9302,14 +9406,14 @@
       const collapsed = body.classList.toggle('collapsed');
       if (chev) chev.classList.toggle('open', !collapsed);
       /* Recalculate scroll positions after height change */
-      setTimeout(() => { if (typeof ScrollTrigger !== 'undefined') ScrollTrigger.refresh(true); }, 350);
+      setTimeout(() => { if (typeof ScrollTrigger !== 'undefined') debouncedSTRefresh(); }, 350);
     }
 
     function toggleLivePanel() {
       SP.livePanelCollapsed = !SP.livePanelCollapsed;
       document.getElementById('liveBody').classList.toggle('collapsed', SP.livePanelCollapsed);
       document.getElementById('liveChevron').classList.toggle('open', !SP.livePanelCollapsed);
-      setTimeout(() => { if (typeof ScrollTrigger !== 'undefined') ScrollTrigger.refresh(true); }, 350);
+      setTimeout(() => { if (typeof ScrollTrigger !== 'undefined') debouncedSTRefresh(); }, 350);
     }
 
     /* ── Bar / panel open/close ── */
@@ -10020,7 +10124,7 @@
       SP._plPanelCollapsed = !SP._plPanelCollapsed;
       document.getElementById('plBody').style.display = SP._plPanelCollapsed ? 'none' : '';
       document.getElementById('playlistsChevron').classList.toggle('open', !SP._plPanelCollapsed);
-      setTimeout(() => { if (typeof ScrollTrigger !== 'undefined') ScrollTrigger.refresh(true); }, 350);
+      setTimeout(() => { if (typeof ScrollTrigger !== 'undefined') debouncedSTRefresh(); }, 350);
     }
 
     /* Hook into connect / disconnect / dashboard show */
@@ -10092,6 +10196,14 @@
 
     function initPhase2() {
       if (isYT) return; // Spotify only
+      if (window._p2Initialized) {
+        // Destroy untracked chart instances before re-render
+        ['ohwScatterChart'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el && el._chartInstance) { try { el._chartInstance.destroy(); } catch(e){} el._chartInstance = null; }
+        });
+      }
+      window._p2Initialized = true;
       const wrap = document.getElementById('phase2-wrap');
       if (wrap) wrap.style.display = '';
       renderLoyaltyScore();
@@ -10103,7 +10215,7 @@
       renderComfort();
       renderHyperfixation();
       renderCommuteDetector();
-      setTimeout(() => ScrollTrigger.refresh(true), 400);
+      debouncedSTRefresh();
     }
 
     /* ── HELPERS ── */
@@ -10721,7 +10833,7 @@
     }
     function toggleCommuteExpand(i) {
       const el=document.getElementById('commuteExp'+i); if(el) el.classList.toggle('open');
-      setTimeout(()=>{ if(typeof ScrollTrigger!=='undefined') ScrollTrigger.refresh(true) },200);
+      debouncedSTRefresh();
     }
 
     /* ── Patch render() to call initPhase2 ── */
@@ -10738,6 +10850,8 @@
       const _origGoHome = goHome;
       goHome = function() {
         _origGoHome();
+        window._p2Initialized = false;
+        window._p3Initialized = false;
         const wrap=document.getElementById('phase2-wrap'); if(wrap) wrap.style.display='none';
       };
     })();
@@ -10760,6 +10874,14 @@
 
     function initPhase3() {
       if (isYT) return;
+      if (window._p3Initialized) {
+        // Destroy untracked chart instances before re-render
+        ['eraBarChart','resSparkChart','leLineChart','laChart'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el && el._chartInstance) { try { el._chartInstance.destroy(); } catch(e){} el._chartInstance = null; }
+        });
+      }
+      window._p3Initialized = true;
       const wrap = document.getElementById('phase3-wrap');
       if (wrap) wrap.style.display = '';
       renderOHW();
@@ -10771,7 +10893,7 @@
       renderCompletionist();
       renderLoyaltyExplorer();
       renderForgottenMiddle();
-      setTimeout(() => ScrollTrigger.refresh(true), 400);
+      debouncedSTRefresh();
     }
 
     /* ── PHASE 3 HELPERS ── */
@@ -10882,8 +11004,9 @@
         setTimeout(() => {
           const ctx = document.getElementById('ohwScatterChart');
           if (!ctx) return;
+          if (ctx._chartInstance) { try { ctx._chartInstance.destroy(); } catch(e){} }
           const d = window._ohwData;
-          new Chart(ctx, {
+          ctx._chartInstance = new Chart(ctx, {
             type: 'bubble',
             data: { datasets: [{
               data: d.map(x=>({ x: x.uniqueCount, y: x.topPlays, r: Math.min(Math.max(x.topShare/12,4),14), label: x.artist })),
@@ -10941,7 +11064,9 @@
       el.innerHTML = `<div class="era-chart-wrap"><canvas id="eraBarChart"></canvas></div>
         <div style="font-family:var(--mono);font-size:.52rem;color:var(--muted);margin-top:6px">Unique tracks played per artist. Longer bar = deeper catalog explorer.</div>`;
 
-      new Chart(document.getElementById('eraBarChart').getContext('2d'), {
+      const _eraEl = document.getElementById('eraBarChart');
+      if (_eraEl && _eraEl._chartInstance) { try { _eraEl._chartInstance.destroy(); } catch(e){} }
+      const _eraChartInst = new Chart(document.getElementById('eraBarChart').getContext('2d'), {
         type: 'bar',
         data: { labels, datasets: [{ data: values, backgroundColor: bgColors, borderRadius: 3, borderSkipped: false }] },
         options: {
@@ -10954,6 +11079,8 @@
           }
         }
       });
+      const _eraCanvas = document.getElementById('eraBarChart');
+      if (_eraCanvas) _eraCanvas._chartInstance = _eraChartInst;
     }
 
     /* ──────────────────────────────────────────
@@ -13667,7 +13794,7 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
     renderScene();
     renderCompat();
     renderTwin();
-    setTimeout(() => { if(typeof ScrollTrigger!=='undefined') ScrollTrigger.refresh(true); }, 400);
+    setTimeout(() => { if(typeof ScrollTrigger!=='undefined') debouncedSTRefresh(); }, 400);
   }
 
   /* ── shared helpers ── */
@@ -14367,7 +14494,7 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
   })();
 
   /* ── helpers ── */
-  function p9S() { return (typeof streams !== 'undefined' && streams) ? streams : []; }
+  function p9S() { return (typeof S !== 'undefined' && S && S.length) ? S : []; }
   function p9TopArtists(n=10) {
     const m = new Map();
     p9S().forEach(s=>{ const a=s.artistName||s.artist||''; if(a) m.set(a,(m.get(a)||0)+1); });
@@ -14383,10 +14510,10 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
     p9S().forEach(s=>{ const d=new Date(s.ts||s.endTime||s.played_at||0); h[d.getHours()]++; });
     return h.indexOf(Math.max(...h));
   }
-  function p9TotalMs() { return p9S().reduce((a,s)=>a+(s.msPlayed||s.ms_played||0),0); }
+  function p9TotalMs() { return p9S().reduce((a,s)=>a+(s.ms||s.msPlayed||s.ms_played||0),0); }
   function p9SkipRate() {
     const all=p9S(); if(!all.length) return 0;
-    const skipped=all.filter(s=>(s.msPlayed||s.ms_played||0)<30000).length;
+    const skipped=all.filter(s=>(s.ms||s.msPlayed||s.ms_played||0)<30000).length;
     return Math.round(skipped/all.length*100);
   }
 
@@ -14424,8 +14551,8 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
       const a=x.artistName||x.artist||''; if(a) am.set(a,(am.get(a)||0)+1);
       const t=x.trackName||x.track||''; if(t) tm.set(t,(tm.get(t)||0)+1);
       const d=new Date(x.ts||x.endTime||x.played_at||0); hours[d.getHours()]++;
-      ms+=(x.msPlayed||x.ms_played||0);
-      if((x.msPlayed||x.ms_played||0)<30000) skipped++;
+      ms+=(x.ms||x.msPlayed||x.ms_played||0);
+      if((x.ms||x.msPlayed||x.ms_played||0)<30000) skipped++;
     });
     const topArtists=[...am.entries()].sort((a,b)=>b[1]-a[1]).slice(0,5);
     const topTracks=[...tm.entries()].sort((a,b)=>b[1]-a[1]).slice(0,5);
@@ -14596,7 +14723,7 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
       const el = document.getElementById(id);
       if (el) el.classList.remove('collapsed');
     });
-    if (typeof ScrollTrigger !== 'undefined') ScrollTrigger.refresh(true);
+    if (typeof ScrollTrigger !== 'undefined') debouncedSTRefresh();
   };
 
   /* ── F2: STATS COMPARED ── */
@@ -14911,12 +15038,6 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
     renderShared();
   }
 
-  /* ── Patch render() to call initPhase9 ── */
-  (function(){
-    const _origR9 = render;
-    render = function(demo) { _origR9(demo); setTimeout(initPhase9, 1000); };
-  })();
-
   /* ── Hide phase9 on goHome ── */
   (function(){
     const _origG9 = goHome;
@@ -14946,7 +15067,7 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
     // Only show on YT mode
     if(typeof isYT !== 'undefined' && !isYT){ wrap.style.display='none'; return; }
     wrap.style.display='';
-    if(typeof ScrollTrigger !== 'undefined') ScrollTrigger.refresh(true);
+    if(typeof ScrollTrigger !== 'undefined') debouncedSTRefresh();
     buildWatchTime();
     buildRabbitHoles();
     buildSpiral();
@@ -14961,7 +15082,7 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
     const el = document.getElementById('p10WatchStats');
     if(!el) return;
     // Compute from streams data
-    const S = (typeof streams !== 'undefined' ? streams : []);
+    const S = (typeof window.S !== "undefined" && window.S && window.S.length) ? window.S : [];
     const n = S.length;
     if(!n){ el.innerHTML='<p style="color:var(--muted);font-family:var(--mono);font-size:.7rem">No data</p>'; return; }
 
@@ -14994,7 +15115,7 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
   function buildRabbitHoles(){
     const el = document.getElementById('p10RabbitList');
     if(!el) return;
-    const S = (typeof streams !== 'undefined' ? streams : []);
+    const S = (typeof window.S !== "undefined" && window.S && window.S.length) ? window.S : [];
     if(!S.length){ el.innerHTML='<p style="color:var(--muted);font-family:var(--mono);font-size:.7rem">No data</p>'; return; }
 
     // Sort by timestamp, find chains of different channels within 30-min windows
@@ -15142,7 +15263,7 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
   function buildChannelLoyalty(){
     const el = document.getElementById('p10LoyGrid');
     if(!el) return;
-    const S = (typeof streams !== 'undefined' ? streams : []);
+    const S = (typeof window.S !== "undefined" && window.S && window.S.length) ? window.S : [];
     if(!S.length){ el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:160px;font-family:var(--mono);font-size:.7rem;color:var(--muted);text-align:center">Upload your YouTube watch history to see channel loyalty.</div>'; return; }
 
     // channel → videos, plays, month-set
@@ -15270,24 +15391,30 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
     const trendEl = document.getElementById('p10DurTrend');
     if(!chartEl) return;
 
-    const S = (typeof streams !== 'undefined' ? streams : []);
+    const _S = (typeof S !== 'undefined' && S && S.length) ? S : [];
     let monthDur = {};
-    if(S.length){
-      // Group by month — estimate: shorts (<= 60s) vs long-form
-      S.forEach(x=>{
+    if(_S.length){
+      _S.forEach(x=>{
         const mo=(x.ts||x.date||'').slice(0,7);
         if(!mo) return;
         if(!monthDur[mo]) monthDur[mo]={total:0,count:0,shorts:0};
-        monthDur[mo].total+=12; // avg estimate min
+        monthDur[mo].total+=12;
         monthDur[mo].count++;
-        // Heuristic: if title contains "short" or duration field indicates
         if((x.track||x.title||'').toLowerCase().includes('#short')) monthDur[mo].shorts++;
       });
     }
 
-    const months=['Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun','Jul'];
-    const durData=[8,9,7,10,11,9,13,14,12,16,17,18];
-    const shortsData=[35,32,38,28,25,30,22,18,20,14,13,11];
+    let months, durData, shortsData;
+    const moKeys = Object.keys(monthDur).sort().slice(-12);
+    if(moKeys.length >= 3){
+      months = moKeys.map(k=>{ const [y,m]=k.split('-'); return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(m,10)-1]+' '+y.slice(2); });
+      durData = moKeys.map(k=> monthDur[k].count ? Math.round(monthDur[k].total/monthDur[k].count) : 0);
+      shortsData = moKeys.map(k=> monthDur[k].count ? Math.round(monthDur[k].shorts/monthDur[k].count*100) : 0);
+    } else {
+      months=['Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun','Jul'];
+      durData=[8,9,7,10,11,9,13,14,12,16,17,18];
+      shortsData=[35,32,38,28,25,30,22,18,20,14,13,11];
+    }
     const trend = durData[durData.length-1]>durData[0] ? '↗ trending long-form' : '↘ trending short-form';
     if(trendEl) trendEl.textContent=trend;
 
@@ -15306,7 +15433,7 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
   function buildRewatchTracker(){
     const el = document.getElementById('p10RewatchGrid');
     if(!el) return;
-    const S = (typeof streams !== 'undefined' ? streams : []);
+    const S = (typeof window.S !== "undefined" && window.S && window.S.length) ? window.S : [];
     if(!S.length){ el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:160px;font-family:var(--mono);font-size:.7rem;color:var(--muted);text-align:center">Upload your YouTube watch history to see rewatch data.</div>'; return; }
 
     const vidMap = {};
@@ -15534,7 +15661,7 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
 
   /* ── build country data from streams ── */
   function buildCountryData(){
-    const S = (typeof streams !== 'undefined' ? streams : []);
+    const S = (typeof window.S !== "undefined" && window.S && window.S.length) ? window.S : [];
     const countryMap = {};
     S.forEach(x=>{
       const artist = (x.artist||x.channel||'').toLowerCase().trim();
@@ -15584,7 +15711,7 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
   let _globeInited=false;
   function buildGlobe(){
     if(_globeInited) return;
-    if(typeof THREE==='undefined'){ console.warn('Three.js not loaded'); return; }
+    if(typeof THREE==='undefined'){ console.warn('Three.js not loaded'); const hint=document.querySelector('.p11-globe-hint'); if(hint) hint.style.display='none'; return; }
 
     const canvas=document.getElementById('p11GlobeCanvas');
     const wrap=document.getElementById('p11GlobeWrap');
@@ -16032,14 +16159,14 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
     const wrap=document.getElementById('phase11-wrap');
     if(!wrap) return;
     wrap.style.display='';
-    if(typeof ScrollTrigger!=='undefined') ScrollTrigger.refresh(true);
+    if(typeof ScrollTrigger!=='undefined') debouncedSTRefresh();
     buildFingerprints();
     buildPDFPreview();
     // Globe lazy: only build when section is expanded
     const globeHeader=document.getElementById('p11GlobeHeader');
     if(globeHeader){
       const origClick=globeHeader.onclick;
-      globeHeader.onclick=function(e){if(origClick) origClick.call(this,e);setTimeout(()=>{buildGlobe();if(typeof ScrollTrigger!=='undefined')ScrollTrigger.refresh(true);},100);};
+      globeHeader.onclick=function(e){if(origClick) origClick.call(this,e);setTimeout(()=>{buildGlobe();if(typeof ScrollTrigger!=='undefined')debouncedSTRefresh();},100);};
     }
   }
 
