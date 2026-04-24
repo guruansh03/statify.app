@@ -4555,8 +4555,9 @@
     .p5-badge.rare.on{background:rgba(91,156,246,.08);border-color:rgba(91,156,246,.35)}
     .p5-badge.epic.on{background:rgba(167,139,250,.08);border-color:rgba(167,139,250,.35)}
     .p5-badge.legendary.on{background:rgba(245,166,35,.08);border-color:rgba(245,166,35,.35)}
-    .p5-badge.locked{opacity:.38;isolation:isolate}
-    .p5-badge.locked:hover .p5-badge-tooltip{opacity:1 !important}
+    .p5-badge.locked{filter:opacity(.38) grayscale(.4);isolation:isolate}
+    .p5-badge.locked:hover{filter:none}
+    .p5-badge.locked:hover .p5-badge-tooltip{opacity:1}
     .p5-badge.locked .p5-badge-icon{filter:grayscale(1)}
     .p5-badge-icon{font-size:20px;line-height:1;display:block;margin-bottom:5px}
     .p5-badge-name{font-family:var(--mono);font-size:.5rem;text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:3px}
@@ -7844,6 +7845,7 @@
     ═══════════════════════════════════════ */
     function render(demo) {
       if (!S.length) return;
+      window.S = S; // expose for cross-script access (phase11 fingerprint etc.)
       stopBgCanvas(); // P3 fix: no need to run particles while dashboard is shown
       /* P5 fix: single O(n) pass to build stats cache — replaces 15+ individual iterations */
       const _SC = window._SC = (function() {
@@ -7900,7 +7902,7 @@
         { l: isYT ? 'CHANNELS' : 'UNIQUE ARTISTS', v: fN(_SC.uA), i: '◉' },
         { l: isYT ? 'RE-WATCHED' : 'SKIP RATE', v: isYT ? fN(Object.values(_SC.vCounts).filter(c => c > 1).length) : ((sk / n) * 100).toFixed(1) + '%', i: isYT ? '↩' : '»' },
         { l: 'DAYS TRACKED', v: span, i: '▦' },
-        { l: 'LIBRARY', v: lib ? fN((lib.tracks || []).length) : (isYT && ytMusicData.length ? fN(ytMusicData.length) : '—'), i: '♥' }
+        { l: lib ? 'LIBRARY' : (isYT ? 'UNIQUE VIDEOS' : 'UNIQUE TRACKS'), v: lib ? fN((lib.tracks || []).length) : (isYT && ytMusicData.length ? fN(ytMusicData.length) : fN(_SC.uT)), i: '♥' }
       ];
       document.getElementById('statGrid').innerHTML = cards.map(c => `<div class="sc"><div class="sc-lbl">${c.l}</div><div class="sc-val" data-count="${c.v}">${c.v}</div><div class="sc-ico">${c.i}</div></div>`).join('');
       animateCountUp();
@@ -8073,17 +8075,16 @@
        DECADE / PLATFORM (Spotify only)
     ═══════════════════════════════════════ */
     function renderDecade() {
-      const adec = { 'The Weeknd': '2010s', 'Drake': '2010s', 'Kendrick Lamar': '2010s', 'Taylor Swift': '2010s', 'Billie Eilish': '2010s', 'Post Malone': '2010s', 'Travis Scott': '2010s' };
-      const dm = { '2020s': 0, '2010s': 0, '2000s': 0, '90s': 0, '80s': 0 };
-      // Build per-artist median stream year for fallback decade inference
-      const _artistYears = {};
-      S.forEach(x => { const yr = new Date(x.ts||x.endTime||x.watchedAt||0).getFullYear(); if(yr>1990&&yr<2100){ (_artistYears[x.artist]||(_artistYears[x.artist]=[])).push(yr); } });
-      const _artistDecade = {};
-      Object.entries(_artistYears).forEach(([a,ys])=>{ const med=ys.sort((a,b)=>a-b)[Math.floor(ys.length/2)]; _artistDecade[a]=Math.floor(med/10)*10+'s'; });
-      S.forEach(x => { const d = adec[x.artist] || _artistDecade[x.artist] || '2010s'; dm[d] = (dm[d] || 0) + 1 });
+      const adec = { 'The Weeknd': '2010s', 'Drake': '2010s', 'Kendrick Lamar': '2010s', 'Taylor Swift': '2010s', 'Billie Eilish': '2010s', 'Post Malone': '2010s', 'Travis Scott': '2010s', 'Ed Sheeran': '2010s', 'Bad Bunny': '2020s', 'SZA': '2020s', 'Doja Cat': '2020s', 'Olivia Rodrigo': '2020s', 'Eminem': '2000s', 'Linkin Park': '2000s', 'Coldplay': '2000s', 'Michael Jackson': '80s', 'Prince': '80s', 'Madonna': '80s', 'The Beatles': '70s', 'Led Zeppelin': '70s', 'David Bowie': '70s' };
+      const dm = { '2020s': 0, '2010s': 0, '2000s': 0, '90s': 0, '80s': 0, '70s': 0 };
+      function decadeKey(yr) { if(yr>=2020)return'2020s'; if(yr>=2010)return'2010s'; if(yr>=2000)return'2000s'; if(yr>=1990)return'90s'; if(yr>=1980)return'80s'; return'70s'; }
+      // Build per-artist first-stream year (earliest listen ≈ era of discovery)
+      const _artistFirstYear = {};
+      S.forEach(x => { const yr = new Date(x.ts||x.endTime||x.watchedAt||0).getFullYear(); if(yr>1970&&yr<2100){ const a=x.artist||x.artistName||''; if(!_artistFirstYear[a]||yr<_artistFirstYear[a])_artistFirstYear[a]=yr; } });
+      S.forEach(x => { const a=x.artist||x.artistName||''; let d=adec[a]; if(!d&&_artistFirstYear[a])d=decadeKey(_artistFirstYear[a]); if(!d)d='2010s'; dm[d]=(dm[d]||0)+1; });
       const tot = Object.values(dm).reduce((a, b) => a + b, 0);
-      const cols = ['#1DB954', '#5b9cf6', '#f5a623', '#e05555', '#888'];
-      document.getElementById('decChart').innerHTML = Object.entries(dm).map(([e, c], i) => { const p = tot ? Math.round((c / tot) * 100) : 0; return `<div class="dr"><div class="de">${e}</div><div class="dt"><div class="df" data-target="${p}" style="background:${cols[i]}"></div></div><div class="dp">${p}%</div></div>` }).join('');
+      const cols = ['#1DB954', '#5b9cf6', '#f5a623', '#e05555', '#888', '#a78bfa'];
+      document.getElementById('decChart').innerHTML = Object.entries(dm).filter(([,c])=>c>0).map(([e, c], i) => { const p = tot ? Math.round((c / tot) * 100) : 0; return `<div class="dr"><div class="de">${e}</div><div class="dt"><div class="df" data-target="${p}" style="background:${cols[i]}"></div></div><div class="dp">${p}%</div></div>` }).join('');
     }
     function renderPlatform() {
       const pM = {}; S.forEach(x => { const p = x.platform || 'Unknown'; if (!pM[p]) pM[p] = { count: 0, ms: 0 }; pM[p].count++; pM[p].ms += getMs(x) });
@@ -8622,17 +8623,21 @@
     const GENRE_COLORS = ['#4ade80', '#60a5fa', '#f87171', '#fbbf24', '#c084fc', '#f472b6', '#22d3ee', '#a3e635', '#fb923c', '#94a3b8'];
     function renderGenre() {
       const map = isYT ? YT_GENRE_MAP : GENRE_MAP;
-      const gM = {};
-      S.forEach(x => { const key = isYT ? (x.channel || x.artist) : x.artist; const g = map[key] || 'Other'; gM[g] = (gM[g] || 0) + 1 });
+      const gM = {}; // genre → total ms
+      S.forEach(x => { const key = isYT ? (x.channel || x.artist) : (x.artist||x.artistName||''); const g = map[key] || 'Other'; gM[g] = (gM[g] || 0) + (x.ms||x.msPlayed||x.ms_played||30000); });
       const sorted = Object.entries(gM).sort((a, b) => b[1] - a[1]);
-      const labels = sorted.map(([g]) => g), data = sorted.map(([, c]) => c);
       const colors = sorted.map((_, i) => GENRE_COLORS[i % GENRE_COLORS.length]);
+      // Keep doughnut chart updated for canvas element
       if (genreCI) genreCI.destroy();
       const ctx = document.getElementById('genreChart').getContext('2d');
-      genreCI = new Chart(ctx, { type: 'doughnut', data: { labels, datasets: [{ data, backgroundColor: colors, borderColor: 'transparent', borderWidth: 3, hoverBorderColor: 'rgba(255,255,255,.2)', hoverOffset: 6 }] }, options: { responsive: true, maintainAspectRatio: false, animation: { animateRotate: true, duration: 1200 }, cutout: '65%', plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(20,20,20,.95)', titleFont: { family: 'Space Mono', size: 11 }, bodyFont: { family: 'Space Mono', size: 10 }, cornerRadius: 4, padding: 10 } } } });
-      document.getElementById('genreLegend').innerHTML = sorted.map(([g, c], i) => {
-        const pct = Math.round((c / S.length) * 100);
-        return `<div class="genre-item"><div class="genre-dot" style="background:${colors[i]}"></div>${g} ${pct}%</div>`;
+      genreCI = new Chart(ctx, { type: 'doughnut', data: { labels: sorted.map(([g])=>g), datasets: [{ data: sorted.map(([,c])=>c), backgroundColor: colors, borderColor: 'transparent', borderWidth: 3, hoverBorderColor: 'rgba(255,255,255,.2)', hoverOffset: 6 }] }, options: { responsive: true, maintainAspectRatio: false, animation: { animateRotate: true, duration: 1200 }, cutout: '65%', plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(20,20,20,.95)', titleFont: { family: 'Space Mono', size: 11 }, bodyFont: { family: 'Space Mono', size: 10 }, cornerRadius: 4, padding: 10 } } } });
+      // Spectrum bars weighted by ms
+      const totalMs = S.reduce((a,x)=>a+(x.ms||x.msPlayed||x.ms_played||30000),0)||1;
+      const maxMs = sorted[0]?.[1]||1;
+      document.getElementById('genreLegend').innerHTML = sorted.map(([g, ms], i) => {
+        const pct = Math.round((ms / totalMs) * 100);
+        const w = Math.round((ms / maxMs) * 100);
+        return `<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:.62rem;margin-bottom:4px"><span style="color:var(--text2)">${g}</span><span style="color:var(--muted)">${pct}%</span></div><div style="height:6px;background:var(--s3);border-radius:3px;overflow:hidden"><div style="height:100%;width:${w}%;background:${colors[i]};border-radius:3px;transition:width 1s ease"></div></div></div>`;
       }).join('');
     }
 
@@ -8896,10 +8901,21 @@
 
     function exportStatifyJSON() {
       document.getElementById('dataExportMenu').style.display = 'none';
+      // Precompute top stats for compare mode compatibility
+      const _topArtistMap = {};
+      S.forEach(x => { const a=x.artistName||x.artist||x.channel||''; _topArtistMap[a]=(_topArtistMap[a]||0)+1; });
+      const topArtists = Object.entries(_topArtistMap).sort((a,b)=>b[1]-a[1]).slice(0,50).map(([name,count])=>({name,count}));
+      const _topTrackMap = {};
+      S.forEach(x => { const t=x.trackName||x.title||x.track||''; _topTrackMap[t]=(_topTrackMap[t]||0)+1; });
+      const topTracks = Object.entries(_topTrackMap).sort((a,b)=>b[1]-a[1]).slice(0,50).map(([name,count])=>({name,count}));
       const payload = {
-        version: 1,
+        version: 2,
         exportedAt: new Date().toISOString(),
         type: isYT ? 'youtube' : 'spotify',
+        streams: S,
+        streams_count: S.length,
+        topArtists,
+        topTracks,
         spotify: isYT ? {} : { streams: S },
         youtube: isYT ? { history: S, searchData: ytSearchData, subscriptions: ytSubscriptions, comments: ytComments, musicData: ytMusicData } : {}
       };
@@ -12131,7 +12147,9 @@
       { val:'10K', label:'streams reached', color:'#f5a623', reached:totalStreams>=10000, date:dateFor(10000), icon:'star' },
       { val:'500', label:'unique artists', color:'#22d3ee', reached:uniqueArtists>=500, date:artistCountDate(500), icon:'person' },
       { val:'25K', label:'streams reached', color:'#a78bfa', reached:totalStreams>=25000, date:dateFor(25000), icon:'check' },
-      { val:'50K', label:'streams reached', color:'#e05555', reached:totalStreams>=50000, date:dateFor(50000), icon:'lock' },
+      { val:'50K', label:'streams reached', color:'#e05555', reached:totalStreams>=50000, date:dateFor(50000), icon:'star' },
+      { val:'100K', label:'streams reached', color:'#f472b6', reached:totalStreams>=100000, date:dateFor(100000), icon:'check' },
+      { val:'250K', label:'streams reached', color:'#fb923c', reached:totalStreams>=250000, date:dateFor(250000), icon:'star' },
     ];
     const icons = {
       star:`<svg viewBox="0 0 20 20" fill="none"><path d="M10 2L12.4 7.4L18 8.2L14 12.1L15 18L10 15.4L5 18L6 12.1L2 8.2L7.6 7.4Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>`,
@@ -13337,7 +13355,7 @@ ${top5Artists.map((a,i)=>`<div class="p6-wc-art-item"><div class="p6-wc-rank">#$
       if (typeof html2canvas === 'undefined') { alert('html2canvas not loaded — export requires the full Statify app.'); return; }
       const _origMargin = poster.style.margin;
       poster.style.margin = '0';
-      html2canvas(poster, {scale:4, backgroundColor:null, useCORS:true, allowTaint:true, windowWidth:poster.scrollWidth, windowHeight:poster.scrollHeight}).then(canvas=>{
+      html2canvas(poster, {scale:4, backgroundColor:null, useCORS:true, allowTaint:true, windowWidth:poster.scrollWidth, windowHeight:poster.scrollHeight, onclone:(clonedDoc)=>{ const cs=getComputedStyle(document.documentElement); const root=clonedDoc.documentElement; ['--g','--g2','--bg','--s1','--s2','--s3','--text','--text2','--muted','--border'].forEach(p=>{ root.style.setProperty(p,cs.getPropertyValue(p).trim()); }); }}).then(canvas=>{
         poster.style.margin = _origMargin;
         const mime = fmt==='JPEG'?'image/jpeg':fmt==='WEBP'?'image/webp':'image/png';
         const q = fmt==='JPEG'?.92:fmt==='WEBP'?.85:1;
@@ -14674,8 +14692,15 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
           return arr.map(x => [x.name||x.artist||x.track||String(x), x.count||x.plays||1]);
         }
         window._p9Profile = {
-          name: data.name || file.name.replace('.json',''),
-          streams: data.streams || data.history || [],
+          name: data.name || file.name.replace(/\.statify\.json|\.json/,''),
+          streams: (()=>{
+            // Handle statify export nested schema: data.spotify.streams / data.youtube.history
+            if (data.spotify?.streams?.length) return data.spotify.streams;
+            if (data.youtube?.history?.length) return data.youtube.history;
+            if (Array.isArray(data.streams) && data.streams.length) return data.streams;
+            if (Array.isArray(data.history) && data.history.length) return data.history;
+            return [];
+          })(),
           topArtists: normalizeTuples(data.topArtists),
           topTracks: normalizeTuples(data.topTracks),
         };
@@ -15844,7 +15869,7 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
   }
 
   function buildFpStats(){
-    const S=(typeof streams!=='undefined'?streams:[]);
+    const S=(typeof window.S !== 'undefined' && window.S && window.S.length) ? window.S : [];
     if(!S.length){ const accent=getComputedStyle(document.documentElement).getPropertyValue('--g').trim()||'#1DB954'; const accent2=getComputedStyle(document.documentElement).getPropertyValue('--g2').trim()||'#1ed760'; return {loyalty:0.74,skipRate:0.12,peakHour:23,genre:'pop',accent,accent2}; }
     // loyalty = top artist streams / total
     const artistCounts={};
@@ -16120,13 +16145,24 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
       }
       const page=pages[idx++];
       if(btn) btn.textContent=`Generating… (${idx}/${pages.length})`;
-      // Render page HTML with explicit pixel dimensions
-      tmpDiv.innerHTML=`<div style="width:794px;height:1123px;overflow:hidden;position:relative">${page.render(_p11PdfStyle)}</div>`;
+      // Wrap: catch synchronous render failures
+      try {
+        tmpDiv.innerHTML=`<div style="width:794px;height:1123px;overflow:hidden;position:relative">${page.render(_p11PdfStyle)}</div>`;
+      } catch(renderErr) {
+        console.warn('Page render threw, skipping:',renderErr);
+        nextPage();
+        return;
+      }
+      // Per-page timeout (30s max)
+      const pageTimer=setTimeout(()=>{
+        console.warn('Page timed out, skipping:',page.id);
+        nextPage();
+      },30000);
       // Wait a frame for layout, then capture
       requestAnimationFrame(()=>{
         setTimeout(()=>{
           if(typeof html2canvas==='undefined'){
-            // fallback: skip page
+            clearTimeout(pageTimer);
             nextPage();
             return;
           }
@@ -16139,12 +16175,21 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
             height:1123,
             windowWidth:794,
             windowHeight:1123,
-            logging:false
+            logging:false,
+            onclone:(clonedDoc)=>{
+              const cs=getComputedStyle(document.documentElement);
+              const root=clonedDoc.documentElement;
+              ['--g','--g2','--bg','--s1','--s2','--s3','--text','--text2','--muted','--border'].forEach(p=>{
+                root.style.setProperty(p,cs.getPropertyValue(p).trim());
+              });
+            }
           }).then(canvas=>{
+            clearTimeout(pageTimer);
             if(idx>1) doc.addPage();
             doc.addImage(canvas.toDataURL('image/jpeg',0.88),'JPEG',0,0,210,297);
             nextPage();
           }).catch(err=>{
+            clearTimeout(pageTimer);
             console.warn('Page render failed, skipping:',err);
             nextPage();
           });
