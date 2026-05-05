@@ -5329,6 +5329,330 @@
       -webkit-overflow-scrolling: touch
     }
 
+    /* ══════════════════════════════════════════════
+       PIP PILL — collapsed floating player
+    ══════════════════════════════════════════════ */
+    #pip-pill {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9000;
+      display: none;
+      cursor: pointer;
+    }
+    #pip-pill.visible { display: flex }
+    .pip-pill-inner {
+      display: inline-flex;
+      align-items: center;
+      gap: 0;
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 50px;
+      width: 300px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.7), 0 0 0 1px #000;
+      overflow: hidden;
+      transition: border-color .15s, box-shadow .15s;
+      user-select: none;
+    }
+    .pip-pill-inner:hover { border-color: #1DB954; box-shadow: 0 8px 40px rgba(29,185,84,.15), 0 0 0 1px #000 }
+    .pip-pill-art {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: #1a1a1a; flex-shrink: 0; margin: 3px;
+      border: 1.5px solid #1DB954;
+      overflow: hidden; display: flex; align-items: center; justify-content: center;
+    }
+    .pip-pill-art img { width: 100%; height: 100%; object-fit: cover; border-radius: 50% }
+    .pip-pill-center { flex: 1; padding: 0 10px; min-width: 0 }
+    .pip-pill-track {
+      font-size: 10px; font-weight: 700; color: #f0f0f0;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      font-family: monospace;
+    }
+    .pip-pill-artist {
+      font-size: 9px; color: #555;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      font-family: monospace; margin-top: 2px;
+    }
+    .pip-pill-bar { height: 2px; background: #1e1e1e; border-radius: 2px; margin-top: 5px }
+    .pip-pill-fill { height: 100%; background: #1DB954; border-radius: 2px; transition: width .5s linear }
+    .pip-pill-right { display: flex; align-items: center; gap: 5px; padding-right: 10px }
+    .pip-ibtn {
+      width: 26px; height: 26px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; border: none; background: none; flex-shrink: 0;
+      opacity: .5; transition: opacity .15s;
+    }
+    .pip-ibtn:hover { opacity: 1 }
+    .pip-ibtn-play { background: #1DB954; opacity: 1 }
+    .pip-ibtn-play:hover { background: #1ed760 }
+    .pip-close-btn {
+      width: 20px; height: 20px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      border: none; background: none; cursor: pointer;
+      color: #333; font-size: 10px; flex-shrink: 0; margin-right: 4px;
+      transition: color .15s;
+    }
+    .pip-close-btn:hover { color: #888 }
+
+    /* ══════════════════════════════════════════════
+       PIP EXPANDED — floats above everything
+    ══════════════════════════════════════════════ */
+    #pip-expanded {
+      position: fixed;
+      bottom: 130px;
+      left: 50%;
+      transform: translateX(-50%) scale(.96);
+      z-index: 9001;
+      display: none;
+      width: 300px;
+      background: #0d0d0d;
+      border: 1px solid #222;
+      border-radius: 10px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.85), 0 0 0 1px #000;
+      overflow: hidden;
+      opacity: 0;
+      transition: opacity .18s, transform .18s;
+    }
+    #pip-expanded.visible {
+      display: block;
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+    /* titlebar — draggable */
+    .pip-exp-titlebar {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 10px;
+      background: #0a0a0a; border-bottom: 1px solid #161616;
+      cursor: grab;
+    }
+    .pip-exp-titlebar:active { cursor: grabbing }
+    .pip-exp-dots { display: flex; gap: 4px }
+    .pip-exp-dot { width: 8px; height: 8px; border-radius: 50% }
+    .pip-exp-domain {
+      font-size: 8px; color: #2a2a2a; font-family: monospace;
+      flex: 1; text-align: center; letter-spacing: .04em;
+    }
+    .pip-exp-collapse {
+      font-size: 7px; color: #2a2a2a; font-family: monospace;
+      cursor: pointer; letter-spacing: .08em; background: none; border: none;
+      transition: color .15s;
+    }
+    .pip-exp-collapse:hover { color: #888 }
+    /* head */
+    .pip-exp-head {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px 8px;
+    }
+    .pip-exp-art {
+      width: 40px; height: 40px; border-radius: 5px;
+      background: #1a1a1a; flex-shrink: 0;
+      border: 1px solid #1DB954; overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .pip-exp-art img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px }
+    .pip-exp-meta { flex: 1; min-width: 0 }
+    .pip-exp-track {
+      font-size: 11px; font-weight: 700; color: #f0f0f0;
+      font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .pip-exp-artist { font-size: 9px; color: #555; font-family: monospace; margin-top: 2px }
+    /* progress */
+    .pip-exp-prog-wrap { padding: 0 12px 5px }
+    .pip-exp-prog { height: 2px; background: #1e1e1e; border-radius: 2px; position: relative; cursor: pointer }
+    .pip-exp-prog:hover { height: 4px }
+    .pip-exp-prog-fill { height: 100%; background: #1DB954; border-radius: 2px; transition: width .5s linear }
+    .pip-exp-prog-dot {
+      width: 7px; height: 7px; background: #fff; border-radius: 50%;
+      position: absolute; top: -2.5px; left: 0;
+      transform: translateX(-50%); box-shadow: 0 0 0 1.5px #1DB954;
+      pointer-events: none;
+    }
+    .pip-exp-times {
+      display: flex; justify-content: space-between;
+      font-size: 7px; color: #2a2a2a; font-family: monospace; margin-top: 3px;
+    }
+    /* controls */
+    .pip-exp-ctrls {
+      display: flex; align-items: center; justify-content: center;
+      gap: 10px; padding: 4px 12px 9px;
+    }
+    .pip-exp-cbtn {
+      width: 18px; height: 18px; display: flex; align-items: center;
+      justify-content: center; opacity: .4; cursor: pointer; background: none; border: none;
+      transition: opacity .15s;
+    }
+    .pip-exp-cbtn:hover { opacity: 1 }
+    .pip-exp-play {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: #1DB954; display: flex; align-items: center;
+      justify-content: center; cursor: pointer; border: none;
+      transition: background .15s;
+    }
+    .pip-exp-play:hover { background: #1ed760 }
+    /* period */
+    .pip-exp-period { display: flex; border-top: 1px solid #161616; border-bottom: 1px solid #161616 }
+    .pip-exp-prd {
+      flex: 1; padding: 5px 0; text-align: center;
+      font-size: 7px; letter-spacing: .1em; color: #333; cursor: pointer;
+      font-family: monospace; transition: color .15s;
+    }
+    .pip-exp-prd.act { color: #1DB954; background: rgba(29,185,84,.05) }
+    .pip-exp-prd:hover:not(.act) { color: #666 }
+    /* rank */
+    .pip-exp-rank {
+      display: flex; align-items: center; gap: 10px;
+      background: #0d0d0d; border: 1px solid #1a1a1a; border-radius: 6px;
+      padding: 8px 10px; margin: 8px 12px 4px;
+    }
+    .pip-exp-rank-n { font-size: 20px; font-weight: 700; color: #f5a623; font-family: monospace; line-height: 1 }
+    .pip-exp-rank-info { flex: 1 }
+    .pip-exp-rank-label { font-size: 8px; color: #555; font-family: monospace }
+    .pip-exp-rank-sub { font-size: 7px; color: #2a2a2a; font-family: monospace; margin-top: 2px }
+    /* tabs */
+    .pip-exp-tabs { display: flex; border-top: 1px solid #1a1a1a; border-bottom: 1px solid #1a1a1a; margin-top: 6px }
+    .pip-exp-tab {
+      flex: 1; padding: 5px 0; text-align: center;
+      font-size: 7px; letter-spacing: .1em; color: #2a2a2a;
+      cursor: pointer; font-family: monospace; border-bottom: 2px solid transparent;
+      transition: color .15s;
+    }
+    .pip-exp-tab.act { color: #1DB954; border-bottom-color: #1DB954 }
+    .pip-exp-tab:hover:not(.act) { color: #666 }
+    .pip-exp-panel { display: none; padding: 8px 12px 12px; max-height: 200px; overflow-y: auto }
+    .pip-exp-panel.act { display: block }
+    .pip-exp-pblock {
+      background: #111; border: 1px solid #1a1a1a; border-radius: 5px;
+      padding: 7px 9px; margin-bottom: 5px;
+    }
+    .pip-exp-pblock:last-child { margin-bottom: 0 }
+    .pip-exp-pb-label { font-size: 7px; letter-spacing: .1em; color: #2a2a2a; font-family: monospace; margin-bottom: 5px }
+    .pip-exp-pb-row { display: flex; justify-content: space-between; margin-bottom: 3px }
+    .pip-exp-pb-row:last-child { margin-bottom: 0 }
+    .pip-exp-pb-k { font-size: 8px; color: #3a3a3a; font-family: monospace }
+    .pip-exp-pb-v { font-size: 9px; color: #ccc; font-family: monospace; font-weight: 700 }
+    .pip-exp-pb-v.g { color: #1DB954 }
+    .pip-exp-pb-v.a { color: #f5a623 }
+    /* similar rows */
+    .pip-exp-sim-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 5px 0; border-bottom: 1px solid #141414; cursor: pointer;
+    }
+    .pip-exp-sim-row:last-child { border-bottom: none }
+    .pip-exp-sim-row:hover .pip-exp-sim-name { color: #1DB954 }
+    .pip-exp-sim-n { font-size: 8px; color: #2a2a2a; width: 12px; text-align: right; font-family: monospace; flex-shrink: 0 }
+    .pip-exp-sim-dot {
+      width: 22px; height: 22px; border-radius: 3px; background: #1a1a1a;
+      flex-shrink: 0; display: flex; align-items: center; justify-content: center; overflow: hidden;
+    }
+    .pip-exp-sim-dot img { width: 100%; height: 100%; object-fit: cover; border-radius: 2px }
+    .pip-exp-sim-info { flex: 1; min-width: 0 }
+    .pip-exp-sim-name { font-size: 9px; color: #777; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: monospace; transition: color .15s }
+    .pip-exp-sim-sub { font-size: 8px; color: #333; font-family: monospace; margin-top: 1px }
+    .pip-exp-sim-plays { font-size: 8px; color: #1DB954; font-family: monospace; flex-shrink: 0 }
+    /* bottom bar */
+    .pip-exp-bot {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 5px 12px; border-top: 1px solid #141414;
+    }
+    .pip-exp-bot-tag {
+      font-size: 7px; letter-spacing: .1em; color: #1DB954;
+      background: rgba(29,185,84,.08); border: 1px solid rgba(29,185,84,.15);
+      padding: 2px 6px; border-radius: 3px; font-family: monospace;
+    }
+    .pip-exp-bot-tags { display: flex; gap: 4px; flex-wrap: wrap }
+    .pip-exp-tag-badge {
+      font-size: 7px; padding: 2px 6px; border-radius: 2px;
+      font-family: monospace; letter-spacing: .06em;
+    }
+    /* hashtag section in sidebar */
+    .npc-hashtags-wrap {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      display: none;
+    }
+    .npc-hashtags-wrap.visible { display: block }
+    .npc-hashtags-title {
+      font-family: var(--mono); font-size: .58rem;
+      letter-spacing: .12em; color: var(--muted); margin-bottom: 7px;
+    }
+    .npc-hashtags-list { display: flex; flex-wrap: wrap; gap: 5px }
+    .npc-hashtag {
+      font-family: var(--mono); font-size: .6rem; padding: 3px 8px;
+      border-radius: 3px; cursor: pointer; transition: opacity .15s;
+    }
+    .npc-hashtag:hover { opacity: .7 }
+    /* ranking section in sidebar */
+    .npc-rank-wrap {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      display: none;
+    }
+    .npc-rank-wrap.visible { display: block }
+    .npc-rank-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .npc-rank-title { font-family: var(--mono); font-size: .58rem; letter-spacing: .12em; color: var(--muted) }
+    .npc-rank-period-strip { display: flex; gap: 3px }
+    .npc-rank-ptab {
+      font-family: var(--mono); font-size: .55rem; padding: 2px 6px;
+      border-radius: 2px; cursor: pointer; background: var(--s3);
+      color: var(--muted); border: 1px solid var(--border); transition: all .15s;
+    }
+    .npc-rank-ptab.act { background: rgba(29,185,84,.12); color: var(--g); border-color: rgba(29,185,84,.3) }
+    .npc-rank-badge {
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(0,0,0,.3); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 9px 12px; margin-bottom: 7px;
+    }
+    .npc-rank-num { font-size: 1.5rem; font-weight: 800; color: #f5a623; font-family: var(--mono); line-height: 1; flex-shrink: 0 }
+    .npc-rank-of { font-family: var(--mono); font-size: .58rem; color: var(--muted); margin-top: 2px }
+    .npc-rank-bar-col { flex: 1 }
+    .npc-rank-bar-label { font-family: var(--mono); font-size: .58rem; color: var(--muted); margin-bottom: 4px; display: flex; justify-content: space-between }
+    .npc-rank-bar-mins { color: #f5a623; font-weight: 700 }
+    .npc-rank-bar-bg { height: 3px; background: var(--border2); border-radius: 2px }
+    .npc-rank-bar-fill { height: 100%; background: #f5a623; border-radius: 2px; transition: width .4s }
+    /* minutes section in sidebar */
+    .npc-minutes-wrap {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      display: none;
+    }
+    .npc-minutes-wrap.visible { display: block }
+    .npc-minutes-title { font-family: var(--mono); font-size: .58rem; letter-spacing: .12em; color: var(--muted); margin-bottom: 8px }
+    .npc-minutes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px }
+    .npc-minutes-cell {
+      background: var(--s3); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 7px 9px;
+    }
+    .npc-minutes-cell-lbl { font-family: var(--mono); font-size: .56rem; color: var(--muted); letter-spacing: .08em; margin-bottom: 3px }
+    .npc-minutes-cell-val { font-family: var(--mono); font-size: .85rem; font-weight: 700; color: var(--g) }
+    /* similar section in sidebar */
+    .npc-similar-wrap {
+      padding: 10px 16px 0;
+      display: none;
+    }
+    .npc-similar-wrap.visible { display: block }
+    .npc-similar-title { font-family: var(--mono); font-size: .58rem; letter-spacing: .12em; color: var(--muted); margin-bottom: 8px }
+    .npc-sim-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 0; border-bottom: 1px solid var(--border); cursor: pointer;
+    }
+    .npc-sim-row:last-child { border-bottom: none; padding-bottom: 12px }
+    .npc-sim-row:hover .npc-sim-name { color: var(--g) }
+    .npc-sim-n { font-family: var(--mono); font-size: .6rem; color: var(--muted); width: 14px; text-align: right; flex-shrink: 0 }
+    .npc-sim-art {
+      width: 28px; height: 28px; border-radius: 3px;
+      background: var(--s3); flex-shrink: 0; overflow: hidden;
+      display: flex; align-items: center; justify-content: center; font-size: .7rem;
+    }
+    .npc-sim-art img { width: 100%; height: 100%; object-fit: cover; border-radius: 2px }
+    .npc-sim-info { flex: 1; min-width: 0 }
+    .npc-sim-name { font-size: .72rem; color: var(--text2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: var(--mono); transition: color .15s }
+    .npc-sim-sub { font-size: .6rem; color: var(--muted); font-family: var(--mono); margin-top: 1px }
+    .npc-sim-plays { font-family: var(--mono); font-size: .6rem; color: var(--g); flex-shrink: 0 }
+
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -6834,6 +7158,68 @@
         <div class="npc-stat-bar-bg"><div class="npc-stat-bar-fill" id="npc-artist-pop-bar"></div></div>
       </div>
       <div class="npc-artist-genre-row" id="npc-artist-genres"></div>
+    </div>
+
+    <!-- ── MINUTES SECTION ── -->
+    <div id="npc-minutes-wrap" style="padding:10px 16px;border-bottom:1px solid var(--border);display:none;">
+      <div style="font-family:var(--mono);font-size:.58rem;letter-spacing:.12em;color:var(--muted);margin-bottom:8px;">YOUR MINUTES</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+        <div style="background:var(--s3);border:1px solid var(--border);border-radius:var(--r);padding:7px 9px;">
+          <div style="font-family:var(--mono);font-size:.56rem;color:var(--muted);letter-spacing:.08em;margin-bottom:3px;">ALL TIME</div>
+          <div id="npc-min-lifetime" style="font-family:var(--mono);font-size:.85rem;font-weight:700;color:var(--g);">—</div>
+        </div>
+        <div style="background:var(--s3);border:1px solid var(--border);border-radius:var(--r);padding:7px 9px;">
+          <div style="font-family:var(--mono);font-size:.56rem;color:var(--muted);letter-spacing:.08em;margin-bottom:3px;">THIS MONTH</div>
+          <div id="npc-min-month" style="font-family:var(--mono);font-size:.85rem;font-weight:700;color:var(--g);">—</div>
+        </div>
+        <div style="background:var(--s3);border:1px solid var(--border);border-radius:var(--r);padding:7px 9px;">
+          <div style="font-family:var(--mono);font-size:.56rem;color:var(--muted);letter-spacing:.08em;margin-bottom:3px;">THIS YEAR</div>
+          <div id="npc-min-year" style="font-family:var(--mono);font-size:.85rem;font-weight:700;color:var(--g);">—</div>
+        </div>
+        <div style="background:var(--s3);border:1px solid var(--border);border-radius:var(--r);padding:7px 9px;">
+          <div style="font-family:var(--mono);font-size:.56rem;color:var(--muted);letter-spacing:.08em;margin-bottom:3px;">AVG SESSION</div>
+          <div id="npc-min-avg" style="font-family:var(--mono);font-size:.85rem;font-weight:700;color:var(--g);">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── HASHTAG SECTION ── -->
+    <div id="npc-hashtags-wrap" style="padding:10px 16px;border-bottom:1px solid var(--border);display:none;">
+      <div style="font-family:var(--mono);font-size:.58rem;letter-spacing:.12em;color:var(--muted);margin-bottom:7px;">TRACK TAGS</div>
+      <div id="npc-hashtags-list" style="display:flex;flex-wrap:wrap;gap:5px;"></div>
+    </div>
+
+    <!-- ── RANKING SECTION ── -->
+    <div id="npc-rank-wrap" style="padding:10px 16px;border-bottom:1px solid var(--border);display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div style="font-family:var(--mono);font-size:.58rem;letter-spacing:.12em;color:var(--muted);">YOUR RANKING</div>
+        <div style="display:flex;gap:3px;">
+          <button class="npc-rank-ptab act" onclick="npcSetRankPeriod('lifetime',this)">ALL</button>
+          <button class="npc-rank-ptab" onclick="npcSetRankPeriod('year',this)">YR</button>
+          <button class="npc-rank-ptab" onclick="npcSetRankPeriod('month',this)">MO</button>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:var(--r);padding:9px 12px;margin-bottom:7px;">
+        <div>
+          <div id="npc-rank-num" style="font-size:1.5rem;font-weight:800;color:#f5a623;font-family:var(--mono);line-height:1;">—</div>
+          <div id="npc-rank-of-total" style="font-family:var(--mono);font-size:.58rem;color:var(--muted);margin-top:2px;">of — tracks</div>
+        </div>
+        <div style="flex:1;">
+          <div style="font-family:var(--mono);font-size:.58rem;color:var(--muted);margin-bottom:4px;display:flex;justify-content:space-between;">
+            <span id="npc-rank-bar-desc">by streams</span>
+            <span id="npc-rank-bar-mins" style="color:#f5a623;font-weight:700;">—</span>
+          </div>
+          <div style="height:3px;background:var(--border2);border-radius:2px;">
+            <div id="npc-rank-bar-fill" style="height:100%;background:#f5a623;border-radius:2px;transition:width .4s;width:0%;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SIMILAR TRACKS SECTION ── -->
+    <div id="npc-similar-wrap" style="padding:10px 16px 0;display:none;">
+      <div style="font-family:var(--mono);font-size:.58rem;letter-spacing:.12em;color:var(--muted);margin-bottom:8px;">SIMILAR FROM YOUR LIBRARY</div>
+      <div id="npc-similar-list"></div>
     </div>
 
     <!-- Recent tracks list -->
@@ -16297,6 +16683,465 @@ self.addEventListener('fetch',e=>{
       }
     }
   </script>
+
+  <!-- ══════ PIP PILL (collapsed) ══════ -->
+  <div id="pip-pill" style="position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:9000;display:none;cursor:pointer;">
+    <div id="pip-pill-inner" style="display:inline-flex;align-items:center;background:#111;border:1px solid #222;border-radius:50px;width:300px;box-shadow:0 8px 32px rgba(0,0,0,.7),0 0 0 1px #000;overflow:hidden;transition:border-color .15s,box-shadow .15s;user-select:none;">
+      <div id="pip-pill-art" style="width:40px;height:40px;border-radius:50%;background:#1a1a1a;flex-shrink:0;margin:3px;border:1.5px solid #1DB954;overflow:hidden;display:flex;align-items:center;justify-content:center;">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" fill="#151515" stroke="#1DB954" stroke-width="1.2"/><circle cx="8" cy="8" r="3" fill="#1DB954" opacity=".8"/></svg>
+      </div>
+      <div style="flex:1;padding:0 10px;min-width:0;">
+        <div id="pip-pill-track" style="font-size:10px;font-weight:700;color:#f0f0f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:monospace;">Nothing playing</div>
+        <div id="pip-pill-artist" style="font-size:9px;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:monospace;margin-top:2px;">—</div>
+        <div style="height:2px;background:#1e1e1e;border-radius:2px;margin-top:5px;"><div id="pip-pill-fill" style="height:100%;background:#1DB954;border-radius:2px;transition:width .5s linear;width:0%"></div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:5px;padding-right:8px;">
+        <button id="pip-pill-prev" title="Previous" onclick="event.stopPropagation();spPlayerCmd('previous')" style="width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;background:none;flex-shrink:0;opacity:.5;">
+          <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><polygon points="9,1 4,4.5 9,8" fill="#888"/><rect x="0" y="1" width="2.5" height="7" rx="1" fill="#888"/></svg>
+        </button>
+        <button id="pip-pill-play" title="Play/Pause" onclick="event.stopPropagation();spPlayerCmd('playpause')" style="width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;background:#1DB954;flex-shrink:0;">
+          <svg width="8" height="9" viewBox="0 0 8 9" fill="none"><rect x="0" y="0" width="2.5" height="9" rx="1" fill="#000"/><rect x="5.5" y="0" width="2.5" height="9" rx="1" fill="#000"/></svg>
+        </button>
+        <button id="pip-pill-next" title="Next" onclick="event.stopPropagation();spPlayerCmd('next')" style="width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;background:none;flex-shrink:0;opacity:.5;">
+          <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><polygon points="0,1 5,4.5 0,8" fill="#888"/><rect x="6.5" y="1" width="2.5" height="7" rx="1" fill="#888"/></svg>
+        </button>
+        <button title="Close PIP" onclick="event.stopPropagation();hidePip()" style="width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:none;background:none;cursor:pointer;color:#444;font-size:10px;flex-shrink:0;">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ PIP EXPANDED ══════ -->
+  <div id="pip-expanded" style="position:fixed;bottom:130px;left:50%;transform:translateX(-50%) scale(.96);z-index:9001;display:none;width:300px;background:#0d0d0d;border:1px solid #222;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.85),0 0 0 1px #000;overflow:hidden;opacity:0;transition:opacity .18s,transform .18s;">
+    <!-- Titlebar -->
+    <div id="pip-exp-titlebar" style="display:flex;align-items:center;gap:6px;padding:6px 10px;background:#0a0a0a;border-bottom:1px solid #161616;cursor:grab;">
+      <div style="display:flex;gap:4px;">
+        <div style="width:8px;height:8px;border-radius:50%;background:#e05555;"></div>
+        <div style="width:8px;height:8px;border-radius:50%;background:#f5a623;"></div>
+        <div style="width:8px;height:8px;border-radius:50%;background:#1DB954;"></div>
+      </div>
+      <div style="font-size:8px;color:#2a2a2a;font-family:monospace;flex:1;text-align:center;letter-spacing:.04em;">statify — now playing</div>
+      <button onclick="collapsePip()" style="font-size:7px;color:#2a2a2a;font-family:monospace;cursor:pointer;letter-spacing:.08em;background:none;border:none;transition:color .15s;" onmouseover="this.style.color='#888'" onmouseout="this.style.color='#2a2a2a'">COLLAPSE ↙</button>
+    </div>
+    <!-- Head -->
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 12px 8px;">
+      <div id="pip-exp-art" style="width:40px;height:40px;border-radius:5px;background:#1a1a1a;flex-shrink:0;border:1px solid #1DB954;overflow:hidden;display:flex;align-items:center;justify-content:center;">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="8" fill="#151515"/><circle cx="9" cy="9" r="3" fill="#1DB954" opacity=".8"/></svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div id="pip-exp-track" style="font-size:11px;font-weight:700;color:#f0f0f0;font-family:monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Nothing playing</div>
+        <div id="pip-exp-artist" style="font-size:9px;color:#555;font-family:monospace;margin-top:2px;">—</div>
+      </div>
+    </div>
+    <!-- Progress -->
+    <div style="padding:0 12px 5px;">
+      <div id="pip-exp-prog" style="height:2px;background:#1e1e1e;border-radius:2px;position:relative;cursor:pointer;transition:height .15s;" onmouseover="this.style.height='4px'" onmouseout="this.style.height='2px'">
+        <div id="pip-exp-prog-fill" style="height:100%;background:#1DB954;border-radius:2px;transition:width .5s linear;width:0%"></div>
+        <div id="pip-exp-prog-dot" style="width:7px;height:7px;background:#fff;border-radius:50%;position:absolute;top:-2.5px;left:0%;transform:translateX(-50%);box-shadow:0 0 0 1.5px #1DB954;pointer-events:none;"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:7px;color:#2a2a2a;font-family:monospace;margin-top:3px;">
+        <span id="pip-exp-elapsed">0:00</span><span id="pip-exp-duration">0:00</span>
+      </div>
+    </div>
+    <!-- Controls -->
+    <div style="display:flex;align-items:center;justify-content:center;gap:10px;padding:4px 12px 9px;">
+      <button onclick="spPlayerCmd('previous')" style="width:18px;height:18px;display:flex;align-items:center;justify-content:center;opacity:.4;cursor:pointer;background:none;border:none;transition:opacity .15s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.4">
+        <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><polygon points="11,1 5,5.5 11,10" fill="#888"/><rect x="0" y="1" width="3" height="9" rx="1" fill="#888"/></svg>
+      </button>
+      <button id="pip-exp-play-btn" onclick="spPlayerCmd('playpause')" style="width:32px;height:32px;border-radius:50%;background:#1DB954;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;transition:background .15s;" onmouseover="this.style.background='#1ed760'" onmouseout="this.style.background='#1DB954'">
+        <svg width="10" height="12" viewBox="0 0 10 12" fill="none"><rect x="0" y="0" width="3" height="12" rx="1.5" fill="#000"/><rect x="7" y="0" width="3" height="12" rx="1.5" fill="#000"/></svg>
+      </button>
+      <button onclick="spPlayerCmd('next')" style="width:18px;height:18px;display:flex;align-items:center;justify-content:center;opacity:.4;cursor:pointer;background:none;border:none;transition:opacity .15s;" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.4">
+        <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><polygon points="0,1 6,5.5 0,10" fill="#888"/><rect x="8" y="1" width="3" height="9" rx="1" fill="#888"/></svg>
+      </button>
+    </div>
+    <!-- Period strip -->
+    <div id="pip-exp-period" style="display:flex;border-top:1px solid #161616;border-bottom:1px solid #161616;">
+      <div class="pip-exp-prd act" onclick="pipSetPeriod(this,'month')" style="flex:1;padding:5px 0;text-align:center;font-size:7px;letter-spacing:.1em;color:#1DB954;cursor:pointer;font-family:monospace;background:rgba(29,185,84,.05);">MONTH</div>
+      <div class="pip-exp-prd" onclick="pipSetPeriod(this,'6m')" style="flex:1;padding:5px 0;text-align:center;font-size:7px;letter-spacing:.1em;color:#333;cursor:pointer;font-family:monospace;">6 MO</div>
+      <div class="pip-exp-prd" onclick="pipSetPeriod(this,'year')" style="flex:1;padding:5px 0;text-align:center;font-size:7px;letter-spacing:.1em;color:#333;cursor:pointer;font-family:monospace;">YEAR</div>
+      <div class="pip-exp-prd" onclick="pipSetPeriod(this,'lifetime')" style="flex:1;padding:5px 0;text-align:center;font-size:7px;letter-spacing:.1em;color:#333;cursor:pointer;font-family:monospace;">ALL TIME</div>
+    </div>
+    <!-- Rank badge -->
+    <div style="display:flex;align-items:center;gap:10px;background:#0d0d0d;border:1px solid #1a1a1a;border-radius:6px;padding:8px 10px;margin:8px 12px 4px;">
+      <div>
+        <div id="pip-exp-rank-n" style="font-size:20px;font-weight:700;color:#f5a623;font-family:monospace;line-height:1;">—</div>
+        <div id="pip-exp-rank-of" style="font-size:8px;color:#3a3a3a;font-family:monospace;margin-top:2px;">of — tracks</div>
+      </div>
+      <div style="flex:1;">
+        <div id="pip-exp-rank-label" style="font-size:8px;color:#555;font-family:monospace;">by streams</div>
+        <div id="pip-exp-rank-sub" style="font-size:7px;color:#2a2a2a;font-family:monospace;margin-top:2px;">— min played</div>
+      </div>
+    </div>
+    <!-- Tabs -->
+    <div style="display:flex;border-top:1px solid #1a1a1a;border-bottom:1px solid #1a1a1a;">
+      <div class="pip-exp-tab act" onclick="pipSwitchTab(0,this)" style="flex:1;padding:5px 0;text-align:center;font-size:7px;letter-spacing:.1em;color:#1DB954;cursor:pointer;font-family:monospace;border-bottom:2px solid #1DB954;">OVERVIEW</div>
+      <div class="pip-exp-tab" onclick="pipSwitchTab(1,this)" style="flex:1;padding:5px 0;text-align:center;font-size:7px;letter-spacing:.1em;color:#2a2a2a;cursor:pointer;font-family:monospace;border-bottom:2px solid transparent;">SIMILAR</div>
+    </div>
+    <!-- Overview panel -->
+    <div id="pip-exp-p0" style="display:block;padding:8px 12px 12px;max-height:200px;overflow-y:auto;">
+      <div style="background:#111;border:1px solid #1a1a1a;border-radius:5px;padding:7px 9px;margin-bottom:5px;">
+        <div id="pip-exp-period-label" style="font-size:7px;letter-spacing:.1em;color:#2a2a2a;font-family:monospace;margin-bottom:5px;">THIS MONTH</div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px;"><span style="font-size:8px;color:#3a3a3a;font-family:monospace;">Streams</span><span id="pip-exp-streams" style="font-size:9px;color:#1DB954;font-family:monospace;font-weight:700;">—</span></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:3px;"><span style="font-size:8px;color:#3a3a3a;font-family:monospace;">Minutes played</span><span id="pip-exp-mins" style="font-size:9px;color:#1DB954;font-family:monospace;font-weight:700;">—</span></div>
+        <div style="display:flex;justify-content:space-between;"><span style="font-size:8px;color:#3a3a3a;font-family:monospace;">First heard</span><span id="pip-exp-first" style="font-size:9px;color:#ccc;font-family:monospace;font-weight:700;">—</span></div>
+      </div>
+      <div id="pip-exp-hashtags-block"></div>
+    </div>
+    <!-- Similar panel -->
+    <div id="pip-exp-p1" style="display:none;padding:8px 12px 12px;max-height:200px;overflow-y:auto;">
+      <div id="pip-exp-similar-list"></div>
+    </div>
+    <!-- Bottom bar -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 12px;border-top:1px solid #141414;">
+      <span style="font-size:7px;letter-spacing:.1em;color:#1DB954;background:rgba(29,185,84,.08);border:1px solid rgba(29,185,84,.15);padding:2px 6px;border-radius:3px;font-family:monospace;">NOW PLAYING</span>
+      <div style="display:flex;gap:3px;opacity:.15;">
+        <span style="display:block;width:3px;height:3px;border-radius:50%;background:#888;"></span>
+        <span style="display:block;width:3px;height:3px;border-radius:50%;background:#888;"></span>
+        <span style="display:block;width:3px;height:3px;border-radius:50%;background:#888;"></span>
+        <span style="display:block;width:3px;height:3px;border-radius:50%;background:#888;"></span>
+        <span style="display:block;width:3px;height:3px;border-radius:50%;background:#888;"></span>
+        <span style="display:block;width:3px;height:3px;border-radius:50%;background:#888;"></span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  /* ══════════════════════════════════════════════
+     PIP SYSTEM
+  ══════════════════════════════════════════════ */
+  const PIP = { visible:false, expanded:false, period:'month', _track:null, _isPlaying:false, _pct:0, _progressMs:0, _artists:'', _art:null, _dragging:false, _dragOffX:0, _dragOffY:0 };
+
+  function pipShow() { const p=document.getElementById('pip-pill'); if(p){p.style.display='flex'; PIP.visible=true;} }
+  function hidePip() {
+    const pill=document.getElementById('pip-pill'), exp=document.getElementById('pip-expanded');
+    if(pill) pill.style.display='none';
+    if(exp){ exp.style.opacity='0'; exp.style.transform='translateX(-50%) scale(.96)'; setTimeout(()=>exp.style.display='none',200); }
+    PIP.visible=false; PIP.expanded=false;
+  }
+  function expandPip() {
+    const exp=document.getElementById('pip-expanded'), pill=document.getElementById('pip-pill');
+    if(pill) pill.style.display='none';
+    exp.style.display='block';
+    requestAnimationFrame(()=>{ exp.style.opacity='1'; exp.style.transform='translateX(-50%) scale(1)'; });
+    PIP.expanded=true;
+    pipRefreshData();
+  }
+  function collapsePip() {
+    const exp=document.getElementById('pip-expanded'), pill=document.getElementById('pip-pill');
+    exp.style.opacity='0'; exp.style.transform='translateX(-50%) scale(.96)';
+    setTimeout(()=>{ exp.style.display='none'; if(pill){ pill.style.display='flex'; } }, 180);
+    PIP.expanded=false;
+  }
+
+  document.getElementById('pip-pill-inner').addEventListener('click', expandPip);
+
+  /* Drag */
+  const _ep=document.getElementById('pip-expanded'), _et=document.getElementById('pip-exp-titlebar');
+  function _pipDragStart(cx,cy){
+    PIP._dragging=true;
+    const r=_ep.getBoundingClientRect();
+    PIP._dragOffX=cx-r.left; PIP._dragOffY=cy-r.top;
+    _ep.style.transform='none'; _ep.style.bottom='auto';
+    _ep.style.left=r.left+'px'; _ep.style.top=r.top+'px';
+  }
+  function _pipDragMove(cx,cy){
+    if(!PIP._dragging)return;
+    const x=Math.max(0,Math.min(window.innerWidth-_ep.offsetWidth, cx-PIP._dragOffX));
+    const y=Math.max(0,Math.min(window.innerHeight-_ep.offsetHeight, cy-PIP._dragOffY));
+    _ep.style.left=x+'px'; _ep.style.top=y+'px';
+  }
+  _et.addEventListener('mousedown',e=>{ _pipDragStart(e.clientX,e.clientY); e.preventDefault(); });
+  document.addEventListener('mousemove',e=>{ if(PIP._dragging) _pipDragMove(e.clientX,e.clientY); });
+  document.addEventListener('mouseup',()=>{ PIP._dragging=false; });
+  _et.addEventListener('touchstart',e=>{ const t=e.touches[0]; _pipDragStart(t.clientX,t.clientY); },{passive:true});
+  document.addEventListener('touchmove',e=>{ if(PIP._dragging){ const t=e.touches[0]; _pipDragMove(t.clientX,t.clientY); } },{passive:true});
+  document.addEventListener('touchend',()=>{ PIP._dragging=false; });
+
+  /* Seek */
+  document.getElementById('pip-exp-prog').addEventListener('click', async (e)=>{
+    if(!PIP._track) return;
+    const r=e.currentTarget.getBoundingClientRect();
+    const pct=(e.clientX-r.left)/r.width;
+    const posMs=Math.floor(pct*(PIP._track.duration_ms||0));
+    if(typeof ensureToken==='function'&&await ensureToken()){
+      await fetch('https://api.spotify.com/v1/me/player/seek?position_ms='+posMs,{method:'PUT',headers:{Authorization:'Bearer '+SP.accessToken}});
+      SP.progressMs=posMs; SP.progressTimestamp=performance.now();
+    }
+  });
+
+  /* Period */
+  function pipSetPeriod(el, period){
+    document.querySelectorAll('.pip-exp-prd').forEach(p=>{
+      p.style.color='#333'; p.style.background='';
+    });
+    el.style.color='#1DB954'; el.style.background='rgba(29,185,84,.05)';
+    PIP.period=period; pipRefreshData();
+  }
+
+  /* Tabs */
+  function pipSwitchTab(i, el){
+    document.querySelectorAll('.pip-exp-tab').forEach((t,j)=>{
+      t.style.color= j===i ? '#1DB954':'#2a2a2a';
+      t.style.borderBottom= j===i ? '2px solid #1DB954':'2px solid transparent';
+    });
+    document.getElementById('pip-exp-p0').style.display= i===0 ? 'block':'none';
+    document.getElementById('pip-exp-p1').style.display= i===1 ? 'block':'none';
+    if(i===1) pipRefreshSimilar();
+  }
+
+  /* Update from SP state */
+  function pipUpdate(track, isPlaying, pct, progressMs, artists, art){
+    if(!track){ hidePip(); return; }
+    PIP._track=track; PIP._isPlaying=isPlaying; PIP._pct=pct; PIP._progressMs=progressMs; PIP._artists=artists; PIP._art=art;
+    pipShow();
+    // pill
+    const pillArt=document.getElementById('pip-pill-art');
+    if(pillArt){ pillArt.innerHTML=art?'<img src="'+art+'" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">':'<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" fill="#151515" stroke="#1DB954" stroke-width="1.2"/><circle cx="8" cy="8" r="3" fill="#1DB954" opacity=".8"/></svg>'; }
+    const pt=document.getElementById('pip-pill-track'); if(pt) pt.textContent=track.name||'';
+    const pa=document.getElementById('pip-pill-artist'); if(pa) pa.textContent=artists||'';
+    const pf=document.getElementById('pip-pill-fill'); if(pf) pf.style.width=pct+'%';
+    const pp=document.getElementById('pip-pill-play');
+    if(pp) pp.innerHTML=isPlaying
+      ? '<svg width="8" height="9" viewBox="0 0 8 9" fill="none"><rect x="0" y="0" width="2.5" height="9" rx="1" fill="#000"/><rect x="5.5" y="0" width="2.5" height="9" rx="1" fill="#000"/></svg>'
+      : '<svg width="9" height="10" viewBox="0 0 9 10" fill="none"><polygon points="0,0 9,5 0,10" fill="#000"/></svg>';
+    // expanded if open
+    if(PIP.expanded) pipUpdateExpUI(track,isPlaying,pct,progressMs,artists,art);
+  }
+
+  function pipUpdateExpUI(track,isPlaying,pct,progressMs,artists,art){
+    const ea=document.getElementById('pip-exp-art');
+    if(ea) ea.innerHTML=art?'<img src="'+art+'" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:4px">':'<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="8" fill="#151515"/><circle cx="9" cy="9" r="3" fill="#1DB954" opacity=".8"/></svg>';
+    const et=document.getElementById('pip-exp-track'); if(et) et.textContent=track.name||'';
+    const ear=document.getElementById('pip-exp-artist'); if(ear) ear.textContent=artists||'';
+    const pf=document.getElementById('pip-exp-prog-fill'); if(pf) pf.style.width=pct+'%';
+    const pd=document.getElementById('pip-exp-prog-dot'); if(pd) pd.style.left=pct+'%';
+    const el=document.getElementById('pip-exp-elapsed'); if(el&&typeof msToMMSS==='function') el.textContent=msToMMSS(progressMs);
+    const dur=document.getElementById('pip-exp-duration'); if(dur&&typeof msToMMSS==='function') dur.textContent=msToMMSS(track.duration_ms||0);
+    const pb=document.getElementById('pip-exp-play-btn');
+    if(pb) pb.innerHTML=isPlaying
+      ? '<svg width="10" height="12" viewBox="0 0 10 12" fill="none"><rect x="0" y="0" width="3" height="12" rx="1.5" fill="#000"/><rect x="7" y="0" width="3" height="12" rx="1.5" fill="#000"/></svg>'
+      : '<svg width="10" height="12" viewBox="0 0 10 12" fill="none"><polygon points="0,0 10,6 0,12" fill="#000"/></svg>';
+  }
+
+  function pipRefreshData(){
+    const track=PIP._track; if(!track) return;
+    pipUpdateExpUI(track,PIP._isPlaying,PIP._pct,PIP._progressMs,PIP._artists,PIP._art);
+    const allData=typeof S!=='undefined'?S:[];
+    const trackName=(track.name||'').toLowerCase();
+    const artistName=(track.artists?.[0]?.name||'').toLowerCase();
+    const now=new Date();
+    const allF=allData.filter(x=>(x.track||'').toLowerCase()===trackName&&(x.artist||'').toLowerCase().includes(artistName.split(' ')[0]));
+    let filtered=allF.slice();
+    if(PIP.period==='month'){const c=new Date(now.getFullYear(),now.getMonth(),1).toISOString();filtered=allF.filter(x=>x.ts&&x.ts>=c);}
+    else if(PIP.period==='year'){const c=new Date(now.getFullYear(),0,1).toISOString();filtered=allF.filter(x=>x.ts&&x.ts>=c);}
+    else if(PIP.period==='6m'){const c=new Date(now.getTime()-183*24*3600000).toISOString();filtered=allF.filter(x=>x.ts&&x.ts>=c);}
+    const streams=filtered.length;
+    const durMs=track.duration_ms||180000;
+    const minutes=streams>0?Math.round(filtered.reduce((a,x)=>a+(x.ms||durMs),0)/60000):0;
+    // rank
+    const periodAll=(()=>{
+      if(PIP.period==='month'){const c=new Date(now.getFullYear(),now.getMonth(),1).toISOString();return allData.filter(x=>!x.ts||x.ts>=c);}
+      if(PIP.period==='year'){const c=new Date(now.getFullYear(),0,1).toISOString();return allData.filter(x=>!x.ts||x.ts>=c);}
+      if(PIP.period==='6m'){const c=new Date(now.getTime()-183*24*3600000).toISOString();return allData.filter(x=>!x.ts||x.ts>=c);}
+      return allData;
+    })();
+    const tc={};
+    periodAll.forEach(x=>{const k=(x.track||'').toLowerCase()+'|||'+(x.artist||'').toLowerCase();tc[k]=(tc[k]||0)+1;});
+    const sorted=Object.entries(tc).sort((a,b)=>b[1]-a[1]);
+    const myKey=trackName+'|||'+artistName.split(' ')[0];
+    const myIdx=sorted.findIndex(([k])=>k.startsWith(myKey));
+    const myRank=myIdx>=0?myIdx+1:null;
+    const pLabels={month:'THIS MONTH','6m':'LAST 6 MO',year:'THIS YEAR',lifetime:'ALL TIME'};
+    const plabel=pLabels[PIP.period]||'ALL TIME';
+    const el_rn=document.getElementById('pip-exp-rank-n'); if(el_rn) el_rn.textContent=myRank?'#'+myRank:'—';
+    const el_ro=document.getElementById('pip-exp-rank-of'); if(el_ro) el_ro.textContent=sorted.length?'of '+sorted.length.toLocaleString()+' tracks':'—';
+    const el_rl=document.getElementById('pip-exp-rank-label'); if(el_rl) el_rl.textContent='by streams · '+plabel;
+    const el_rs=document.getElementById('pip-exp-rank-sub'); if(el_rs) el_rs.textContent=minutes>0?minutes+' min played':'—';
+    const el_pl=document.getElementById('pip-exp-period-label'); if(el_pl) el_pl.textContent=plabel;
+    const el_st=document.getElementById('pip-exp-streams'); if(el_st) el_st.textContent=streams>0?streams:(allData.length?'0':'—');
+    const el_mn=document.getElementById('pip-exp-mins'); if(el_mn) el_mn.textContent=minutes>0?minutes+' min':(allData.length?'0 min':'—');
+    const ts=allF.map(x=>x.ts).filter(Boolean).sort();
+    const first=ts.length?(typeof fmtDate==='function'?fmtDate(ts[0]):ts[0].slice(0,10)):(allData.length?'NOT YET':'—');
+    const el_fi=document.getElementById('pip-exp-first'); if(el_fi) el_fi.textContent=first;
+    // hashtags
+    const tags=[];
+    const hour=now.getHours();
+    if(hour>=22||hour<4) tags.push({text:'LATE NIGHT',c:'#1DB954',bg:'rgba(29,185,84,.1)',b:'rgba(29,185,84,.2)'});
+    if(hour>=6&&hour<12) tags.push({text:'MORNING',c:'#f5a623',bg:'rgba(245,166,35,.1)',b:'rgba(245,166,35,.2)'});
+    if(streams>10) tags.push({text:'HEAVY ROTATION',c:'#1DB954',bg:'rgba(29,185,84,.1)',b:'rgba(29,185,84,.2)'});
+    if(streams>0&&minutes/streams>=4) tags.push({text:'FULL PLAYS',c:'#5b9cf6',bg:'rgba(91,156,246,.1)',b:'rgba(91,156,246,.2)'});
+    if(allF.length>30) tags.push({text:'TOP 50',c:'#f5a623',bg:'rgba(245,166,35,.1)',b:'rgba(245,166,35,.2)'});
+    const hb=document.getElementById('pip-exp-hashtags-block');
+    if(hb) hb.innerHTML=tags.length?'<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px">'+tags.map(t=>'<span style="font-size:7px;color:'+t.c+';background:'+t.bg+';border:1px solid '+t.b+';padding:2px 6px;border-radius:2px;font-family:monospace">'+t.text+'</span>').join('')+'</div>':'';
+  }
+
+  function pipRefreshSimilar(){
+    const track=PIP._track, list=document.getElementById('pip-exp-similar-list');
+    if(!list||!track){if(list)list.innerHTML='<div style="font-size:8px;color:#333;font-family:monospace;padding:4px 0">No data loaded.</div>';return;}
+    const allData=typeof S!=='undefined'?S:[];
+    const artistName=(track.artists?.[0]?.name||'').toLowerCase();
+    const trackName=(track.name||'').toLowerCase();
+    const at={};
+    allData.forEach(x=>{const a=(x.artist||'').toLowerCase(),t=(x.track||'').toLowerCase();if(a.includes(artistName.split(' ')[0])&&t!==trackName){const k=t+'|||'+(x.artist||'');at[k]=(at[k]||0)+1;}});
+    const sorted=Object.entries(at).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    if(!sorted.length){list.innerHTML='<div style="font-size:8px;color:#333;font-family:monospace;padding:4px 0">No similar tracks in library.</div>';return;}
+    list.innerHTML=sorted.map(([k,ct],i)=>{
+      const[t,a]=k.split('|||');
+      const dn=t.length>22?t.slice(0,22)+'…':t;
+      return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #141414;cursor:pointer;" onmouseover="this.querySelector(\'.psn\').style.color=\'#1DB954\'" onmouseout="this.querySelector(\'.psn\').style.color=\'#777\'">'
+        +'<div style="font-size:8px;color:#2a2a2a;width:12px;text-align:right;font-family:monospace;flex-shrink:0;">'+(i+1)+'</div>'
+        +'<div style="width:22px;height:22px;border-radius:3px;background:#1a1a1a;flex-shrink:0;display:flex;align-items:center;justify-content:center;"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><polygon points="1,1 7,4 1,7" fill="#2a2a2a"/></svg></div>'
+        +'<div style="flex:1;min-width:0;"><div class="psn" style="font-size:9px;color:#777;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:monospace;transition:color .15s">'+dn+'</div><div style="font-size:8px;color:#333;font-family:monospace;margin-top:1px">'+(a||'')+'</div></div>'
+        +'<div style="font-size:8px;color:#1DB954;font-family:monospace;flex-shrink:0;">'+ct+'×</div>'
+        +'</div>';
+    }).join('');
+  }
+
+  /* ══════════════════════════════════════════════
+     SIDEBAR ENHANCEMENTS
+  ══════════════════════════════════════════════ */
+  let _npcRankPeriod='lifetime';
+
+  function npcRenderEnhancements(){
+    const track=SP._currentTrackData; if(!track) return;
+    npcRenderMinutes(track);
+    npcRenderRank(track);
+    npcRenderHashtags(track);
+    npcRenderSimilar(track);
+  }
+
+  function _npcFiltered(track, period){
+    const allData=typeof S!=='undefined'?S:[];
+    const tn=(track.name||'').toLowerCase(), an=(track.artists?.[0]?.name||'').toLowerCase();
+    const now=new Date();
+    const all=allData.filter(x=>(x.track||'').toLowerCase()===tn&&(x.artist||'').toLowerCase().includes(an.split(' ')[0]));
+    if(period==='year'){const c=new Date(now.getFullYear(),0,1).toISOString();return all.filter(x=>x.ts&&x.ts>=c);}
+    if(period==='month'){const c=new Date(now.getFullYear(),now.getMonth(),1).toISOString();return all.filter(x=>x.ts&&x.ts>=c);}
+    return all;
+  }
+
+  function npcRenderMinutes(track){
+    const wrap=document.getElementById('npc-minutes-wrap'); if(!wrap) return;
+    const allData=typeof S!=='undefined'?S:[];
+    if(!allData.length){wrap.style.display='none';return;}
+    wrap.style.display='block';
+    const durMs=track.duration_ms||180000;
+    const mins=arr=>arr.length>0?Math.round(arr.reduce((a,x)=>a+(x.ms||durMs),0)/60000):0;
+    const allF=_npcFiltered(track,'lifetime'), mF=_npcFiltered(track,'month'), yF=_npcFiltered(track,'year');
+    const e=id=>document.getElementById(id);
+    if(e('npc-min-lifetime')) e('npc-min-lifetime').textContent=mins(allF)+' min';
+    if(e('npc-min-month')) e('npc-min-month').textContent=mins(mF)+' min';
+    if(e('npc-min-year')) e('npc-min-year').textContent=mins(yF)+' min';
+    const avgMs=allF.length>0?allF.reduce((a,x)=>a+(x.ms||durMs),0)/allF.length:0;
+    if(e('npc-min-avg')) e('npc-min-avg').textContent=avgMs>0?Math.round(avgMs/1000)+'s avg':'—';
+  }
+
+  function npcRenderRank(track){
+    const wrap=document.getElementById('npc-rank-wrap'); if(!wrap) return;
+    const allData=typeof S!=='undefined'?S:[];
+    if(!allData.length){wrap.style.display='none';return;}
+    wrap.style.display='block';
+    const now=new Date(), period=_npcRankPeriod;
+    const periodAll=(()=>{
+      if(period==='month'){const c=new Date(now.getFullYear(),now.getMonth(),1).toISOString();return allData.filter(x=>!x.ts||x.ts>=c);}
+      if(period==='year'){const c=new Date(now.getFullYear(),0,1).toISOString();return allData.filter(x=>!x.ts||x.ts>=c);}
+      return allData;
+    })();
+    const tc={};
+    periodAll.forEach(x=>{const k=(x.track||'').toLowerCase()+'|||'+(x.artist||'').toLowerCase();tc[k]=(tc[k]||0)+1;});
+    const sorted=Object.entries(tc).sort((a,b)=>b[1]-a[1]);
+    const tn=(track.name||'').toLowerCase(), an=(track.artists?.[0]?.name||'').toLowerCase();
+    const myKey=tn+'|||'+an.split(' ')[0];
+    const myIdx=sorted.findIndex(([k])=>k.startsWith(myKey));
+    const myRank=myIdx>=0?myIdx+1:null;
+    const myCount=sorted[myIdx]?.[1]||0;
+    const maxCount=sorted[0]?.[1]||1;
+    const pct=myCount>0?Math.round((myCount/maxCount)*100):0;
+    const filtered=_npcFiltered(track,period);
+    const durMs=track.duration_ms||180000;
+    const minutes=filtered.length>0?Math.round(filtered.reduce((a,x)=>a+(x.ms||durMs),0)/60000):0;
+    const pLabels={lifetime:'ALL TIME',month:'THIS MONTH',year:'THIS YEAR'};
+    const e=id=>document.getElementById(id);
+    if(e('npc-rank-num')) e('npc-rank-num').textContent=myRank?'#'+myRank:'—';
+    if(e('npc-rank-of-total')) e('npc-rank-of-total').textContent=sorted.length?'of '+sorted.length.toLocaleString()+' tracks':'—';
+    if(e('npc-rank-bar-mins')) e('npc-rank-bar-mins').textContent=minutes>0?minutes+' min':'—';
+    if(e('npc-rank-bar-desc')) e('npc-rank-bar-desc').textContent='by streams · '+(pLabels[period]||'ALL TIME');
+    if(e('npc-rank-bar-fill')) e('npc-rank-bar-fill').style.width=pct+'%';
+  }
+
+  function npcSetRankPeriod(period,el){
+    document.querySelectorAll('.npc-rank-ptab').forEach(t=>t.classList.remove('act'));
+    if(el) el.classList.add('act');
+    _npcRankPeriod=period;
+    if(SP._currentTrackData) npcRenderRank(SP._currentTrackData);
+  }
+
+  function npcRenderHashtags(track){
+    const wrap=document.getElementById('npc-hashtags-wrap'); if(!wrap) return;
+    const allData=typeof S!=='undefined'?S:[];
+    const allF=_npcFiltered(track,'lifetime'), mF=_npcFiltered(track,'month');
+    const tags=[];
+    const now=new Date(), hour=now.getHours();
+    const durMs=track.duration_ms||180000;
+    if(hour>=22||hour<4) tags.push({text:'#LATE_NIGHT',c:'#1DB954',bg:'rgba(29,185,84,.1)',b:'rgba(29,185,84,.2)'});
+    if(hour>=6&&hour<12) tags.push({text:'#MORNING',c:'#f5a623',bg:'rgba(245,166,35,.1)',b:'rgba(245,166,35,.2)'});
+    if(allF.length>20) tags.push({text:'#HEAVY_ROTATION',c:'#1DB954',bg:'rgba(29,185,84,.1)',b:'rgba(29,185,84,.2)'});
+    if(mF.length>5) tags.push({text:'#THIS_MONTH_FAV',c:'#5b9cf6',bg:'rgba(91,156,246,.1)',b:'rgba(91,156,246,.2)'});
+    const avgPct=allF.length>0?allF.reduce((a,x)=>a+(x.ms||durMs),0)/allF.length/durMs:0;
+    if(avgPct>0.85) tags.push({text:'#NEVER_SKIPS',c:'#1DB954',bg:'rgba(29,185,84,.1)',b:'rgba(29,185,84,.2)'});
+    if(allF.length>50) tags.push({text:'#TOP_50',c:'#f5a623',bg:'rgba(245,166,35,.1)',b:'rgba(245,166,35,.2)'});
+    if(!allData.length||!tags.length){wrap.style.display='none';return;}
+    wrap.style.display='block';
+    const listEl=document.getElementById('npc-hashtags-list');
+    if(listEl) listEl.innerHTML=tags.map(t=>'<span class="npc-hashtag" style="color:'+t.c+';background:'+t.bg+';border:1px solid '+t.b+'">'+t.text+'</span>').join('');
+  }
+
+  function npcRenderSimilar(track){
+    const wrap=document.getElementById('npc-similar-wrap'); if(!wrap) return;
+    const allData=typeof S!=='undefined'?S:[];
+    if(!allData.length){wrap.style.display='none';return;}
+    const tn=(track.name||'').toLowerCase(), an=(track.artists?.[0]?.name||'').toLowerCase();
+    const at={};
+    allData.forEach(x=>{const a=(x.artist||'').toLowerCase(),t=(x.track||'').toLowerCase();if(a.includes(an.split(' ')[0])&&t!==tn){const k=t+'|||'+(x.artist||'');at[k]=(at[k]||0)+1;}});
+    const sorted=Object.entries(at).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    if(!sorted.length){wrap.style.display='none';return;}
+    wrap.style.display='block';
+    const listEl=document.getElementById('npc-similar-list');
+    if(listEl) listEl.innerHTML=sorted.map(([k,ct],i)=>{
+      const[t,a]=k.split('|||');
+      const dn=t.length>24?t.slice(0,24)+'…':t;
+      const ad=a&&a.length>18?a.slice(0,18)+'…':a||'';
+      return '<div class="npc-sim-row">'
+        +'<div class="npc-sim-n">'+(i+1)+'</div>'
+        +'<div class="npc-sim-art">🎵</div>'
+        +'<div class="npc-sim-info"><div class="npc-sim-name">'+dn+'</div><div class="npc-sim-sub">'+ad+'</div></div>'
+        +'<div class="npc-sim-plays">'+ct+'×</div>'
+        +'</div>';
+    }).join('');
+  }
+
+  /* Poll SP state → drive PIP every second */
+  setInterval(()=>{
+    if(typeof SP==='undefined'||!SP._currentTrackData) return;
+    const track=SP._currentTrackData;
+    const isPlaying=SP.isPlaying||false;
+    const prog=SP.progressMs||0;
+    const dur=SP.trackDuration||track.duration_ms||1;
+    const pct=Math.min(100,(prog/dur)*100);
+    const artists=(track.artists||[]).map(a=>a.name).join(', ');
+    const art=track.album?.images?.[0]?.url||null;
+    pipUpdate(track,isPlaying,pct,prog,artists,art);
+  },1000);
+
+  /* Hook npc-stats-wrap visibility change → render enhancements */
+  (()=>{
+    const statsWrap=document.getElementById('npc-stats-wrap');
+    if(!statsWrap) return;
+    const obs=new MutationObserver(()=>{ if(SP&&SP._currentTrackData) npcRenderEnhancements(); });
+    obs.observe(statsWrap,{attributes:true,attributeFilter:['style']});
+  })();
+  </script>
+
 </body>
 
 </html>
