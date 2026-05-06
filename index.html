@@ -16452,394 +16452,524 @@ self.addEventListener('fetch',e=>{
 
 
 
-  <!-- ══════ CANVAS PICTURE-IN-PICTURE PLAYER ══════ -->
-  <canvas id="pip-canvas" width="800" height="450" style="display:none;"></canvas>
-  <video id="pip-video" style="display:none;" muted playsinline></video>
 
+
+  <!-- ══════ DOCUMENT PICTURE-IN-PICTURE PLAYER ══════
+       Uses window.documentPictureInPicture API (Chrome 116+)
+       Real live HTML in an OS-level floating window above all apps
+  ══════════════════════════════════════════════════ -->
   <script>
-  /* ══════════════════════════════════════════════════════
-     TRUE PICTURE-IN-PICTURE — canvas → video → OS PiP
-     Floats above all apps like Spotify's PiP
-  ══════════════════════════════════════════════════════ */
-  const pipCanvas = document.getElementById('pip-canvas');
-  const pipVideo  = document.getElementById('pip-video');
-  const pipCtx    = pipCanvas.getContext('2d');
-
-  // State
-  const _pip = {
-    active: false,
-    track: null,
-    isPlaying: false,
-    pct: 0,
-    progressMs: 0,
-    artists: '',
-    artUrl: null,
-    artImg: null,
-    artLoaded: false,
-    _lastArtUrl: null,
-    _animFrame: null,
-    _stream: null,
+  /* ─────────────────────────────────────────────────────
+     DOCUMENT PiP — live interactive HTML overlay
+     Mirrors Spotify's approach: actual DOM in floating window
+  ───────────────────────────────────────────────────── */
+  const DPIP = {
+    win: null,       // the PiP window object
+    doc: null,       // its document
+    interval: null,  // update ticker
+    state: {
+      track: null, isPlaying: false,
+      pct: 0, progressMs: 0,
+      artists: '', artUrl: '',
+    },
   };
 
-  // Canvas dimensions — user can resize PiP window; we draw at 800x450 (16:9)
-  const PIP_W = 800, PIP_H = 450;
-
-  /* Load album art image */
-  function _pipLoadArt(url) {
-    if (!url || url === _pip._lastArtUrl) return;
-    _pip._lastArtUrl = url;
-    _pip.artLoaded = false;
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => { _pip.artImg = img; _pip.artLoaded = true; };
-    img.onerror = () => { _pip.artImg = null; _pip.artLoaded = false; };
-    img.src = url;
+  /* Called every second from SP polling */
+  function dpipSync(track, isPlaying, pct, progressMs, artists, artUrl) {
+    DPIP.state = { track, isPlaying, pct, progressMs, artists, artUrl };
+    if (DPIP.win && !DPIP.win.closed) dpipUpdate();
+    // Update MediaSession for OS media keys
+    _dpipMediaSession(track, artists, artUrl);
   }
 
-  /* Helper: rounded rect */
-  function _rr(x, y, w, h, r) {
-    pipCtx.beginPath();
-    pipCtx.moveTo(x + r, y);
-    pipCtx.lineTo(x + w - r, y);
-    pipCtx.quadraticCurveTo(x + w, y, x + w, y + r);
-    pipCtx.lineTo(x + w, y + h - r);
-    pipCtx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-    pipCtx.lineTo(x + r, y + h);
-    pipCtx.quadraticCurveTo(x, y + h, x, y + h - r);
-    pipCtx.lineTo(x, y + r);
-    pipCtx.quadraticCurveTo(x, y, x + r, y);
-    pipCtx.closePath();
+  /* Inject fresh styles into the PiP window document */
+  function dpipStyles(doc) {
+    const s = doc.createElement('style');
+    s.textContent = `
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0 }
+      :root {
+        --g: #1DB954; --bg: #0a0a0a; --bg2: #111;
+        --text: #f0f0f0; --muted: #555; --border: #1a1a1a;
+        --gold: #f5a623; --mono: monospace;
+      }
+      html, body {
+        width: 100%; height: 100%;
+        background: var(--bg); color: var(--text);
+        font-family: system-ui, -apple-system, sans-serif;
+        overflow: hidden; user-select: none;
+      }
+      #pip-root {
+        width: 100%; height: 100%;
+        display: flex; flex-direction: column;
+        position: relative; overflow: hidden;
+      }
+      /* ── blurred art bg ── */
+      #pip-bg {
+        position: absolute; inset: 0; z-index: 0;
+        background-size: cover; background-position: center;
+        filter: blur(28px) brightness(0.3) saturate(1.4);
+        transform: scale(1.1);
+        transition: background-image .6s;
+      }
+      #pip-overlay {
+        position: absolute; inset: 0; z-index: 1;
+        background: rgba(8,8,8,0.72);
+      }
+      /* ── content on top of bg ── */
+      #pip-content {
+        position: relative; z-index: 2;
+        width: 100%; height: 100%;
+        display: flex; flex-direction: column;
+        padding: 0;
+      }
+
+      /* ════ LARGE layout (width > 340px) ════ */
+      .pip-large { display: flex; flex-direction: column; height: 100% }
+      .pip-large .pip-art-row {
+        display: flex; align-items: center; gap: 16px;
+        padding: 16px 16px 8px; flex: 1; min-height: 0;
+      }
+      .pip-large .pip-art-wrap {
+        flex-shrink: 0; border-radius: 8px; overflow: hidden;
+        border: 2px solid var(--g);
+        width: clamp(80px, 30%, 160px);
+        aspect-ratio: 1 / 1;
+        box-shadow: 0 8px 32px rgba(29,185,84,.25);
+      }
+      .pip-large .pip-art-wrap img {
+        width: 100%; height: 100%; object-fit: cover; display: block;
+      }
+      .pip-large .pip-art-ph {
+        width: 100%; height: 100%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 2rem; background: var(--bg2); color: var(--muted);
+      }
+      .pip-large .pip-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px }
+      .pip-large .pip-track {
+        font-size: clamp(13px, 3.5cqw, 22px); font-weight: 800;
+        color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      .pip-large .pip-artist {
+        font-size: clamp(10px, 2.5cqw, 14px); color: var(--muted);
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      }
+      .pip-large .pip-stats {
+        display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap;
+      }
+      .pip-stat-chip {
+        background: rgba(255,255,255,.05); border: 1px solid var(--border);
+        border-radius: 4px; padding: 3px 8px;
+        font-family: var(--mono); font-size: 10px;
+      }
+      .pip-stat-chip span { color: var(--g); font-weight: 700; margin-left: 3px }
+      .pip-stat-chip.gold span { color: var(--gold) }
+      .pip-large .pip-bottom { padding: 0 16px 14px; display: flex; flex-direction: column; gap: 6px }
+
+      /* ════ MINI layout (width <= 340px) ════ */
+      .pip-mini { display: flex; flex-direction: column; height: 100%; justify-content: space-between }
+      .pip-mini .pip-mini-head {
+        display: flex; align-items: center; gap: 10px;
+        padding: 10px 12px 6px;
+      }
+      .pip-mini .pip-mini-art {
+        width: 42px; height: 42px; border-radius: 6px;
+        overflow: hidden; flex-shrink: 0;
+        border: 1.5px solid var(--g);
+      }
+      .pip-mini .pip-mini-art img { width: 100%; height: 100%; object-fit: cover; display: block }
+      .pip-mini .pip-mini-art-ph { width: 100%; height: 100%; background: var(--bg2); display: flex; align-items: center; justify-content: center; font-size: 1.2rem }
+      .pip-mini .pip-mini-meta { flex: 1; min-width: 0 }
+      .pip-mini .pip-mini-track { font-size: 11px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+      .pip-mini .pip-mini-artist { font-size: 9px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px }
+      .pip-mini .pip-mini-bottom { padding: 0 10px 10px; display: flex; flex-direction: column; gap: 5px }
+
+      /* ── progress bar ── */
+      .pip-prog-wrap { position: relative }
+      .pip-prog-track {
+        height: 3px; background: rgba(255,255,255,.12);
+        border-radius: 3px; cursor: pointer; position: relative;
+        transition: height .12s;
+      }
+      .pip-prog-track:hover { height: 5px }
+      .pip-prog-fill {
+        height: 100%; background: var(--g);
+        border-radius: 3px; pointer-events: none;
+        transition: width .5s linear;
+      }
+      .pip-prog-dot {
+        width: 10px; height: 10px; background: #fff;
+        border-radius: 50%; position: absolute;
+        top: 50%; transform: translate(-50%, -50%);
+        pointer-events: none;
+        box-shadow: 0 0 0 2px var(--g);
+        opacity: 0; transition: opacity .12s;
+      }
+      .pip-prog-track:hover .pip-prog-dot { opacity: 1 }
+      .pip-prog-times {
+        display: flex; justify-content: space-between;
+        font-family: var(--mono); font-size: 9px; color: var(--muted);
+        margin-top: 4px;
+      }
+      /* ── controls ── */
+      .pip-controls {
+        display: flex; align-items: center; justify-content: center;
+        gap: 6px;
+      }
+      .pip-btn {
+        background: none; border: none; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        border-radius: 50%; transition: opacity .12s, transform .1s;
+        color: rgba(255,255,255,.65); flex-shrink: 0;
+      }
+      .pip-btn:hover { opacity: 1 !important; transform: scale(1.08) }
+      .pip-btn:active { transform: scale(.94) }
+      .pip-btn svg { display: block }
+      .pip-btn-play {
+        background: #fff; color: #000;
+        border-radius: 50%;
+        box-shadow: 0 4px 16px rgba(0,0,0,.4);
+      }
+      .pip-btn-play:hover { background: var(--g) !important; color: #fff }
+      /* playing badge */
+      .pip-playing-badge {
+        display: flex; align-items: center; gap: 5px;
+        font-family: var(--mono); font-size: 9px; color: var(--g); letter-spacing: .1em;
+      }
+      .pip-eq { display: flex; align-items: flex-end; gap: 1.5px; height: 10px }
+      .pip-eq-bar {
+        width: 2.5px; background: var(--g); border-radius: 1px;
+        animation: pip-eq-anim 0.8s ease-in-out infinite alternate;
+      }
+      .pip-eq-bar:nth-child(1) { height: 4px; animation-delay: 0s }
+      .pip-eq-bar:nth-child(2) { height: 8px; animation-delay: .15s }
+      .pip-eq-bar:nth-child(3) { height: 5px; animation-delay: .3s }
+      .pip-eq-bar:nth-child(4) { height: 10px; animation-delay: .1s }
+      @keyframes pip-eq-anim { from { transform: scaleY(.3) } to { transform: scaleY(1) } }
+      .pip-eq-static .pip-eq-bar { animation: none; transform: scaleY(.4) }
+      /* hashtags */
+      .pip-tags { display: flex; gap: 4px; flex-wrap: wrap }
+      .pip-tag {
+        font-family: var(--mono); font-size: 8px; padding: 2px 6px;
+        border-radius: 2px; letter-spacing: .06em;
+        background: rgba(29,185,84,.1); color: var(--g); border: 1px solid rgba(29,185,84,.2);
+      }
+      .pip-tag.gold { background: rgba(245,166,35,.1); color: var(--gold); border-color: rgba(245,166,35,.2) }
+      /* scrollbar */
+      ::-webkit-scrollbar { width: 2px }
+      ::-webkit-scrollbar-thumb { background: var(--border) }
+    `;
+    doc.head.appendChild(s);
   }
 
-  /* Helper: truncate text */
-  function _trunc(ctx, text, maxW) {
-    if (ctx.measureText(text).width <= maxW) return text;
-    let t = text;
-    while (t.length > 0 && ctx.measureText(t + '…').width > maxW) t = t.slice(0, -1);
-    return t + '…';
-  }
-
-  /* Draw one frame onto canvas */
-  function _pipDraw() {
-    const c = pipCtx;
-    const W = PIP_W, H = PIP_H;
-
-    // --- Background ---
-    c.clearRect(0, 0, W, H);
-
-    // Deep dark bg
-    c.fillStyle = '#0a0a0a';
-    c.fillRect(0, 0, W, H);
-
-    // Subtle glow behind art if we have it
-    if (_pip.artLoaded && _pip.artImg) {
-      c.save();
-      c.filter = 'blur(60px)';
-      c.globalAlpha = 0.35;
-      c.drawImage(_pip.artImg, -40, -40, W + 80, H + 80);
-      c.filter = 'none';
-      c.globalAlpha = 1;
-      c.restore();
-      // Re-darken
-      c.fillStyle = 'rgba(0,0,0,0.72)';
-      c.fillRect(0, 0, W, H);
-    }
-
-    // Top bar
-    c.fillStyle = 'rgba(0,0,0,0.5)';
-    c.fillRect(0, 0, W, 44);
-
-    // STATIFY label
-    c.font = 'bold 11px monospace';
-    c.fillStyle = '#1DB954';
-    c.letterSpacing = '3px';
-    c.fillText('STATIFY', 20, 27);
-
-    // NOW PLAYING label
-    c.font = '9px monospace';
-    c.fillStyle = '#2a2a2a';
-    c.fillText('NOW PLAYING', W/2 - 36, 27);
-
-    // Resize hint top-right
-    c.font = '9px monospace';
-    c.fillStyle = '#222';
-    c.fillText('drag corner to resize', W - 132, 27);
-
-    const ART_SIZE = 200;
-    const ART_X = 48;
-    const ART_Y = (H - ART_SIZE) / 2 - 10;
-
-    // Album art box
-    _rr(ART_X - 2, ART_Y - 2, ART_SIZE + 4, ART_SIZE + 4, 10);
-    c.fillStyle = '#1DB954';
-    c.fill();
-
-    _rr(ART_X, ART_Y, ART_SIZE, ART_SIZE, 9);
-    c.fillStyle = '#1a1a1a';
-    c.fill();
-    c.save();
-    c.clip();
-
-    if (_pip.artLoaded && _pip.artImg) {
-      c.drawImage(_pip.artImg, ART_X, ART_Y, ART_SIZE, ART_SIZE);
-    } else {
-      // Placeholder
-      c.fillStyle = '#111';
-      c.fillRect(ART_X, ART_Y, ART_SIZE, ART_SIZE);
-      c.font = '48px serif';
-      c.fillStyle = '#222';
-      c.textAlign = 'center';
-      c.fillText('♫', ART_X + ART_SIZE/2, ART_Y + ART_SIZE/2 + 16);
-      c.textAlign = 'left';
-    }
-    c.restore();
-
-    // --- Right side content ---
-    const RX = ART_X + ART_SIZE + 44;
-    const RW = W - RX - 44;
-    let ry = ART_Y + 8;
-
-    // Track name
-    c.font = 'bold 26px system-ui, -apple-system, sans-serif';
-    c.fillStyle = '#f0f0f0';
-    const trackText = _trunc(c, _pip.track?.name || '—', RW);
-    c.fillText(trackText, RX, ry + 26);
-    ry += 42;
-
-    // Artist
-    c.font = '15px system-ui, -apple-system, sans-serif';
-    c.fillStyle = '#888';
-    const artistText = _trunc(c, _pip.artists || '—', RW);
-    c.fillText(artistText, RX, ry + 15);
-    ry += 40;
-
-    // Progress bar
-    const BAR_H = 4;
-    const BAR_W = RW;
-    // track
-    _rr(RX, ry, BAR_W, BAR_H, 2);
-    c.fillStyle = '#1e1e1e';
-    c.fill();
-    // fill
-    const fillW = Math.max(0, Math.min(BAR_W, BAR_W * (_pip.pct / 100)));
-    if (fillW > 0) {
-      _rr(RX, ry, fillW, BAR_H, 2);
-      c.fillStyle = '#1DB954';
-      c.fill();
-    }
-    // dot
-    c.beginPath();
-    c.arc(RX + fillW, ry + BAR_H/2, 7, 0, Math.PI * 2);
-    c.fillStyle = '#fff';
-    c.fill();
-    c.beginPath();
-    c.arc(RX + fillW, ry + BAR_H/2, 5, 0, Math.PI * 2);
-    c.fillStyle = '#1DB954';
-    c.fill();
-
-    // Times
-    ry += 20;
-    const elapsed = typeof msToMMSS === 'function' ? msToMMSS(_pip.progressMs) : '0:00';
-    const duration = typeof msToMMSS === 'function' ? msToMMSS(_pip.track?.duration_ms || 0) : '0:00';
-    c.font = '11px monospace';
-    c.fillStyle = '#444';
-    c.fillText(elapsed, RX, ry);
-    c.textAlign = 'right';
-    c.fillText(duration, RX + RW, ry);
-    c.textAlign = 'left';
-    ry += 36;
-
-    // Play/Pause indicator text (browser PiP chrome has real buttons via MediaSession)
-    c.font = 'bold 13px monospace';
-    c.fillStyle = _pip.isPlaying ? '#1DB954' : '#555';
-    c.fillText(_pip.isPlaying ? '▶  PLAYING' : '⏸  PAUSED', RX, ry);
-    ry += 36;
-
-    // Stats block (if data loaded)
+  /* Build stats chips from uploaded data */
+  function _dpipStats(track, artists) {
     const allData = typeof S !== 'undefined' ? S : [];
-    if (allData.length && _pip.track) {
-      const tn = (_pip.track.name || '').toLowerCase();
-      const an = (_pip.artists || '').toLowerCase().split(',')[0].trim();
-      const matches = allData.filter(x =>
-        (x.track||'').toLowerCase() === tn &&
-        (x.artist||'').toLowerCase().includes(an.split(' ')[0])
-      );
-      const durMs = _pip.track.duration_ms || 180000;
-      const totalMin = matches.length > 0
-        ? Math.round(matches.reduce((a,x) => a + (x.ms || durMs), 0) / 60000)
-        : 0;
+    if (!allData.length || !track) return { plays: null, mins: null, rank: null, tags: [] };
+    const tn = (track.name || '').toLowerCase();
+    const an = (artists || '').toLowerCase().split(',')[0].trim();
+    const matches = allData.filter(x =>
+      (x.track||'').toLowerCase() === tn &&
+      (x.artist||'').toLowerCase().includes(an.split(' ')[0])
+    );
+    const durMs = track.duration_ms || 180000;
+    const mins = matches.length > 0
+      ? Math.round(matches.reduce((a,x) => a+(x.ms||durMs), 0) / 60000) : 0;
+    const tc = {};
+    allData.forEach(x => { const k=(x.track||'').toLowerCase()+'|||'+(x.artist||'').toLowerCase(); tc[k]=(tc[k]||0)+1; });
+    const sorted = Object.entries(tc).sort((a,b)=>b[1]-a[1]);
+    const myIdx = sorted.findIndex(([k])=>k.startsWith(tn+'|||'+an.split(' ')[0]));
+    const rank = myIdx >= 0 ? myIdx + 1 : null;
+    // tags
+    const tags = [];
+    const h = new Date().getHours();
+    if (h >= 22 || h < 4) tags.push({ text: 'LATE NIGHT', gold: false });
+    if (matches.length > 20) tags.push({ text: 'HEAVY ROTATION', gold: false });
+    if (rank && rank <= 10) tags.push({ text: 'TOP 10', gold: true });
+    if (matches.length > 50) tags.push({ text: 'TOP 50', gold: true });
+    return { plays: matches.length, mins, rank, tags };
+  }
 
-      // mini stats row
-      const stats = [
-        { label: 'PLAYS', val: matches.length || '0' },
-        { label: 'MINUTES', val: totalMin || '0' },
-      ];
+  /* Render full PiP window content — called on every update */
+  function dpipUpdate() {
+    if (!DPIP.win || DPIP.win.closed) return;
+    const doc = DPIP.doc;
+    const { track, isPlaying, pct, progressMs, artists, artUrl } = DPIP.state;
+    const W = DPIP.win.innerWidth;
+    const isMini = W <= 340;
+    const stats = _dpipStats(track, artists);
+    const elapsed = typeof msToMMSS === 'function' ? msToMMSS(progressMs) : '0:00';
+    const duration = typeof msToMMSS === 'function' ? msToMMSS(track?.duration_ms || 0) : '0:00';
+    const artSrc = artUrl || '';
+    const trackName = track?.name || '—';
+    const artistName = artists || '—';
 
-      // rank
-      const tc = {};
-      allData.forEach(x => { const k=(x.track||'').toLowerCase()+'|||'+(x.artist||'').toLowerCase(); tc[k]=(tc[k]||0)+1; });
-      const sorted = Object.entries(tc).sort((a,b)=>b[1]-a[1]);
-      const myKey = tn+'|||'+an.split(' ')[0];
-      const myIdx = sorted.findIndex(([k])=>k.startsWith(myKey));
-      if (myIdx >= 0) stats.push({ label: 'RANK', val: '#' + (myIdx+1) });
+    // Update bg
+    const bg = doc.getElementById('pip-bg');
+    if (bg && artSrc) bg.style.backgroundImage = `url('${artSrc}')`;
 
-      const CELL_W = Math.floor(RW / stats.length);
-      stats.forEach((s, i) => {
-        const cx = RX + i * CELL_W;
-        // cell bg
-        _rr(cx, ry - 4, CELL_W - 8, 52, 5);
-        c.fillStyle = 'rgba(255,255,255,0.04)';
-        c.fill();
-        // value
-        c.font = 'bold 18px monospace';
-        c.fillStyle = s.label === 'RANK' ? '#f5a623' : '#1DB954';
-        c.fillText(String(s.val), cx + 10, ry + 20);
-        // label
-        c.font = '9px monospace';
-        c.fillStyle = '#333';
-        c.fillText(s.label, cx + 10, ry + 38);
-      });
+    if (isMini) {
+      _dpipRenderMini(doc, { trackName, artistName, artSrc, isPlaying, pct, elapsed, duration, stats });
+    } else {
+      _dpipRenderLarge(doc, { trackName, artistName, artSrc, isPlaying, pct, elapsed, duration, stats, W });
     }
-
-    // Bottom bar
-    c.fillStyle = 'rgba(0,0,0,0.6)';
-    c.fillRect(0, H - 36, W, 36);
-    c.font = '9px monospace';
-    c.fillStyle = '#222';
-    c.textAlign = 'center';
-    c.fillText('Use browser controls to play · pause · skip', W/2, H - 14);
-    c.textAlign = 'left';
   }
 
-  /* Animation loop — redraws canvas every ~500ms (enough for smooth progress) */
-  function _pipLoop() {
-    if (!_pip.active) return;
-    // Tick progress locally between SP polls
-    if (_pip.isPlaying && _pip.track) {
-      _pip.progressMs = Math.min(_pip.progressMs + 500, _pip.track.duration_ms || 999999);
-      _pip.pct = Math.min(100, (_pip.progressMs / (_pip.track.duration_ms || 1)) * 100);
+  function _dpipRenderLarge(doc, { trackName, artistName, artSrc, isPlaying, pct, elapsed, duration, stats, W }) {
+    const root = doc.getElementById('pip-main');
+    if (!root) return;
+
+    const artHTML = artSrc
+      ? `<img src="${artSrc}" alt="" crossorigin="anonymous">`
+      : `<div class="pip-art-ph">♫</div>`;
+
+    const statsHTML = [
+      stats.plays !== null ? `<div class="pip-stat-chip">PLAYS<span>${stats.plays}</span></div>` : '',
+      stats.mins !== null ? `<div class="pip-stat-chip">MIN<span>${stats.mins}</span></div>` : '',
+      stats.rank !== null ? `<div class="pip-stat-chip gold">RANK<span>#${stats.rank}</span></div>` : '',
+    ].join('');
+
+    const tagsHTML = stats.tags.map(t => `<span class="pip-tag${t.gold?' gold':''}">${t.text}</span>`).join('');
+
+    const eqClass = isPlaying ? 'pip-eq' : 'pip-eq pip-eq-static';
+
+    root.innerHTML = `
+      <div class="pip-large">
+        <div class="pip-art-row">
+          <div class="pip-art-wrap">${artHTML}</div>
+          <div class="pip-meta">
+            <div class="pip-track" title="${trackName}">${trackName}</div>
+            <div class="pip-artist">${artistName}</div>
+            ${statsHTML ? `<div class="pip-stats">${statsHTML}</div>` : ''}
+            ${tagsHTML ? `<div class="pip-tags" style="margin-top:6px">${tagsHTML}</div>` : ''}
+          </div>
+        </div>
+        <div class="pip-bottom">
+          <div class="pip-playing-badge">
+            <div class="${eqClass}">
+              <div class="pip-eq-bar"></div><div class="pip-eq-bar"></div>
+              <div class="pip-eq-bar"></div><div class="pip-eq-bar"></div>
+            </div>
+            ${isPlaying ? 'PLAYING' : 'PAUSED'}
+          </div>
+          <div class="pip-prog-wrap">
+            <div class="pip-prog-track" id="pip-prog" data-dur="${track?.duration_ms||0}">
+              <div class="pip-prog-fill" style="width:${pct}%"></div>
+              <div class="pip-prog-dot" style="left:${pct}%"></div>
+            </div>
+            <div class="pip-prog-times"><span>${elapsed}</span><span>${duration}</span></div>
+          </div>
+          <div class="pip-controls">
+            <button class="pip-btn" style="opacity:.5;width:32px;height:32px;" onclick="window.opener._dpipCmd('previous')" title="Previous">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M3 3h2v10H3zm2.5 5l7-5v10z"/></svg>
+            </button>
+            <button class="pip-btn pip-btn-play" style="width:44px;height:44px;" onclick="window.opener._dpipCmd('playpause')" title="${isPlaying?'Pause':'Play'}">
+              ${isPlaying
+                ? `<svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor"><rect x="3" y="2" width="4" height="14" rx="1.5"/><rect x="11" y="2" width="4" height="14" rx="1.5"/></svg>`
+                : `<svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor"><path d="M4 2l12 7-12 7z"/></svg>`}
+            </button>
+            <button class="pip-btn" style="opacity:.5;width:32px;height:32px;" onclick="window.opener._dpipCmd('next')" title="Next">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M13 3h-2v10h2zm-2.5 5l-7-5v10z"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>`;
+
+    // Seek handler
+    const prog = doc.getElementById('pip-prog');
+    if (prog) {
+      prog.onclick = (e) => {
+        const r = prog.getBoundingClientRect();
+        const p = (e.clientX - r.left) / r.width;
+        const ms = Math.floor(p * parseInt(prog.dataset.dur || 0));
+        window.opener._dpipSeek(ms);
+      };
     }
-    _pipDraw();
-    _pip._animFrame = setTimeout(_pipLoop, 500);
   }
 
-  /* Update PiP state from SP polling */
-  function pipSyncState(track, isPlaying, pct, progressMs, artists, artUrl) {
-    _pip.track = track;
-    _pip.isPlaying = isPlaying;
-    _pip.pct = pct;
-    _pip.progressMs = progressMs;
-    _pip.artists = artists;
-    _pip.artUrl = artUrl;
-    if (artUrl) _pipLoadArt(artUrl);
-    if (_pip.active) _pipDraw();
-  }
+  function _dpipRenderMini(doc, { trackName, artistName, artSrc, isPlaying, pct, elapsed, duration, stats }) {
+    const root = doc.getElementById('pip-main');
+    if (!root) return;
 
-  /* Wire MediaSession API — these buttons appear in PiP chrome + OS media controls */
-  function _setupMediaSession() {
-    if (!('mediaSession' in navigator)) return;
-    const track = _pip.track;
-    if (track) {
-      const art = _pip.artUrl ? [{ src: _pip.artUrl, sizes: '640x640', type: 'image/jpeg' }] : [];
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: track.name || 'Unknown',
-        artist: _pip.artists || '',
-        album: track.album?.name || '',
-        artwork: art,
-      });
+    const artHTML = artSrc
+      ? `<img src="${artSrc}" alt="" crossorigin="anonymous">`
+      : `<div class="pip-mini-art-ph">♫</div>`;
+
+    root.innerHTML = `
+      <div class="pip-mini">
+        <div class="pip-mini-head">
+          <div class="pip-mini-art">${artHTML}</div>
+          <div class="pip-mini-meta">
+            <div class="pip-mini-track" title="${trackName}">${trackName}</div>
+            <div class="pip-mini-artist">${artistName}</div>
+          </div>
+        </div>
+        <div class="pip-mini-bottom">
+          <div class="pip-prog-wrap">
+            <div class="pip-prog-track" id="pip-prog" data-dur="${track?.duration_ms||0}">
+              <div class="pip-prog-fill" style="width:${pct}%"></div>
+              <div class="pip-prog-dot" style="left:${pct}%"></div>
+            </div>
+            <div class="pip-prog-times"><span>${elapsed}</span><span>${duration}</span></div>
+          </div>
+          <div class="pip-controls" style="gap:4px">
+            <button class="pip-btn" style="opacity:.5;width:28px;height:28px;" onclick="window.opener._dpipCmd('previous')">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M3 3h2v10H3zm2.5 5l7-5v10z"/></svg>
+            </button>
+            <button class="pip-btn pip-btn-play" style="width:36px;height:36px;" onclick="window.opener._dpipCmd('playpause')">
+              ${isPlaying
+                ? `<svg width="14" height="14" viewBox="0 0 18 18" fill="currentColor"><rect x="3" y="2" width="4" height="14" rx="1.5"/><rect x="11" y="2" width="4" height="14" rx="1.5"/></svg>`
+                : `<svg width="14" height="14" viewBox="0 0 18 18" fill="currentColor"><path d="M4 2l12 7-12 7z"/></svg>`}
+            </button>
+            <button class="pip-btn" style="opacity:.5;width:28px;height:28px;" onclick="window.opener._dpipCmd('next')">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M13 3h-2v10h2zm-2.5 5l-7-5v10z"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>`;
+
+    const prog = doc.getElementById('pip-prog');
+    if (prog) {
+      prog.onclick = (e) => {
+        const r = prog.getBoundingClientRect();
+        const p = (e.clientX - r.left) / r.width;
+        const ms = Math.floor(p * parseInt(prog.dataset.dur || 0));
+        window.opener._dpipSeek(ms);
+      };
     }
-    navigator.mediaSession.setActionHandler('play',     () => spPlayerCmd('playpause'));
-    navigator.mediaSession.setActionHandler('pause',    () => spPlayerCmd('playpause'));
-    navigator.mediaSession.setActionHandler('previoustrack', () => spPlayerCmd('previous'));
-    navigator.mediaSession.setActionHandler('nexttrack',     () => spPlayerCmd('next'));
   }
 
-  /* Trigger PiP — called by ⧉ POP OUT button */
+  /* Commands called from PiP window back into parent page */
+  function _dpipCmd(cmd) { if (typeof spPlayerCmd === 'function') spPlayerCmd(cmd); }
+  async function _dpipSeek(ms) {
+    if (typeof ensureToken !== 'function' || !await ensureToken()) return;
+    await fetch('https://api.spotify.com/v1/me/player/seek?position_ms=' + ms, {
+      method: 'PUT', headers: { Authorization: 'Bearer ' + SP.accessToken }
+    });
+    SP.progressMs = ms; SP.progressTimestamp = performance.now();
+  }
+
+  /* MediaSession for OS media keys + lock screen */
+  function _dpipMediaSession(track, artists, artUrl) {
+    if (!('mediaSession' in navigator) || !track) return;
+    const art = artUrl ? [{ src: artUrl, sizes: '640x640', type: 'image/jpeg' }] : [];
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: track.name || '', artist: artists || '',
+      album: track.album?.name || '', artwork: art,
+    });
+    navigator.mediaSession.setActionHandler('previoustrack', () => _dpipCmd('previous'));
+    navigator.mediaSession.setActionHandler('nexttrack',     () => _dpipCmd('next'));
+    navigator.mediaSession.setActionHandler('play',          () => _dpipCmd('playpause'));
+    navigator.mediaSession.setActionHandler('pause',         () => _dpipCmd('playpause'));
+  }
+
+  /* Open the Document PiP window */
   async function triggerPiP() {
     const btn = document.getElementById('npc-pip-btn');
 
-    // If already in PiP → exit
-    if (document.pictureInPictureElement) {
-      await document.exitPictureInPicture();
+    // Close if already open
+    if (DPIP.win && !DPIP.win.closed) {
+      DPIP.win.close();
       return;
     }
 
-    if (!document.pictureInPictureEnabled) {
-      alert('Picture-in-Picture is not supported or disabled in your browser.\n\nEnable it in Chrome: Settings → Privacy → Site settings → Picture-in-Picture');
+    // Check API availability
+    if (!('documentPictureInPicture' in window)) {
+      // Fallback message with instructions
+      const msg = [
+        'Document Picture-in-Picture requires Chrome 116+ or Edge 116+.',
+        '',
+        'Enable it:',
+        '  1. Open chrome://flags',
+        '  2. Search "Document Picture-in-Picture"',
+        '  3. Enable → Relaunch',
+        '',
+        'Or update Chrome to the latest version.'
+      ].join('\n');
+      alert(msg);
       return;
     }
-
-    // Init canvas stream → video (only once)
-    if (!_pip._stream) {
-      _pip._stream = pipCanvas.captureStream(2); // 2fps — enough for progress bar
-      pipVideo.srcObject = _pip._stream;
-      await pipVideo.play();
-    }
-
-    // Draw first frame immediately
-    _pipDraw();
 
     try {
-      await pipVideo.requestPictureInPicture();
-      _pip.active = true;
+      // Open PiP window — starts at 360×240, user can resize freely
+      DPIP.win = await window.documentPictureInPicture.requestWindow({
+        width: 360,
+        height: 240,
+        disallowReturnToOpener: false,
+      });
+      DPIP.doc = DPIP.win.document;
+
+      // Inject styles
+      dpipStyles(DPIP.doc);
+
+      // Build root HTML
+      DPIP.doc.body.innerHTML = `
+        <div id="pip-root">
+          <div id="pip-bg"></div>
+          <div id="pip-overlay"></div>
+          <div id="pip-content">
+            <div id="pip-main" style="width:100%;height:100%;"></div>
+          </div>
+        </div>`;
+
+      // Update btn
       if (btn) { btn.textContent = '⧉ CLOSE PiP'; btn.style.color = '#1DB954'; }
 
-      // Start animation loop
-      clearTimeout(_pip._animFrame);
-      _pipLoop();
+      // Initial render
+      dpipUpdate();
 
-      // Wire MediaSession
-      _setupMediaSession();
+      // Live resize — re-render on window resize (layout switches mini↔large)
+      DPIP.win.addEventListener('resize', () => dpipUpdate());
 
-      // Listen for PiP close
-      pipVideo.addEventListener('leavepictureinpicture', () => {
-        _pip.active = false;
-        clearTimeout(_pip._animFrame);
+      // Tick progress locally every 500ms
+      DPIP.interval = setInterval(() => {
+        if (!DPIP.win || DPIP.win.closed) { clearInterval(DPIP.interval); return; }
+        const st = DPIP.state;
+        if (st.isPlaying && st.track) {
+          st.progressMs = Math.min(st.progressMs + 500, st.track.duration_ms || 999999);
+          st.pct = Math.min(100, (st.progressMs / (st.track.duration_ms || 1)) * 100);
+        }
+        dpipUpdate();
+      }, 500);
+
+      // Clean up on close
+      DPIP.win.addEventListener('pagehide', () => {
+        clearInterval(DPIP.interval);
+        DPIP.win = null; DPIP.doc = null;
         if (btn) { btn.textContent = '⧉ POP OUT'; btn.style.color = ''; }
-      }, { once: false });
+      });
 
     } catch(err) {
-      console.warn('PiP failed:', err);
+      console.warn('Document PiP error:', err);
       if (err.name === 'NotAllowedError') {
-        alert('PiP was blocked. Click anywhere on the page first, then try again.');
+        alert('PiP was blocked by the browser.\n\nMake sure you click the button directly (no programmatic trigger).');
+      } else {
+        alert('Could not open PiP: ' + err.message);
       }
     }
   }
 
-  /* Poll SP state → sync PiP canvas */
+  /* SP polling → sync PiP + sidebar */
   setInterval(() => {
     if (typeof SP === 'undefined' || !SP._currentTrackData) return;
-    const track = SP._currentTrackData;
+    const track     = SP._currentTrackData;
     const isPlaying = SP.isPlaying || false;
-    const prog = SP.progressMs || 0;
-    const dur = SP.trackDuration || track.duration_ms || 1;
-    const pct = Math.min(100, (prog / dur) * 100);
-    const artists = (track.artists || []).map(a => a.name).join(', ');
-    const art = track.album?.images?.[0]?.url || null;
+    const prog      = SP.progressMs || 0;
+    const dur       = SP.trackDuration || track.duration_ms || 1;
+    const pct       = Math.min(100, (prog / dur) * 100);
+    const artists   = (track.artists || []).map(a => a.name).join(', ');
+    const art       = track.album?.images?.[0]?.url || null;
 
-    pipSyncState(track, isPlaying, pct, prog, artists, art);
-
-    // Update MediaSession if PiP active
-    if (_pip.active && 'mediaSession' in navigator) {
-      _setupMediaSession();
-      if (navigator.mediaSession.setPositionState) {
-        navigator.mediaSession.setPositionState({
-          duration: (track.duration_ms || 0) / 1000,
-          playbackRate: 1,
-          position: prog / 1000,
-        });
-      }
-    }
+    dpipSync(track, isPlaying, pct, prog, artists, art);
   }, 1000);
 
-  /* Hook npc-stats-wrap visibility → render sidebar enhancements */
+  /* Hook npc-stats-wrap → sidebar enhancements */
   (() => {
-    const statsWrap = document.getElementById('npc-stats-wrap');
-    if (!statsWrap) return;
+    const wrap = document.getElementById('npc-stats-wrap');
+    if (!wrap) return;
     const obs = new MutationObserver(() => {
-      if (typeof SP !== 'undefined' && SP && SP._currentTrackData) npcRenderEnhancements();
+      if (typeof SP !== 'undefined' && SP?._currentTrackData) npcRenderEnhancements();
     });
-    obs.observe(statsWrap, { attributes: true, attributeFilter: ['style'] });
+    obs.observe(wrap, { attributes: true, attributeFilter: ['style'] });
   })();
   </script>
 
