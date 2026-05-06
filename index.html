@@ -16493,11 +16493,14 @@ self.addEventListener('fetch',e=>{
         --gold: #f5a623; --mono: monospace;
       }
       html, body {
-        width: 100%; height: 100%;
+        width: 100%; height: 100%; min-height: 100%;
         background: var(--bg); color: var(--text);
         font-family: system-ui, -apple-system, sans-serif;
         overflow: hidden; user-select: none;
+        -webkit-font-smoothing: antialiased;
       }
+      /* ensure pip-root always fills window */
+      #pip-root { min-height: 100vh }
       #pip-root {
         width: 100%; height: 100%;
         display: flex; flex-direction: column;
@@ -16693,33 +16696,37 @@ self.addEventListener('fetch',e=>{
   function dpipUpdate() {
     if (!DPIP.win || DPIP.win.closed) return;
     const doc = DPIP.doc;
+    if (!doc || !doc.getElementById('pip-main')) return; // DOM not ready yet
     const { track, isPlaying, pct, progressMs, artists, artUrl } = DPIP.state;
     const W = DPIP.win.innerWidth;
-    const isMini = W <= 340;
+    const H = DPIP.win.innerHeight;
+    const isMini = W <= 320;
     const stats = _dpipStats(track, artists);
     const elapsed = typeof msToMMSS === 'function' ? msToMMSS(progressMs) : '0:00';
-    const duration = typeof msToMMSS === 'function' ? msToMMSS(track?.duration_ms || 0) : '0:00';
+    const durMs = track?.duration_ms || 0;
+    const duration = typeof msToMMSS === 'function' ? msToMMSS(durMs) : '0:00';
     const artSrc = artUrl || '';
-    const trackName = track?.name || '—';
+    const trackName = track?.name || 'Nothing playing';
     const artistName = artists || '—';
 
-    // Update bg
+    // Update blurred bg
     const bg = doc.getElementById('pip-bg');
-    if (bg && artSrc) bg.style.backgroundImage = `url('${artSrc}')`;
+    if (bg) bg.style.backgroundImage = artSrc ? `url('${artSrc}')` : '';
 
+    const payload = { trackName, artistName, artSrc, isPlaying, pct, elapsed, duration, durMs, stats };
     if (isMini) {
-      _dpipRenderMini(doc, { trackName, artistName, artSrc, isPlaying, pct, elapsed, duration, stats });
+      _dpipRenderMini(doc, payload);
     } else {
-      _dpipRenderLarge(doc, { trackName, artistName, artSrc, isPlaying, pct, elapsed, duration, stats, W });
+      _dpipRenderLarge(doc, payload);
     }
   }
 
-  function _dpipRenderLarge(doc, { trackName, artistName, artSrc, isPlaying, pct, elapsed, duration, stats, W }) {
+  function _dpipRenderLarge(doc, { trackName, artistName, artSrc, isPlaying, pct, elapsed, duration, durMs, stats }) {
     const root = doc.getElementById('pip-main');
     if (!root) return;
 
     const artHTML = artSrc
-      ? `<img src="${artSrc}" alt="" crossorigin="anonymous">`
+      ? `<img src="${artSrc}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;" crossorigin="anonymous">`
       : `<div class="pip-art-ph">♫</div>`;
 
     const statsHTML = [
@@ -16752,22 +16759,22 @@ self.addEventListener('fetch',e=>{
             ${isPlaying ? 'PLAYING' : 'PAUSED'}
           </div>
           <div class="pip-prog-wrap">
-            <div class="pip-prog-track" id="pip-prog" data-dur="${track?.duration_ms||0}">
+            <div class="pip-prog-track" id="pip-prog" data-dur="${durMs}">
               <div class="pip-prog-fill" style="width:${pct}%"></div>
               <div class="pip-prog-dot" style="left:${pct}%"></div>
             </div>
             <div class="pip-prog-times"><span>${elapsed}</span><span>${duration}</span></div>
           </div>
           <div class="pip-controls">
-            <button class="pip-btn" style="opacity:.5;width:32px;height:32px;" onclick="window.opener._dpipCmd('previous')" title="Previous">
+            <button class="pip-btn" style="opacity:.5;width:32px;height:32px;" onclick="_cmd('previous')" title="Previous">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M3 3h2v10H3zm2.5 5l7-5v10z"/></svg>
             </button>
-            <button class="pip-btn pip-btn-play" style="width:44px;height:44px;" onclick="window.opener._dpipCmd('playpause')" title="${isPlaying?'Pause':'Play'}">
+            <button class="pip-btn pip-btn-play" style="width:44px;height:44px;" onclick="_cmd('playpause')" title="${isPlaying?'Pause':'Play'}">
               ${isPlaying
                 ? `<svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor"><rect x="3" y="2" width="4" height="14" rx="1.5"/><rect x="11" y="2" width="4" height="14" rx="1.5"/></svg>`
                 : `<svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor"><path d="M4 2l12 7-12 7z"/></svg>`}
             </button>
-            <button class="pip-btn" style="opacity:.5;width:32px;height:32px;" onclick="window.opener._dpipCmd('next')" title="Next">
+            <button class="pip-btn" style="opacity:.5;width:32px;height:32px;" onclick="_cmd('next')" title="Next">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M13 3h-2v10h2zm-2.5 5l-7-5v10z"/></svg>
             </button>
           </div>
@@ -16781,17 +16788,17 @@ self.addEventListener('fetch',e=>{
         const r = prog.getBoundingClientRect();
         const p = (e.clientX - r.left) / r.width;
         const ms = Math.floor(p * parseInt(prog.dataset.dur || 0));
-        window.opener._dpipSeek(ms);
+        _seek(ms);
       };
     }
   }
 
-  function _dpipRenderMini(doc, { trackName, artistName, artSrc, isPlaying, pct, elapsed, duration, stats }) {
+  function _dpipRenderMini(doc, { trackName, artistName, artSrc, isPlaying, pct, elapsed, duration, durMs, stats }) {
     const root = doc.getElementById('pip-main');
     if (!root) return;
 
     const artHTML = artSrc
-      ? `<img src="${artSrc}" alt="" crossorigin="anonymous">`
+      ? `<img src="${artSrc}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;" crossorigin="anonymous">`
       : `<div class="pip-mini-art-ph">♫</div>`;
 
     root.innerHTML = `
@@ -16805,22 +16812,22 @@ self.addEventListener('fetch',e=>{
         </div>
         <div class="pip-mini-bottom">
           <div class="pip-prog-wrap">
-            <div class="pip-prog-track" id="pip-prog" data-dur="${track?.duration_ms||0}">
+            <div class="pip-prog-track" id="pip-prog" data-dur="${durMs}">
               <div class="pip-prog-fill" style="width:${pct}%"></div>
               <div class="pip-prog-dot" style="left:${pct}%"></div>
             </div>
             <div class="pip-prog-times"><span>${elapsed}</span><span>${duration}</span></div>
           </div>
           <div class="pip-controls" style="gap:4px">
-            <button class="pip-btn" style="opacity:.5;width:28px;height:28px;" onclick="window.opener._dpipCmd('previous')">
+            <button class="pip-btn" style="opacity:.5;width:28px;height:28px;" onclick="_cmd('previous')">
               <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M3 3h2v10H3zm2.5 5l7-5v10z"/></svg>
             </button>
-            <button class="pip-btn pip-btn-play" style="width:36px;height:36px;" onclick="window.opener._dpipCmd('playpause')">
+            <button class="pip-btn pip-btn-play" style="width:36px;height:36px;" onclick="_cmd('playpause')">
               ${isPlaying
                 ? `<svg width="14" height="14" viewBox="0 0 18 18" fill="currentColor"><rect x="3" y="2" width="4" height="14" rx="1.5"/><rect x="11" y="2" width="4" height="14" rx="1.5"/></svg>`
                 : `<svg width="14" height="14" viewBox="0 0 18 18" fill="currentColor"><path d="M4 2l12 7-12 7z"/></svg>`}
             </button>
-            <button class="pip-btn" style="opacity:.5;width:28px;height:28px;" onclick="window.opener._dpipCmd('next')">
+            <button class="pip-btn" style="opacity:.5;width:28px;height:28px;" onclick="_cmd('next')">
               <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M13 3h-2v10h2zm-2.5 5l-7-5v10z"/></svg>
             </button>
           </div>
@@ -16833,7 +16840,7 @@ self.addEventListener('fetch',e=>{
         const r = prog.getBoundingClientRect();
         const p = (e.clientX - r.left) / r.width;
         const ms = Math.floor(p * parseInt(prog.dataset.dur || 0));
-        window.opener._dpipSeek(ms);
+        _seek(ms);
       };
     }
   }
@@ -16874,23 +16881,11 @@ self.addEventListener('fetch',e=>{
 
     // Check API availability
     if (!('documentPictureInPicture' in window)) {
-      // Fallback message with instructions
-      const msg = [
-        'Document Picture-in-Picture requires Chrome 116+ or Edge 116+.',
-        '',
-        'Enable it:',
-        '  1. Open chrome://flags',
-        '  2. Search "Document Picture-in-Picture"',
-        '  3. Enable → Relaunch',
-        '',
-        'Or update Chrome to the latest version.'
-      ].join('\n');
-      alert(msg);
+      alert('Document Picture-in-Picture requires Chrome 116+ or Edge 116+.\n\nUpdate your browser or enable it via chrome://flags → Document Picture-in-Picture API.');
       return;
     }
 
     try {
-      // Open PiP window — starts at 360×240, user can resize freely
       DPIP.win = await window.documentPictureInPicture.requestWindow({
         width: 360,
         height: 240,
@@ -16898,10 +16893,10 @@ self.addEventListener('fetch',e=>{
       });
       DPIP.doc = DPIP.win.document;
 
-      // Inject styles
+      // ── Inject styles ──
       dpipStyles(DPIP.doc);
 
-      // Build root HTML
+      // ── Build skeleton HTML ──
       DPIP.doc.body.innerHTML = `
         <div id="pip-root">
           <div id="pip-bg"></div>
@@ -16911,16 +16906,36 @@ self.addEventListener('fetch',e=>{
           </div>
         </div>`;
 
-      // Update btn
+      // ── KEY FIX: inject a script into PiP window that binds
+      //    commands back to THIS parent window reference directly.
+      //    window.opener is null in Document PiP — we use the
+      //    documentPictureInPicture.window reference instead.
+      const bridge = DPIP.doc.createElement('script');
+      bridge.textContent = `
+        // Parent window reference — Document PiP uses this pattern
+        function _cmd(c) {
+          try { window.documentPictureInPicture._parentRef._dpipCmd(c); } catch(e){}
+        }
+        function _seek(ms) {
+          try { window.documentPictureInPicture._parentRef._dpipSeek(ms); } catch(e){}
+        }
+      `;
+      DPIP.doc.head.appendChild(bridge);
+
+      // Store parent ref accessible from PiP window via documentPictureInPicture
+      // The PiP window shares the same documentPictureInPicture object as parent
+      window.documentPictureInPicture._parentRef = window;
+
+      // Update button
       if (btn) { btn.textContent = '⧉ CLOSE PiP'; btn.style.color = '#1DB954'; }
 
-      // Initial render
+      // Initial render — DOM is ready immediately after innerHTML set
       dpipUpdate();
 
-      // Live resize — re-render on window resize (layout switches mini↔large)
+      // Re-render on resize (mini ↔ large layout switch)
       DPIP.win.addEventListener('resize', () => dpipUpdate());
 
-      // Tick progress locally every 500ms
+      // Local progress tick every 500ms for smooth bar
       DPIP.interval = setInterval(() => {
         if (!DPIP.win || DPIP.win.closed) { clearInterval(DPIP.interval); return; }
         const st = DPIP.state;
@@ -16931,7 +16946,7 @@ self.addEventListener('fetch',e=>{
         dpipUpdate();
       }, 500);
 
-      // Clean up on close
+      // Cleanup on PiP close
       DPIP.win.addEventListener('pagehide', () => {
         clearInterval(DPIP.interval);
         DPIP.win = null; DPIP.doc = null;
@@ -16941,9 +16956,9 @@ self.addEventListener('fetch',e=>{
     } catch(err) {
       console.warn('Document PiP error:', err);
       if (err.name === 'NotAllowedError') {
-        alert('PiP was blocked by the browser.\n\nMake sure you click the button directly (no programmatic trigger).');
+        alert('PiP was blocked.\n\nClick the POP OUT button directly (not programmatically).');
       } else {
-        alert('Could not open PiP: ' + err.message);
+        alert('PiP failed: ' + err.message);
       }
     }
   }
