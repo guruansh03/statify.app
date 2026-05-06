@@ -16533,11 +16533,11 @@ self.addEventListener('fetch',e=>{
         padding: 16px 16px 8px; flex: 1; min-height: 0;
       }
       .pip-large .pip-art-wrap {
-        flex-shrink: 0; border-radius: 8px; overflow: hidden;
+        flex-shrink: 0; border-radius: 10px; overflow: hidden;
         border: 2px solid var(--g);
-        width: clamp(80px, 30%, 160px);
+        width: clamp(100px, 32%, 180px);
         aspect-ratio: 1 / 1;
-        box-shadow: 0 8px 32px rgba(29,185,84,.25);
+        box-shadow: 0 8px 32px rgba(29,185,84,.3);
       }
       .pip-large .pip-art-wrap img {
         width: 100%; height: 100%; object-fit: cover; display: block;
@@ -16549,22 +16549,24 @@ self.addEventListener('fetch',e=>{
       }
       .pip-large .pip-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px }
       .pip-large .pip-track {
-        font-size: clamp(13px, 3.5cqw, 22px); font-weight: 800;
+        font-size: clamp(16px, 4.5vw, 26px); font-weight: 800;
         color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        letter-spacing: -0.01em;
       }
       .pip-large .pip-artist {
-        font-size: clamp(10px, 2.5cqw, 14px); color: var(--muted);
+        font-size: clamp(12px, 3vw, 16px); color: var(--muted);
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        margin-top: 2px;
       }
       .pip-large .pip-stats {
         display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap;
       }
       .pip-stat-chip {
         background: rgba(255,255,255,.05); border: 1px solid var(--border);
-        border-radius: 4px; padding: 3px 8px;
-        font-family: var(--mono); font-size: 10px;
+        border-radius: 4px; padding: 4px 10px;
+        font-family: var(--mono); font-size: 11px;
       }
-      .pip-stat-chip span { color: var(--g); font-weight: 700; margin-left: 3px }
+      .pip-stat-chip span { color: var(--g); font-weight: 700; margin-left: 4px; font-size: 13px; }
       .pip-stat-chip.gold span { color: var(--gold) }
       .pip-large .pip-bottom { padding: 0 16px 14px; display: flex; flex-direction: column; gap: 6px }
 
@@ -16575,25 +16577,26 @@ self.addEventListener('fetch',e=>{
         padding: 10px 12px 6px;
       }
       .pip-mini .pip-mini-art {
-        width: 42px; height: 42px; border-radius: 6px;
+        width: 50px; height: 50px; border-radius: 7px;
         overflow: hidden; flex-shrink: 0;
-        border: 1.5px solid var(--g);
+        border: 2px solid var(--g);
+        box-shadow: 0 4px 16px rgba(29,185,84,.2);
       }
       .pip-mini .pip-mini-art img { width: 100%; height: 100%; object-fit: cover; display: block }
       .pip-mini .pip-mini-art-ph { width: 100%; height: 100%; background: var(--bg2); display: flex; align-items: center; justify-content: center; font-size: 1.2rem }
       .pip-mini .pip-mini-meta { flex: 1; min-width: 0 }
-      .pip-mini .pip-mini-track { font-size: 11px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
-      .pip-mini .pip-mini-artist { font-size: 9px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px }
+      .pip-mini .pip-mini-track { font-size: 13px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; letter-spacing: -0.01em; }
+      .pip-mini .pip-mini-artist { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px }
       .pip-mini .pip-mini-bottom { padding: 0 10px 10px; display: flex; flex-direction: column; gap: 5px }
 
       /* ── progress bar ── */
       .pip-prog-wrap { position: relative }
       .pip-prog-track {
-        height: 3px; background: rgba(255,255,255,.12);
-        border-radius: 3px; cursor: pointer; position: relative;
+        height: 4px; background: rgba(255,255,255,.12);
+        border-radius: 4px; cursor: pointer; position: relative;
         transition: height .12s;
       }
-      .pip-prog-track:hover { height: 5px }
+      .pip-prog-track:hover { height: 6px }
       .pip-prog-fill {
         height: 100%; background: var(--g);
         border-radius: 3px; pointer-events: none;
@@ -16610,8 +16613,8 @@ self.addEventListener('fetch',e=>{
       .pip-prog-track:hover .pip-prog-dot { opacity: 1 }
       .pip-prog-times {
         display: flex; justify-content: space-between;
-        font-family: var(--mono); font-size: 9px; color: var(--muted);
-        margin-top: 4px;
+        font-family: var(--mono); font-size: 11px; color: var(--muted);
+        margin-top: 5px;
       }
       /* ── controls ── */
       .pip-controls {
@@ -16635,8 +16638,8 @@ self.addEventListener('fetch',e=>{
       .pip-btn-play:hover { background: var(--g) !important; color: #fff }
       /* playing badge */
       .pip-playing-badge {
-        display: flex; align-items: center; gap: 5px;
-        font-family: var(--mono); font-size: 9px; color: var(--g); letter-spacing: .1em;
+        display: flex; align-items: center; gap: 6px;
+        font-family: var(--mono); font-size: 11px; color: var(--g); letter-spacing: .12em;
       }
       .pip-eq { display: flex; align-items: flex-end; gap: 1.5px; height: 10px }
       .pip-eq-bar {
@@ -16652,8 +16655,8 @@ self.addEventListener('fetch',e=>{
       /* hashtags */
       .pip-tags { display: flex; gap: 4px; flex-wrap: wrap }
       .pip-tag {
-        font-family: var(--mono); font-size: 8px; padding: 2px 6px;
-        border-radius: 2px; letter-spacing: .06em;
+        font-family: var(--mono); font-size: 10px; padding: 3px 8px;
+        border-radius: 3px; letter-spacing: .06em;
         background: rgba(29,185,84,.1); color: var(--g); border: 1px solid rgba(29,185,84,.2);
       }
       .pip-tag.gold { background: rgba(245,166,35,.1); color: var(--gold); border-color: rgba(245,166,35,.2) }
@@ -16700,7 +16703,8 @@ self.addEventListener('fetch',e=>{
     const { track, isPlaying, pct, progressMs, artists, artUrl } = DPIP.state;
     const W = DPIP.win.innerWidth;
     const H = DPIP.win.innerHeight;
-    const isMini = W <= 320;
+    const isTiny = W <= 240 || H <= 130;   // track name + buttons only
+    const isMini = !isTiny && (W <= 340);   // compact: art + name + controls + bar
     const stats = _dpipStats(track, artists);
     const elapsed = typeof msToMMSS === 'function' ? msToMMSS(progressMs) : '0:00';
     const durMs = track?.duration_ms || 0;
@@ -16713,32 +16717,30 @@ self.addEventListener('fetch',e=>{
     const bg = doc.getElementById('pip-bg');
     if (bg) bg.style.backgroundImage = artSrc ? `url('${artSrc}')` : '';
 
-    const payload = { trackName, artistName, artSrc, isPlaying, pct, elapsed, duration, durMs, stats };
-    if (isMini) {
+    const payload = { trackName, artistName, artSrc, isPlaying, pct, elapsed, duration, durMs, stats, W, H };
+    if (isTiny) {
+      _dpipRenderTiny(doc, payload);
+    } else if (isMini) {
       _dpipRenderMini(doc, payload);
     } else {
       _dpipRenderLarge(doc, payload);
     }
   }
 
+  /* ── LARGE: full player with art, stats, eq bars ── */
   function _dpipRenderLarge(doc, { trackName, artistName, artSrc, isPlaying, pct, elapsed, duration, durMs, stats }) {
     const root = doc.getElementById('pip-main');
     if (!root) return;
-
     const artHTML = artSrc
       ? `<img src="${artSrc}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;" crossorigin="anonymous">`
-      : `<div class="pip-art-ph">♫</div>`;
-
+      : `<div class="pip-art-ph">&#9835;</div>`;
     const statsHTML = [
       stats.plays !== null ? `<div class="pip-stat-chip">PLAYS<span>${stats.plays}</span></div>` : '',
-      stats.mins !== null ? `<div class="pip-stat-chip">MIN<span>${stats.mins}</span></div>` : '',
-      stats.rank !== null ? `<div class="pip-stat-chip gold">RANK<span>#${stats.rank}</span></div>` : '',
-    ].join('');
-
+      stats.mins  !== null ? `<div class="pip-stat-chip">MIN<span>${stats.mins}</span></div>`   : '',
+      stats.rank  !== null ? `<div class="pip-stat-chip gold">RANK<span>#${stats.rank}</span></div>` : '',
+    ].filter(Boolean).join('');
     const tagsHTML = stats.tags.map(t => `<span class="pip-tag${t.gold?' gold':''}">${t.text}</span>`).join('');
-
     const eqClass = isPlaying ? 'pip-eq' : 'pip-eq pip-eq-static';
-
     root.innerHTML = `
       <div class="pip-large">
         <div class="pip-art-row">
@@ -16747,7 +16749,7 @@ self.addEventListener('fetch',e=>{
             <div class="pip-track" title="${trackName}">${trackName}</div>
             <div class="pip-artist">${artistName}</div>
             ${statsHTML ? `<div class="pip-stats">${statsHTML}</div>` : ''}
-            ${tagsHTML ? `<div class="pip-tags" style="margin-top:6px">${tagsHTML}</div>` : ''}
+            ${tagsHTML  ? `<div class="pip-tags" style="margin-top:6px">${tagsHTML}</div>` : ''}
           </div>
         </div>
         <div class="pip-bottom">
@@ -16766,41 +16768,34 @@ self.addEventListener('fetch',e=>{
             <div class="pip-prog-times"><span>${elapsed}</span><span>${duration}</span></div>
           </div>
           <div class="pip-controls">
-            <button class="pip-btn" style="opacity:.5;width:32px;height:32px;" onclick="_cmd('previous')" title="Previous">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M3 3h2v10H3zm2.5 5l7-5v10z"/></svg>
+            <button class="pip-btn" style="opacity:.55;width:38px;height:38px;" onclick="_cmd('previous')" title="Previous">
+              <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor"><path d="M3 3h2v10H3zm2.5 5l7-5v10z"/></svg>
             </button>
-            <button class="pip-btn pip-btn-play" style="width:44px;height:44px;" onclick="_cmd('playpause')" title="${isPlaying?'Pause':'Play'}">
+            <button class="pip-btn pip-btn-play" style="width:52px;height:52px;" onclick="_cmd('playpause')">
               ${isPlaying
-                ? `<svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor"><rect x="3" y="2" width="4" height="14" rx="1.5"/><rect x="11" y="2" width="4" height="14" rx="1.5"/></svg>`
-                : `<svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor"><path d="M4 2l12 7-12 7z"/></svg>`}
+                ? `<svg width="22" height="22" viewBox="0 0 18 18" fill="currentColor"><rect x="3" y="2" width="4" height="14" rx="1.5"/><rect x="11" y="2" width="4" height="14" rx="1.5"/></svg>`
+                : `<svg width="22" height="22" viewBox="0 0 18 18" fill="currentColor"><path d="M4 2l12 7-12 7z"/></svg>`}
             </button>
-            <button class="pip-btn" style="opacity:.5;width:32px;height:32px;" onclick="_cmd('next')" title="Next">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M13 3h-2v10h2zm-2.5 5l-7-5v10z"/></svg>
+            <button class="pip-btn" style="opacity:.55;width:38px;height:38px;" onclick="_cmd('next')" title="Next">
+              <svg width="20" height="20" viewBox="0 0 16 16" fill="currentColor"><path d="M13 3h-2v10h2zm-2.5 5l-7-5v10z"/></svg>
             </button>
           </div>
         </div>
       </div>`;
-
-    // Seek handler
     const prog = doc.getElementById('pip-prog');
-    if (prog) {
-      prog.onclick = (e) => {
-        const r = prog.getBoundingClientRect();
-        const p = (e.clientX - r.left) / r.width;
-        const ms = Math.floor(p * parseInt(prog.dataset.dur || 0));
-        _seek(ms);
-      };
-    }
+    if (prog) prog.onclick = e => {
+      const r = prog.getBoundingClientRect();
+      _seek(Math.floor(((e.clientX - r.left) / r.width) * parseInt(prog.dataset.dur || 0)));
+    };
   }
 
-  function _dpipRenderMini(doc, { trackName, artistName, artSrc, isPlaying, pct, elapsed, duration, durMs, stats }) {
+  /* ── MINI: compact — art thumb + name + bar + buttons ── */
+  function _dpipRenderMini(doc, { trackName, artistName, artSrc, isPlaying, pct, elapsed, duration, durMs }) {
     const root = doc.getElementById('pip-main');
     if (!root) return;
-
     const artHTML = artSrc
       ? `<img src="${artSrc}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;" crossorigin="anonymous">`
-      : `<div class="pip-mini-art-ph">♫</div>`;
-
+      : `<div class="pip-mini-art-ph">&#9835;</div>`;
     root.innerHTML = `
       <div class="pip-mini">
         <div class="pip-mini-head">
@@ -16818,32 +16813,51 @@ self.addEventListener('fetch',e=>{
             </div>
             <div class="pip-prog-times"><span>${elapsed}</span><span>${duration}</span></div>
           </div>
-          <div class="pip-controls" style="gap:4px">
-            <button class="pip-btn" style="opacity:.5;width:28px;height:28px;" onclick="_cmd('previous')">
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M3 3h2v10H3zm2.5 5l7-5v10z"/></svg>
+          <div class="pip-controls" style="gap:6px">
+            <button class="pip-btn" style="opacity:.55;width:34px;height:34px;" onclick="_cmd('previous')">
+              <svg width="17" height="17" viewBox="0 0 16 16" fill="currentColor"><path d="M3 3h2v10H3zm2.5 5l7-5v10z"/></svg>
             </button>
-            <button class="pip-btn pip-btn-play" style="width:36px;height:36px;" onclick="_cmd('playpause')">
+            <button class="pip-btn pip-btn-play" style="width:44px;height:44px;" onclick="_cmd('playpause')">
               ${isPlaying
-                ? `<svg width="14" height="14" viewBox="0 0 18 18" fill="currentColor"><rect x="3" y="2" width="4" height="14" rx="1.5"/><rect x="11" y="2" width="4" height="14" rx="1.5"/></svg>`
-                : `<svg width="14" height="14" viewBox="0 0 18 18" fill="currentColor"><path d="M4 2l12 7-12 7z"/></svg>`}
+                ? `<svg width="19" height="19" viewBox="0 0 18 18" fill="currentColor"><rect x="3" y="2" width="4" height="14" rx="1.5"/><rect x="11" y="2" width="4" height="14" rx="1.5"/></svg>`
+                : `<svg width="19" height="19" viewBox="0 0 18 18" fill="currentColor"><path d="M4 2l12 7-12 7z"/></svg>`}
             </button>
-            <button class="pip-btn" style="opacity:.5;width:28px;height:28px;" onclick="_cmd('next')">
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M13 3h-2v10h2zm-2.5 5l-7-5v10z"/></svg>
+            <button class="pip-btn" style="opacity:.55;width:34px;height:34px;" onclick="_cmd('next')">
+              <svg width="17" height="17" viewBox="0 0 16 16" fill="currentColor"><path d="M13 3h-2v10h2zm-2.5 5l-7-5v10z"/></svg>
             </button>
           </div>
         </div>
       </div>`;
-
     const prog = doc.getElementById('pip-prog');
-    if (prog) {
-      prog.onclick = (e) => {
-        const r = prog.getBoundingClientRect();
-        const p = (e.clientX - r.left) / r.width;
-        const ms = Math.floor(p * parseInt(prog.dataset.dur || 0));
-        _seek(ms);
-      };
-    }
+    if (prog) prog.onclick = e => {
+      const r = prog.getBoundingClientRect();
+      _seek(Math.floor(((e.clientX - r.left) / r.width) * parseInt(prog.dataset.dur || 0)));
+    };
   }
+
+  /* ── TINY: ultra-minimal — track name + 3 buttons only ── */
+  function _dpipRenderTiny(doc, { trackName, isPlaying }) {
+    const root = doc.getElementById('pip-main');
+    if (!root) return;
+    root.innerHTML = `
+      <div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:8px 14px;">
+        <div style="font-size:14px;font-weight:700;color:#f0f0f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;text-align:center;line-height:1.3;" title="${trackName}">${trackName}</div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <button class="pip-btn" style="opacity:.55;width:34px;height:34px;" onclick="_cmd('previous')" title="Previous">
+            <svg width="19" height="19" viewBox="0 0 16 16" fill="currentColor"><path d="M3 3h2v10H3zm2.5 5l7-5v10z"/></svg>
+          </button>
+          <button class="pip-btn pip-btn-play" style="width:46px;height:46px;" onclick="_cmd('playpause')">
+            ${isPlaying
+              ? `<svg width="20" height="20" viewBox="0 0 18 18" fill="currentColor"><rect x="3" y="2" width="4" height="14" rx="1.5"/><rect x="11" y="2" width="4" height="14" rx="1.5"/></svg>`
+              : `<svg width="20" height="20" viewBox="0 0 18 18" fill="currentColor"><path d="M4 2l12 7-12 7z"/></svg>`}
+          </button>
+          <button class="pip-btn" style="opacity:.55;width:34px;height:34px;" onclick="_cmd('next')" title="Next">
+            <svg width="19" height="19" viewBox="0 0 16 16" fill="currentColor"><path d="M13 3h-2v10h2zm-2.5 5l-7-5v10z"/></svg>
+          </button>
+        </div>
+      </div>`;
+  }
+
 
   /* Commands called from PiP window back into parent page */
   function _dpipCmd(cmd) { if (typeof spPlayerCmd === 'function') spPlayerCmd(cmd); }
