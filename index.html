@@ -16701,6 +16701,12 @@ self.addEventListener('fetch',e=>{
     const doc = DPIP.doc;
     if (!doc || !doc.getElementById('pip-main')) return; // DOM not ready yet
     const { track, isPlaying, pct, progressMs, artists, artUrl } = DPIP.state;
+    // BUG 2 FIX: nothing playing — show idle state instead of crashing
+    if (!track) {
+      const root = doc.getElementById('pip-main');
+      if (root) root.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;opacity:.45;"><div style="font-size:1.4rem">&#9835;</div><div style="font-family:monospace;font-size:11px;color:#666;letter-spacing:.1em">NOTHING PLAYING</div></div>`;
+      return;
+    }
     const W = DPIP.win.innerWidth;
     const H = DPIP.win.innerHeight;
     const isTiny = W <= 240 || H <= 130;   // track name + buttons only
@@ -16732,7 +16738,7 @@ self.addEventListener('fetch',e=>{
     const root = doc.getElementById('pip-main');
     if (!root) return;
     const artHTML = artSrc
-      ? `<img src="${artSrc}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;" crossorigin="anonymous">`
+      ? `<img src="${artSrc}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">`
       : `<div class="pip-art-ph">&#9835;</div>`;
     const statsHTML = [
       stats.plays !== null ? `<div class="pip-stat-chip">PLAYS<span>${stats.plays}</span></div>` : '',
@@ -16794,7 +16800,7 @@ self.addEventListener('fetch',e=>{
     const root = doc.getElementById('pip-main');
     if (!root) return;
     const artHTML = artSrc
-      ? `<img src="${artSrc}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;" crossorigin="anonymous">`
+      ? `<img src="${artSrc}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;">`
       : `<div class="pip-mini-art-ph">&#9835;</div>`;
     root.innerHTML = `
       <div class="pip-mini">
@@ -16920,49 +16926,44 @@ self.addEventListener('fetch',e=>{
           </div>
         </div>`;
 
-      // ── KEY FIX: inject a script into PiP window that binds
-      //    commands back to THIS parent window reference directly.
-      //    window.opener is null in Document PiP — we use the
-      //    documentPictureInPicture.window reference instead.
-      const bridge = DPIP.doc.createElement('script');
-      bridge.textContent = `
-        // Parent window reference — Document PiP uses this pattern
-        function _cmd(c) {
-          try { window.documentPictureInPicture._parentRef._dpipCmd(c); } catch(e){}
-        }
-        function _seek(ms) {
-          try { window.documentPictureInPicture._parentRef._dpipSeek(ms); } catch(e){}
-        }
-      `;
-      DPIP.doc.head.appendChild(bridge);
-
-      // Store parent ref accessible from PiP window via documentPictureInPicture
-      // The PiP window shares the same documentPictureInPicture object as parent
-      window.documentPictureInPicture._parentRef = window;
+      // ── BUG 1 FIX: assign _cmd/_seek BEFORE dpipUpdate() so the initial
+      //    render's onclick handlers already resolve correctly.
+      //    Document PiP windows have no window.opener — direct property
+      //    assignment on the PiP window object is the correct pattern.
+      DPIP.win._cmd  = (c)  => { try { _dpipCmd(c);  } catch(e) {} };
+      DPIP.win._seek = (ms) => { try { _dpipSeek(ms); } catch(e) {} };
 
       // Update button
       if (btn) { btn.textContent = '⧉ CLOSE PiP'; btn.style.color = '#1DB954'; }
 
-      // Initial render — DOM is ready immediately after innerHTML set
+      // Initial render
       dpipUpdate();
 
       // Re-render on resize (mini ↔ large layout switch)
       DPIP.win.addEventListener('resize', () => dpipUpdate());
 
-      // Local progress tick every 500ms for smooth bar
+      // BUG 5 FIX: single 500ms ticker that advances local progress AND
+      // re-renders — the outer 1-second SP poller calls dpipSync() which
+      // already calls dpipUpdate(), so we only need the local ticker for
+      // smooth progress-bar interpolation between SP polls.
       DPIP.interval = setInterval(() => {
-        if (!DPIP.win || DPIP.win.closed) { clearInterval(DPIP.interval); return; }
+        if (!DPIP.win || DPIP.win.closed) {
+          clearInterval(DPIP.interval); // BUG 6 FIX: always clear on guard hit
+          DPIP.interval = null;
+          return;
+        }
         const st = DPIP.state;
         if (st.isPlaying && st.track) {
           st.progressMs = Math.min(st.progressMs + 500, st.track.duration_ms || 999999);
           st.pct = Math.min(100, (st.progressMs / (st.track.duration_ms || 1)) * 100);
+          dpipUpdate(); // only re-render when playing to reduce unnecessary work
         }
-        dpipUpdate();
       }, 500);
 
       // Cleanup on PiP close
       DPIP.win.addEventListener('pagehide', () => {
         clearInterval(DPIP.interval);
+        DPIP.interval = null;
         DPIP.win = null; DPIP.doc = null;
         if (btn) { btn.textContent = '⧉ POP OUT'; btn.style.color = ''; }
       });
@@ -16996,7 +16997,9 @@ self.addEventListener('fetch',e=>{
     const wrap = document.getElementById('npc-stats-wrap');
     if (!wrap) return;
     const obs = new MutationObserver(() => {
-      if (typeof SP !== 'undefined' && SP?._currentTrackData) npcRenderEnhancements();
+      if (typeof SP !== 'undefined' && SP?._currentTrackData) {
+        if (typeof npcRenderEnhancements === 'function') npcRenderEnhancements();
+      }
     });
     obs.observe(wrap, { attributes: true, attributeFilter: ['style'] });
   })();
