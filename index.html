@@ -13,11 +13,11 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="description"
     content="Analyze your Spotify & YouTube Music listening data. 100% local, private, and beautiful.">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" crossorigin="anonymous"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
@@ -2345,7 +2345,121 @@
       background: rgba(255, 0, 0, .08)
     }
 
-    /* ═══════════ LIGHT/DARK TOGGLE ═══════════ */
+    /* ── Light Mode: Midnight Report (3AM) ── */
+    body.light-mode .midnight-wrap {
+      background: linear-gradient(160deg, #f8f5ff 0%, var(--s1) 60%);
+      border-color: rgba(167, 139, 250, .25)
+    }
+    body.light-mode .midnight-hero { border-color: rgba(167, 139, 250, .12) }
+    body.light-mode .midnight-eyebrow { color: #8b6fd0 }
+    body.light-mode .midnight-headline { color: #7c3aed }
+    body.light-mode .midnight-sub { color: #9b85c0 }
+    body.light-mode .mn-kpi {
+      background: rgba(167, 139, 250, .06);
+      border-color: rgba(167, 139, 250, .18)
+    }
+    body.light-mode .mn-kpi-val { color: #7c3aed }
+    body.light-mode .mn-kpi-lbl { color: #9b85c0 }
+    body.light-mode .midnight-body { border-color: rgba(167, 139, 250, .1) }
+    body.light-mode .mn-col:first-child { border-color: rgba(167, 139, 250, .1) }
+    body.light-mode .mn-col-title { color: #8b6fd0 }
+    body.light-mode .mn-track-row { border-color: rgba(167, 139, 250, .08) }
+    body.light-mode .mn-tr-rank { color: #b8a0e0 }
+    body.light-mode .mn-tr-ct { color: #7c3aed }
+    body.light-mode .mn-genre-bar { background: rgba(167, 139, 250, .12) }
+    body.light-mode .midnight-footer {
+      background: rgba(167, 139, 250, .04);
+      border-color: rgba(167, 139, 250, .12)
+    }
+    body.light-mode .mn-ft-dot { background: #7c3aed }
+    body.light-mode .mn-ft-text { color: #8b6fd0 }
+
+    /* ── Light Mode: Listener Archetype ── */
+    body.light-mode .arch-hero-card {
+      background: linear-gradient(135deg, #f5f0ff, var(--s1));
+      border-color: rgba(167, 139, 250, .25)
+    }
+    body.light-mode .arch-hero-card::before { display: none }
+    body.light-mode .arch-badge-pill {
+      background: rgba(167, 139, 250, .08);
+      color: #7c3aed;
+      border-color: rgba(167, 139, 250, .25)
+    }
+    body.light-mode .arch-kpi-card {
+      background: var(--s2);
+      border-color: var(--border)
+    }
+    body.light-mode .arch-avatar {
+      background: rgba(167, 139, 250, .1);
+      border-color: #a78bfa
+    }
+    body.light-mode .radar-info-badge {
+      background: rgba(167, 139, 250, .08);
+      color: #7c3aed;
+      border-color: rgba(167, 139, 250, .25)
+    }
+
+    /* ── Light Mode: First Listen Modal ── */
+    body.light-mode .fl-modal-hero {
+      background: linear-gradient(180deg, var(--s2), var(--s1));
+      border-color: var(--border)
+    }
+
+    /* ── Light Mode: Alter Ego (Morning vs Night) ── */
+    body.light-mode .alter-card.morning {
+      background: linear-gradient(160deg, #fdf8f0, var(--s1));
+      border-color: rgba(245, 166, 35, .25)
+    }
+    body.light-mode .alter-card.night {
+      background: linear-gradient(160deg, #f5f0ff, var(--s1));
+      border-color: rgba(167, 139, 250, .25)
+    }
+    body.light-mode .alter-card.morning .alter-header { border-color: rgba(245, 166, 35, .15) }
+    body.light-mode .alter-card.night .alter-header { border-color: rgba(167, 139, 250, .15) }
+    body.light-mode .alter-card.morning .alter-time-tag { color: #b87a20 }
+    body.light-mode .alter-card.night .alter-time-tag { color: #7c3aed }
+    body.light-mode .alter-stat-box { background: rgba(0,0,0,.03) }
+    body.light-mode .alter-card.morning .alter-artist-row { border-color: rgba(245, 166, 35, .1) }
+    body.light-mode .alter-card.night .alter-artist-row { border-color: rgba(167, 139, 250, .1) }
+    body.light-mode .alter-card.morning .alter-stats { border-color: rgba(245, 166, 35, .15) }
+    body.light-mode .alter-card.night .alter-stats { border-color: rgba(167, 139, 250, .15) }
+    body.light-mode .alter-card.morning .alter-genre-row { border-color: rgba(245, 166, 35, .15) }
+    body.light-mode .alter-card.night .alter-genre-row { border-color: rgba(167, 139, 250, .15) }
+    body.light-mode .alter-card.morning .alter-g-tag {
+      border-color: rgba(245, 166, 35, .25); color: #8a5a10; background: rgba(245, 166, 35, .08)
+    }
+    body.light-mode .alter-card.night .alter-g-tag {
+      border-color: rgba(167, 139, 250, .25); color: #5c3db0; background: rgba(167, 139, 250, .08)
+    }
+
+    /* ── Light Mode: Origin Story ── */
+    body.light-mode .origin-wrap {
+      background: linear-gradient(160deg, #f0f8f2, var(--s1));
+      border-color: rgba(29, 185, 84, .25)
+    }
+    body.light-mode .origin-hero { border-color: rgba(29, 185, 84, .12) }
+    body.light-mode .origin-footer { border-color: rgba(29, 185, 84, .12) }
+    body.light-mode .origin-ms-badge {
+      background: rgba(29, 185, 84, .08);
+      border-color: rgba(29, 185, 84, .2)
+    }
+
+    /* ── Light Mode: Wrapped Poster Card ── */
+    body.light-mode .p6-wcard {
+      background: var(--s1);
+      border-color: var(--border)
+    }
+    body.light-mode .p6-wc-glow { opacity: .3 }
+
+    /* ── Light Mode: Rank badge in sidebar ── */
+    body.light-mode .npc-rank-badge {
+      background: rgba(0,0,0,.04);
+      border-color: var(--border)
+    }
+
+    /* ── Light Mode: Chart.js grid fix ── */
+    body.light-mode .hero { border-bottom-color: var(--border) }
+
     .mode-toggle {
       display: flex;
       align-items: center;
@@ -5182,17 +5296,6 @@
     /* FIX 15: toggle-locked-tip z-index guard */
     .toggle-locked-tip { z-index: 200 }
 
-    /* FIX 16: Annual report page checkboxes — larger touch targets */
-    .p11-page-sel input[type="checkbox"] {
-      width: 20px;
-      height: 20px;
-      min-width: 20px;
-      cursor: pointer
-    }
-    .p11-page-thumb {
-      min-height: 44px
-    }
-
     /* FIX 17: Dropzone mobile padding */
     @media(max-width:640px) {
       #dropzone {
@@ -5273,17 +5376,6 @@
       .p7-race-count { width: 28px }
     }
 
-    /* ── MOBILE: compare mode zones stack vertically ── */
-    @media(max-width:560px) {
-      .p9-zones { flex-direction: column }
-      .p9-vs { transform: rotate(90deg) }
-    }
-
-    /* ── MOBILE: p11 PDF page selector grid ── */
-    @media(max-width:600px) {
-      .p11-pages-grid { grid-template-columns: repeat(2, 1fr) !important }
-    }
-
     /* ── PWA: safe-area insets for notch/home indicator ── */
     header {
       padding-top: max(14px, env(safe-area-inset-top));
@@ -5316,7 +5408,7 @@
 
     /* ── PWA: touch target minimum for all interactive controls ── */
     .sort-btn, .wtab, .hbtn, .rbtn, .sbtn, .p7-race-speed,
-    .res-tab, .bf8-vtab, .yt-mtab, .p9-lt-btn {
+    .res-tab, .bf8-vtab, .yt-mtab {
       min-height: 36px
     }
     .npc-collapse-btn, .amc, .spm-x { min-width: 36px; min-height: 36px }
@@ -5419,8 +5511,6 @@
     .npc-sim-plays { font-family: var(--mono); font-size: .6rem; color: var(--g); flex-shrink: 0 }
 
   </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 
 <body>
@@ -6471,95 +6561,7 @@
           </div>
         </div>
 
-        <!-- F3: Compatibility Matrix -->
-        <div class="coll-header rv" onclick="toggleColl(this)">
-          <div class="sl">Compatibility Matrix</div>
-          <div class="coll-arrow">▼</div>
-        </div>
-        <div class="coll-body">
-          <div class="panel rv mb40 p8-section" style="padding:24px">
-            <p class="pt" style="margin-bottom:4px">Who's your music soulmate?</p>
-            <p class="ps">Load 2–4 friend .statify.json profiles. Ranked by compatibility score across genre, peak hour, skip rate, and shared artists.</p>
-            <div id="compatContent"></div>
-          </div>
-        </div>
-
-        <!-- F4: Music Twin Score -->
-        <div class="coll-header rv" onclick="toggleColl(this)">
-          <div class="sl">Music Twin Score</div>
-          <div class="coll-arrow">▼</div>
-        </div>
-        <div class="coll-body">
-          <div class="panel rv mb40 p8-section" style="padding:24px">
-            <p class="pt" style="margin-bottom:4px">Your taste DNA vs a friend</p>
-            <p class="ps">Venn diagram of shared artists and genres. Overlap = twin score. Shared guilty pleasures, peak hours, skip rates all boost it.</p>
-            <div id="twinContent"></div>
-          </div>
-        </div>
-
       </div><!-- /phase8-wrap -->
-
-      <!-- ═══════ PHASE 9 — COMPARE MODE ═══════ -->
-      <div id="phase9-wrap" style="display:none">
-
-        <!-- Load Profiles -->
-        <div class="coll-header rv" onclick="toggleColl(this)">
-          <div class="sl">Compare Mode — Load Profiles</div>
-          <div class="coll-arrow">▼</div>
-        </div>
-        <div class="coll-body">
-          <div class="panel rv mb40" style="padding:24px">
-            <p class="pt" style="margin-bottom:4px">Head-to-head listening comparison</p>
-            <p class="ps">Load two .statify.json shareable profiles. Your data is always Profile A.</p>
-            <div id="p9LoadContent"></div>
-          </div>
-        </div>
-
-        <!-- Stats Compared -->
-        <div class="coll-header rv collapsed" onclick="toggleColl(this)" id="p9StatsHeader">
-          <div class="sl">Stats Compared</div>
-          <div class="coll-arrow">▼</div>
-        </div>
-        <div class="coll-body" style="display:none" id="p9StatsBody">
-          <div class="panel rv mb40" style="padding:24px">
-            <div id="p9StatsContent"></div>
-          </div>
-        </div>
-
-        <!-- Overlay Charts -->
-        <div class="coll-header rv collapsed" onclick="toggleColl(this)" id="p9ChartsHeader">
-          <div class="sl">Overlay Charts</div>
-          <div class="coll-arrow">▼</div>
-        </div>
-        <div class="coll-body" style="display:none" id="p9ChartsBody">
-          <div class="panel rv mb40" style="padding:24px">
-            <div id="p9ChartsContent"></div>
-          </div>
-        </div>
-
-        <!-- Music Twin Score -->
-        <div class="coll-header rv collapsed" onclick="toggleColl(this)" id="p9TwinHeader">
-          <div class="sl">Music Twin Score</div>
-          <div class="coll-arrow">▼</div>
-        </div>
-        <div class="coll-body" style="display:none" id="p9TwinBody">
-          <div class="panel rv mb40" style="padding:24px">
-            <div id="p9TwinContent"></div>
-          </div>
-        </div>
-
-        <!-- Shared Artists & Tracks -->
-        <div class="coll-header rv collapsed" onclick="toggleColl(this)" id="p9SharedHeader">
-          <div class="sl">Shared Music</div>
-          <div class="coll-arrow">▼</div>
-        </div>
-        <div class="coll-body" style="display:none" id="p9SharedBody">
-          <div class="panel rv mb40" style="padding:24px">
-            <div id="p9SharedContent"></div>
-          </div>
-        </div>
-
-      </div><!-- /phase9-wrap -->
       <!-- ═══════ PHASE 10 — YT DEEP FEATURES ═══════ -->
       <div id="phase10-wrap" style="display:none">
 
@@ -6666,135 +6668,6 @@
           </div>
         </div>
 
-      </div><!-- /phase10-wrap -->
-      <!-- ═══════ PHASE 11 — GLOBE & VISUAL SHOWSTOPPERS ═══════ -->
-      <div id="phase11-wrap" style="display:none">
-
-        <!-- 01: 3D GLOBE -->
-        <div class="coll-header rv" onclick="toggleColl(this)" id="p11GlobeHeader">
-          <div class="sl">3D Listening Globe</div>
-          <div class="coll-arrow">▼</div>
-        </div>
-        <div class="coll-body" id="p11GlobeBody">
-          <div class="rv mb40">
-            <div class="p11-globe-wrap" id="p11GlobeWrap">
-              <canvas id="p11GlobeCanvas"></canvas>
-              <div class="p11-globe-overlay">DRAG TO EXPLORE &nbsp;·&nbsp; <span id="p11GlobeCountryCount">—</span></div>
-              <div class="p11-globe-hint">← DRAG TO ROTATE →</div>
-              <div class="p11-globe-tt" id="p11GlobeTT">
-                <div class="p11-tt-country" id="p11TTCountry">—</div>
-                <div class="p11-tt-row" id="p11TTArtist">—</div>
-                <div class="p11-tt-row" id="p11TTStreams">—</div>
-              </div>
-              <div class="p11-globe-legend">
-                <div class="p11-legend-row"><div class="p11-legend-dot" style="width:5px;height:5px;background:var(--g);opacity:.5"></div><span>100 streams</span></div>
-                <div class="p11-legend-row"><div class="p11-legend-dot" style="width:9px;height:9px;background:var(--g)"></div><span>10k streams</span></div>
-                <div class="p11-legend-row"><div class="p11-legend-dot" style="width:15px;height:15px;background:var(--g);box-shadow:0 0 8px var(--g)"></div><span>50k+ streams</span></div>
-              </div>
-            </div>
-            <div class="p11-vmeta">
-              <div class="p11-vmeta-item">Rotation: <span>Auto + drag inertia</span></div>
-              <div class="p11-vmeta-item">Dots: <span>Pulsing glow rings</span></div>
-              <div class="p11-vmeta-item">Hover: <span>Raycasted tooltip</span></div>
-              <div class="p11-vmeta-item">Countries: <span id="p11GlobeCountryMeta">—</span></div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 02: MUSICAL FINGERPRINT -->
-        <div class="coll-header rv" onclick="toggleColl(this)" id="p11FpHeader">
-          <div class="sl">Musical Fingerprint</div>
-          <div class="coll-arrow">▼</div>
-        </div>
-        <div class="coll-body" id="p11FpBody">
-          <div class="rv mb40">
-            <div class="p11-fp-wrap">
-              <div class="p11-fp-card">
-                <div class="p11-fp-card-header">
-                  <span class="p11-fp-card-title">A — RADIAL MANDALA</span>
-                  <span class="p11-fp-card-label">SYMMETRIC</span>
-                </div>
-                <div class="p11-fp-svg-area">
-                  <svg viewBox="0 0 200 200" id="p11FpA" xmlns="http://www.w3.org/2000/svg">
-                    <defs><radialGradient id="p11rgA" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="var(--g)" stop-opacity="0.2"/><stop offset="100%" stop-color="#0a0a0a" stop-opacity="0"/></radialGradient></defs>
-                    <circle cx="100" cy="100" r="96" fill="#0a0f0b"/>
-                    <circle cx="100" cy="100" r="96" fill="url(#p11rgA)"/>
-                    <g id="p11MandalaRings"></g>
-                    <g id="p11MandalaArms"></g>
-                    <circle cx="100" cy="100" r="6" fill="var(--g)" opacity=".9"/>
-                    <circle cx="100" cy="100" r="3" fill="var(--g2)"/>
-                  </svg>
-                </div>
-                <div class="p11-fp-card-footer">
-                  <button class="p11-fp-export-btn" onclick="p11ExportSVG('p11FpA','fingerprint-mandala')">↓ SVG</button>
-                  <button class="p11-fp-export-btn" onclick="p11ExportPNG('p11FpA','fingerprint-mandala')">↓ PNG</button>
-                </div>
-              </div>
-              <div class="p11-fp-card">
-                <div class="p11-fp-card-header">
-                  <span class="p11-fp-card-title">B — ORGANIC BLOB</span>
-                  <span class="p11-fp-card-label">FLOWING</span>
-                </div>
-                <div class="p11-fp-svg-area">
-                  <svg viewBox="0 0 200 200" id="p11FpB" xmlns="http://www.w3.org/2000/svg">
-                    <defs><radialGradient id="p11rgB" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="var(--g)" stop-opacity="0.35"/><stop offset="100%" stop-color="var(--g)" stop-opacity="0"/></radialGradient></defs>
-                    <circle cx="100" cy="100" r="96" fill="#0a0f0b"/>
-                    <g id="p11BlobOuter"></g>
-                    <g id="p11BlobInner"></g>
-                  </svg>
-                </div>
-                <div class="p11-fp-card-footer">
-                  <button class="p11-fp-export-btn" onclick="p11ExportSVG('p11FpB','fingerprint-blob')">↓ SVG</button>
-                  <button class="p11-fp-export-btn" onclick="p11ExportPNG('p11FpB','fingerprint-blob')">↓ PNG</button>
-                </div>
-              </div>
-              <div class="p11-fp-card">
-                <div class="p11-fp-card-header">
-                  <span class="p11-fp-card-title">C — POLAR SPECTRUM</span>
-                  <span class="p11-fp-card-label">GEOMETRIC</span>
-                </div>
-                <div class="p11-fp-svg-area">
-                  <svg viewBox="0 0 200 200" id="p11FpC" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="100" cy="100" r="96" fill="#0a0a0a"/>
-                    <g id="p11PolarBars"></g>
-                    <circle cx="100" cy="100" r="4" fill="var(--g)"/>
-                  </svg>
-                </div>
-                <div class="p11-fp-card-footer">
-                  <button class="p11-fp-export-btn" onclick="p11ExportSVG('p11FpC','fingerprint-polar')">↓ SVG</button>
-                  <button class="p11-fp-export-btn" onclick="p11ExportPNG('p11FpC','fingerprint-polar')">↓ PNG</button>
-                </div>
-              </div>
-            </div>
-            <div class="p11-vmeta" style="margin-top:20px" id="p11FpMeta"></div>
-          </div>
-        </div>
-
-        <!-- 03: ANNUAL REPORT PDF -->
-        <div class="coll-header rv" onclick="toggleColl(this)" id="p11PdfHeader">
-          <div class="sl">Annual Report PDF</div>
-          <div class="coll-arrow">▼</div>
-        </div>
-        <div class="coll-body" id="p11PdfBody">
-          <div class="rv mb40">
-            <div class="p11-pdf-tabs">
-              <button class="p11-pdf-tab act" id="p11TabA" onclick="p11SwitchPDF('A',this)">A — DARK EDITORIAL</button>
-              <button class="p11-pdf-tab" id="p11TabB" onclick="p11SwitchPDF('B',this)">B — CREAM MAGAZINE</button>
-            </div>
-            <div class="p11-pdf-preview" id="p11PdfPreview"></div>
-            <div class="p11-vmeta" style="margin-top:16px">
-              <div class="p11-vmeta-item">Pages: <span>9</span></div>
-              <div class="p11-vmeta-item">Format: <span>A4</span></div>
-              <div class="p11-vmeta-item">Engine: <span>jsPDF + html2canvas</span></div>
-              <div class="p11-vmeta-item">Selected: <span id="p11PagesCount">9 / 9</span></div>
-            </div>
-            <div style="margin-top:20px">
-              <button class="rbtn" id="p11PdfExportBtn" onclick="p11ExportPDF()" style="background:var(--g);color:#000;border-color:var(--g)">↓ Export PDF</button>
-            </div>
-          </div>
-        </div>
-
-      </div><!-- /phase11-wrap -->
 
 
 
@@ -7127,6 +7000,25 @@
     let cmpCI = null;          // compare chart instance
 
     /* ═══════════════════════════════════════
+       CHART.JS REGISTRY — destroy before recreate
+    ═══════════════════════════════════════ */
+    const _chartRegistry = new Map();
+    function safeChart(canvasId, config) {
+      const old = _chartRegistry.get(canvasId);
+      if (old) { try { old.destroy(); } catch(e) {} }
+      const el = typeof canvasId === 'string' ? document.getElementById(canvasId) : canvasId;
+      if (!el) return null;
+      const ctx = el.getContext ? el.getContext('2d') : el;
+      const inst = new Chart(ctx, config);
+      _chartRegistry.set(canvasId, inst);
+      return inst;
+    }
+    function destroyAllCharts() {
+      _chartRegistry.forEach((c) => { try { c.destroy(); } catch(e) {} });
+      _chartRegistry.clear();
+    }
+
+    /* ═══════════════════════════════════════
        CENTRALIZED UTILS
     ═══════════════════════════════════════ */
     // unit label: 'streams' | 'watches' | 'videos' | 'plays' | 'STREAMS' etc.
@@ -7142,7 +7034,6 @@
     function getTrack(x)  { return x.track  || x.title  || x.trackName  || x.master_metadata_track_name  || '?'; }
     function getMs(x)     { return x.ms || x.msPlayed || x.ms_played || 0; }
     function getTs(x)     { return x.ts || x.endTime || ''; }
-    // Expose for cross-script use (phase11 PDF render)
     window.getArtist = getArtist; window.getTrack = getTrack; window.getMs = getMs; window.getTs = getTs;
 
     // topBy(arr, keyFn) → [[key, count], ...] sorted desc
@@ -7351,16 +7242,32 @@
     }
     function parseFiles(res) {
       S = []; lib = null;
+      const errors = [];
       // res can be raw {name,content} (fallback) or pre-parsed {name,data,ok} (worker path)
       for (const item of res) {
         try {
+          if (item.ok === false) { errors.push(item.name); continue; }
           const d = item.ok !== undefined ? item.data : JSON.parse(item.content);
-          if (!d) continue;
+          if (!d) { errors.push(item.name); continue; }
           const ln = item.name.toLowerCase();
           if (ln.includes('streaminghistory') || ln.includes('streaming_history')) { if (Array.isArray(d)) S.push(...d) }
           else if (ln.includes('yourlibrary') || ln.includes('your_library')) { lib = d }
           else if (Array.isArray(d) && d[0] && (d[0].endTime || d[0].ts)) { S.push(...d) }
-        } catch (e) { }
+        } catch (e) { errors.push(item.name); }
+      }
+      // Show error banner for failed files
+      if (errors.length) {
+        const banner = document.createElement('div');
+        banner.className = 'parse-error-banner';
+        banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#1a0505;border-bottom:2px solid #e05555;padding:12px 20px;display:flex;align-items:center;gap:12px;font-family:var(--mono);font-size:.72rem;color:#e05555;animation:slideDown .3s ease';
+        banner.textContent = `⚠ ${errors.length} file(s) could not be parsed: ${errors.join(', ')}`;
+        const closeBtn = document.createElement('button');
+        closeBtn.textContent = '✕';
+        closeBtn.style.cssText = 'background:none;border:1px solid #e05555;color:#e05555;border-radius:3px;padding:2px 8px;cursor:pointer;margin-left:auto;flex-shrink:0;font-size:.7rem';
+        closeBtn.addEventListener('click', () => banner.remove());
+        banner.appendChild(closeBtn);
+        document.body.appendChild(banner);
+        setTimeout(() => banner.remove(), 15000);
       }
       S = S.map(s => ({ ts: s.endTime || s.ts || s.timestamp || '', artist: s.artistName || s.master_metadata_album_artist_name || s.artist || 'Unknown', track: s.trackName || s.master_metadata_track_name || s.track || 'Unknown', ms: s.msPlayed || s.ms_played || s.ms || 0, skipped: s.skipped || false, platform: s.platform || '', fullMs: s.fullMs || 0 }));
     }
@@ -7732,6 +7639,7 @@
         });
       }
       S = []; lib = null; tkMap = {}; top50open = false; ytMusicData = []; ytWatchData = []; ytSearchData = []; ytSubscriptions = []; ytComments = []; ytLiveChats = []; ytPlaylists = {};
+      destroyAllCharts();
       if (mci) { mci.destroy(); mci = null }
       if (typeof genreCI !== 'undefined' && genreCI) { genreCI.destroy(); genreCI = null }
       if (typeof cmpCI !== 'undefined' && cmpCI) { cmpCI.destroy(); cmpCI = null }
@@ -8000,7 +7908,7 @@
     ═══════════════════════════════════════ */
     function render(demo) {
       if (!S.length) return;
-      window.S = S; // expose for cross-script access (phase11 fingerprint etc.)
+      window.S = S;
       stopBgCanvas(); // P3 fix: no need to run particles while dashboard is shown
       /* P5 fix: single O(n) pass to build stats cache — replaces 15+ individual iterations */
       const _SC = window._SC = (function() {
@@ -8584,8 +8492,7 @@
             ['Close modal','Esc'],
             ['Wrapped tabs ←/→','Arrow keys'],
             ['SECTIONS',''],
-            ['Jump to Globe','G'],
-            ['Jump to Poster','P'],
+                        ['Jump to Poster','P'],
             ['Export PDF report','E'],
             ['Jump to Top Tracks','L'],
             ['MISC',''],
@@ -8619,13 +8526,7 @@
       }
       /* Home → scroll to top */
       if (e.key === 'Home') { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
-      /* G → Globe section */
-      if (e.key === 'g' || e.key === 'G') {
-        const w = document.getElementById('phase11-wrap');
-        const hdr = document.getElementById('p11GlobeHeader');
-        if (w && w.style.display !== 'none') {
-          const body = document.getElementById('p11GlobeBody');
-          if (body && body.classList.contains('collapsed') && hdr) hdr.click();
+                if (body && body.classList.contains('collapsed') && hdr) hdr.click();
           hdr && hdr.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
         return;
@@ -8636,12 +8537,7 @@
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
         return;
       }
-      /* E → PDF export (phase11) */
-      if (e.key === 'e' || e.key === 'E') {
-        const btn = document.getElementById('p11PdfExportBtn');
-        if (btn) { btn.scrollIntoView({ behavior: 'smooth', block: 'center' }); btn.focus(); }
-        return;
-      }
+
       /* L → Top Tracks list */
       if (e.key === 'l' || e.key === 'L') {
         const el = document.getElementById('top50');
@@ -13510,7 +13406,7 @@ ${top5Artists.map((a,i)=>`<div class="p6-wc-art-item"><div class="p6-wc-rank">#$
       if (typeof html2canvas === 'undefined') { alert('html2canvas not loaded — export requires the full Statify app.'); return; }
       const _origMargin = poster.style.margin;
       poster.style.margin = '0';
-      html2canvas(poster, {scale:4, backgroundColor:null, useCORS:true, allowTaint:true, windowWidth:poster.scrollWidth, windowHeight:poster.scrollHeight, onclone:(clonedDoc)=>{ const cs=getComputedStyle(document.documentElement); const root=clonedDoc.documentElement; ['--g','--g2','--bg','--s1','--s2','--s3','--text','--text2','--muted','--border'].forEach(p=>{ root.style.setProperty(p,cs.getPropertyValue(p).trim()); }); }}).then(canvas=>{
+      html2canvas(poster, {scale:4, backgroundColor:null, useCORS:true, windowWidth:poster.scrollWidth, windowHeight:poster.scrollHeight, onclone:(clonedDoc)=>{ const cs=getComputedStyle(document.documentElement); const root=clonedDoc.documentElement; ['--g','--g2','--bg','--s1','--s2','--s3','--text','--text2','--muted','--border'].forEach(p=>{ root.style.setProperty(p,cs.getPropertyValue(p).trim()); }); }}).then(canvas=>{
         poster.style.margin = _origMargin;
         const mime = fmt==='JPEG'?'image/jpeg':fmt==='WEBP'?'image/webp':'image/png';
         const q = fmt==='JPEG'?.92:fmt==='WEBP'?.85:1;
@@ -14520,714 +14416,6 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
   })();
 
   /* ── Hide phase8 on goHome ── */
-  (function(){
-    const _origGoHome3 = goHome;
-    goHome = function() {
-      _origGoHome3();
-      const w8=document.getElementById('phase8-wrap'); if(w8) w8.style.display='none';
-    };
-  })();
-  </script>
-
-
-  <script>
-  /* ═══════════════════════════════════════════════════════════
-     PHASE 9 — COMPARE MODE
-  ═══════════════════════════════════════════════════════════ */
-
-  (function injectP9Styles() {
-    const s = document.createElement('style');
-    s.textContent = `
-      /* ── Compare Load UI ── */
-      .p9-load-wrap{display:flex;flex-direction:column;gap:16px}
-      .p9-zones{display:flex;gap:14px;align-items:center}
-      .p9-zone{flex:1;border:2px dashed var(--border2);border-radius:8px;padding:28px 20px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;transition:all .2s;text-align:center}
-      .p9-zone:hover{border-color:var(--muted)}
-      .p9-zone.loaded-a{border-color:var(--g);border-style:solid;background:rgba(29,185,84,.04)}
-      .p9-zone.loaded-b{border-color:#5b9cf6;border-style:solid;background:rgba(91,156,246,.04)}
-      .p9-zone-ico{font-size:28px}
-      .p9-zone-t{font-size:11px;font-weight:700}
-      .p9-zone-s{font-family:var(--mono);font-size:9px;color:var(--muted);text-align:center}
-      .p9-vs{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--muted);flex-shrink:0}
-      .p9-go-btn{padding:10px 24px;background:var(--s3);border:1px solid var(--border2);border-radius:6px;font-size:11px;font-weight:700;color:var(--muted);cursor:not-allowed;font-family:var(--mono);letter-spacing:1px;transition:all .2s;align-self:flex-end}
-      .p9-go-btn.ready{background:var(--g);color:#000;border-color:var(--g);cursor:pointer}
-      /* ── Layout switch ── */
-      .p9-layout-toggle{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
-      .p9-lt-lbl{font-family:var(--mono);font-size:.52rem;color:var(--muted);letter-spacing:.12em;margin-right:4px}
-      .p9-lt-btn{font-family:var(--mono);font-size:.55rem;padding:5px 12px;border-radius:3px;border:1px solid var(--border2);background:none;color:var(--muted);cursor:pointer;transition:all .15s;letter-spacing:.04em}
-      .p9-lt-btn:hover{border-color:var(--g);color:var(--g)}
-      .p9-lt-btn.act{background:var(--g);border-color:var(--g);color:#000;font-weight:700}
-      /* ── Overlay panels ── */
-      .p9-side-wrap{background:var(--s1);border:1px solid var(--border);border-radius:10px;overflow:hidden}
-      .p9-side-bar{background:var(--s2);border-bottom:1px solid var(--border);padding:10px 18px;display:flex;align-items:center;gap:10px}
-      .p9-side-dot{width:7px;height:7px;border-radius:50%;box-shadow:0 0 8px currentColor}
-      .p9-side-lbl{font-family:var(--mono);font-size:.52rem;letter-spacing:.12em}
-      .p9-side-close{margin-left:auto;font-family:var(--mono);font-size:.65rem;color:var(--muted);cursor:pointer;background:none;border:1px solid var(--border);padding:3px 10px;border-radius:3px}
-      .p9-side-body{display:grid;grid-template-columns:1fr 1px 1fr;min-height:260px}
-      .p9-side-panel{padding:18px;display:flex;flex-direction:column;gap:8px}
-      .p9-side-panel.r{background:rgba(0,0,0,.2)}
-      .p9-side-div{background:var(--border)}
-      .p9-user-row{display:flex;align-items:center;gap:10px;padding-bottom:12px;border-bottom:1px solid var(--border)}
-      .p9-av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;flex-shrink:0}
-      .p9-av.a{background:linear-gradient(135deg,#1DB954,#0a4a20);color:#000}
-      .p9-av.b{background:linear-gradient(135deg,#5b9cf6,#0c2a6e);color:#fff}
-      .p9-uname{font-size:.82rem;font-weight:700}
-      .p9-umeta{font-family:var(--mono);font-size:.52rem;color:var(--muted)}
-      .p9-stat-row{background:var(--s2);border-radius:4px;padding:7px 10px;display:flex;justify-content:space-between;font-size:.72rem}
-      .p9-stat-k{color:var(--muted)}
-      .p9-stat-v{font-family:var(--mono);font-size:.68rem}
-      .p9-stat-v.a{color:var(--g)} .p9-stat-v.b{color:#5b9cf6} .p9-stat-v.w{color:var(--text)}
-      /* ── Twin score ── */
-      .p9-twin-style-row{display:flex;gap:6px;margin-bottom:16px;align-items:center}
-      .p9-ts-lbl{font-family:var(--mono);font-size:.52rem;color:var(--muted);letter-spacing:.12em;margin-right:4px}
-      .p9-ts-btn{font-family:var(--mono);font-size:.55rem;padding:5px 12px;border-radius:3px;border:1px solid var(--border2);background:none;color:var(--muted);cursor:pointer;transition:all .15s}
-      .p9-ts-btn:hover{border-color:var(--g);color:var(--g)}
-      .p9-ts-btn.act{background:var(--g);border-color:var(--g);color:#000;font-weight:700}
-      /* Twin ring */
-      .p9-ring-wrap{display:flex;gap:24px;align-items:center;background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:22px}
-      .p9-ring{flex-shrink:0;position:relative;width:130px;height:130px}
-      .p9-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
-      .p9-ring-txt{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
-      .p9-ring-pct{font-family:var(--mono);font-size:28px;font-weight:700;color:var(--g);line-height:1}
-      .p9-ring-sub{font-size:.55rem;color:var(--muted);letter-spacing:.12em;margin-top:3px}
-      .p9-ring-right{flex:1;display:flex;flex-direction:column;gap:10px}
-      .p9-ring-title{font-size:.9rem;font-weight:800}
-      .p9-ring-tag{font-family:var(--mono);font-size:.6rem;color:var(--g);margin-top:-4px}
-      .p9-dim-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
-      .p9-dim-cell{background:var(--s2);border-radius:4px;padding:6px 9px;display:flex;justify-content:space-between;font-size:.68rem;color:var(--muted)}
-      .p9-dim-cell span:last-child{font-family:var(--mono);font-size:.65rem}
-      /* Twin bars */
-      .p9-bars-wrap{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:22px;display:flex;flex-direction:column;gap:18px}
-      .p9-bars-top{display:flex;align-items:flex-start;gap:18px}
-      .p9-bars-score{font-family:var(--mono);font-size:60px;font-weight:700;color:var(--g);line-height:1}
-      .p9-bars-score sup{font-size:24px;color:var(--muted);vertical-align:super}
-      .p9-bars-info{display:flex;flex-direction:column;gap:4px;padding-top:6px}
-      .p9-bars-title{font-size:.9rem;font-weight:800}
-      .p9-bars-tag{font-family:var(--mono);font-size:.58rem;color:var(--g)}
-      .p9-bar-list{display:flex;flex-direction:column;gap:8px}
-      .p9-bar-item{display:flex;flex-direction:column;gap:4px}
-      .p9-bar-top{display:flex;justify-content:space-between;font-size:.7rem;color:var(--text2)}
-      .p9-bar-bg{height:5px;background:var(--s3);border-radius:99px;overflow:hidden}
-      .p9-bar-fill{height:100%;border-radius:99px}
-      /* Twin DNA */
-      .p9-dna-wrap{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:22px;display:flex;gap:22px;align-items:flex-start}
-      .p9-dna-col{display:flex;flex-direction:column;gap:5px;padding-top:4px}
-      .p9-dna-lbl{font-family:var(--mono);font-size:.48rem;color:var(--muted);letter-spacing:.12em;margin-bottom:4px;text-align:center}
-      .p9-rung{display:flex;gap:4px;align-items:center}
-      .p9-rh{height:7px;width:22px;border-radius:3px}
-      .p9-rdot{width:5px;height:5px;border-radius:50%;background:var(--border2);flex-shrink:0}
-      .p9-dna-right{flex:1;display:flex;flex-direction:column;gap:12px}
-      .p9-dna-score-row{display:flex;align-items:flex-end;gap:12px;padding-bottom:12px;border-bottom:1px solid var(--border)}
-      .p9-dna-pct{font-family:var(--mono);font-size:48px;font-weight:700;color:var(--g);line-height:1}
-      .p9-dna-info{display:flex;flex-direction:column;gap:2px;padding-bottom:4px}
-      .p9-dna-title{font-size:.82rem;font-weight:800}
-      .p9-dna-sub{font-family:var(--mono);font-size:.52rem;color:var(--muted);letter-spacing:.08em}
-      .p9-dna-dims{display:flex;flex-direction:column;gap:6px}
-      .p9-dna-dim{display:flex;justify-content:space-between;font-size:.7rem}
-      .p9-dna-dim .k{color:var(--text2)} .p9-dna-dim .m{color:var(--g)} .p9-dna-dim .d{color:#e05555}
-      /* ── Charts ── */
-      .p9-chart-wrap{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:14px}
-      .p9-chart-head{display:flex;justify-content:space-between;align-items:center}
-      .p9-chart-title{font-size:.85rem;font-weight:700}
-      .p9-chart-legend{display:flex;gap:14px}
-      .p9-chart-leg{display:flex;align-items:center;gap:6px;font-size:.65rem;color:var(--text2)}
-      .p9-chart-line{width:24px;height:2px;border-radius:1px}
-      /* ── Shared music ── */
-      .p9-shared-tabs{display:flex;gap:6px;margin-bottom:14px}
-      .p9-shared-tab{font-family:var(--mono);font-size:.55rem;padding:5px 12px;border-radius:3px;border:1px solid var(--border2);color:var(--muted);cursor:pointer;transition:all .15s}
-      .p9-shared-tab.act{background:var(--g);border-color:var(--g);color:#000;font-weight:700}
-      .p9-shared-view-tabs{display:flex;gap:6px;margin-bottom:12px}
-      .p9-shared-view-tab{font-family:var(--mono);font-size:.52rem;padding:4px 10px;border-radius:3px;border:1px solid var(--border2);color:var(--muted);cursor:pointer;transition:all .15s}
-      .p9-shared-view-tab.act{border-color:var(--g);color:var(--g)}
-      .p9-shared-item{display:flex;align-items:center;gap:10px;padding:9px 10px;background:var(--s1);border-radius:6px;border:1px solid var(--border);margin-bottom:7px}
-      .p9-shared-rank{font-family:var(--mono);font-size:.52rem;color:var(--muted);width:18px;text-align:center;flex-shrink:0}
-      .p9-shared-art{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0}
-      .p9-shared-info{flex:1;min-width:0}
-      .p9-shared-name{font-size:.78rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-      .p9-shared-sub{font-size:.65rem;color:var(--muted2);margin-top:2px}
-      .p9-shared-bars{display:flex;flex-direction:column;gap:3px;width:60px;flex-shrink:0}
-      .p9-shared-bar-lbl{font-family:var(--mono);font-size:.5rem}
-      .p9-shared-bar-bg{height:3px;background:var(--s3);border-radius:99px;overflow:hidden}
-      .p9-shared-bar-fill{height:100%;border-radius:99px}
-      /* venn columns */
-      .p9-venn-stats{display:flex;justify-content:space-between;margin-bottom:12px}
-      .p9-venn-stat-v{font-family:var(--mono);font-size:.85rem;font-weight:700}
-      .p9-venn-stat-l{font-size:.62rem;color:var(--muted);margin-top:2px}
-      .p9-venn-cols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-      .p9-venn-col{display:flex;flex-direction:column;gap:5px}
-      .p9-venn-col-head{font-family:var(--mono);font-size:.52rem;letter-spacing:.08em;padding:4px 8px;border-radius:3px;text-align:center}
-      .p9-venn-col-head.a{background:rgba(29,185,84,.12);color:var(--g)}
-      .p9-venn-col-head.s{background:rgba(167,139,250,.12);color:#a78bfa}
-      .p9-venn-col-head.b{background:rgba(91,156,246,.12);color:#5b9cf6}
-      .p9-venn-tag{padding:5px 8px;border-radius:4px;font-size:.68rem;font-weight:600;text-align:center}
-      .p9-venn-tag.a{background:rgba(29,185,84,.08);color:var(--g);border:1px solid rgba(29,185,84,.18)}
-      .p9-venn-tag.s{background:rgba(167,139,250,.08);color:#a78bfa;border:1px solid rgba(167,139,250,.18)}
-      .p9-venn-tag.b{background:rgba(91,156,246,.08);color:#5b9cf6;border:1px solid rgba(91,156,246,.18)}
-    `;
-    document.head.appendChild(s);
-  })();
-
-  /* ── helpers ── */
-  function p9S() { return (typeof S !== 'undefined' && S && S.length) ? S : []; }
-  function p9TopArtists(n=10) {
-    const m = new Map();
-    p9S().forEach(s=>{ const a=s.artistName||s.artist||''; if(a) m.set(a,(m.get(a)||0)+1); });
-    return [...m.entries()].sort((a,b)=>b[1]-a[1]).slice(0,n);
-  }
-  function p9TopTracks(n=10) {
-    const m = new Map();
-    p9S().forEach(s=>{ const t=s.trackName||s.track||''; if(t) m.set(t,(m.get(t)||0)+1); });
-    return [...m.entries()].sort((a,b)=>b[1]-a[1]).slice(0,n);
-  }
-  function p9PeakHour() {
-    const h = new Array(24).fill(0);
-    p9S().forEach(s=>{ const d=new Date(s.ts||s.endTime||s.played_at||0); h[d.getHours()]++; });
-    return h.indexOf(Math.max(...h));
-  }
-  function p9TotalMs() { return p9S().reduce((a,s)=>a+(s.ms||s.msPlayed||s.ms_played||0),0); }
-  function p9SkipRate() {
-    const all=p9S(); if(!all.length) return 0;
-    const skipped=all.filter(s=>(s.ms||s.msPlayed||s.ms_played||0)<30000).length;
-    return Math.round(skipped/all.length*100);
-  }
-
-  /* ── profile store ── */
-  window._p9Profile = null; // loaded friend profile
-
-  function p9MyStats() {
-    const topArtists = p9TopArtists(5);
-    const topTracks  = p9TopTracks(5);
-    const ph = p9PeakHour();
-    const ms = p9TotalMs();
-    return {
-      name: 'You',
-      streams: p9S().length,
-      hours: Math.round(ms/3600000),
-      topArtist: topArtists[0]?.[0]||'—',
-      topTrack:  topTracks[0]?.[0]||'—',
-      skipRate:  p9SkipRate(),
-      peakHour:  ph + ':00',
-      topArtists: topArtists,
-      topTracks:  topTracks,
-      topGenre:   (()=>{ const top5=topArtists.slice(0,5).map(([a])=>a); const scenes=top5.map(a=>(typeof KNOWN!=='undefined'?KNOWN[a]:null)||(typeof inferScene==='function'?inferScene(a):null)).filter(Boolean); if(!scenes.length) return 'Mixed'; const freq={}; scenes.forEach(s=>freq[s]=(freq[s]||0)+1); return Object.entries(freq).sort((a,b)=>b[1]-a[1])[0][0]; })(),
-      loyalty:    (()=>{ const s=p9S(); if(!s.length) return 50; const am={}; s.forEach(x=>{const a=x.artist||'';am[a]=(am[a]||0)+1;}); const top1=Object.values(am).sort((a,b)=>b-a)[0]||0; return Math.min(99,Math.round(top1/s.length*400)); })(),
-      explorer:   (()=>{ const s=p9S(); if(!s.length) return 50; const am={}; s.forEach(x=>{const a=x.artist||'';am[a]=(am[a]||0)+1;}); return Math.min(99,Math.round(Object.keys(am).length/Math.max(s.length,1)*500)); })(),
-      archetype:  'Listener'
-    };
-  }
-
-  function p9FriendStats(profile) {
-    const s = profile.streams || [];
-    const am = new Map(), tm = new Map();
-    let ms = 0, skipped = 0;
-    const hours = new Array(24).fill(0);
-    s.forEach(x => {
-      const a=x.artistName||x.artist||''; if(a) am.set(a,(am.get(a)||0)+1);
-      const t=x.trackName||x.track||''; if(t) tm.set(t,(tm.get(t)||0)+1);
-      const d=new Date(x.ts||x.endTime||x.played_at||0); hours[d.getHours()]++;
-      ms+=(x.ms||x.msPlayed||x.ms_played||0);
-      if((x.ms||x.msPlayed||x.ms_played||0)<30000) skipped++;
-    });
-    const topArtists=[...am.entries()].sort((a,b)=>b[1]-a[1]).slice(0,5);
-    const topTracks=[...tm.entries()].sort((a,b)=>b[1]-a[1]).slice(0,5);
-    const ph = hours.indexOf(Math.max(...hours));
-    return {
-      name: profile.name||'Friend',
-      streams: s.length,
-      hours: Math.round(ms/3600000),
-      topArtist: topArtists[0]?.[0]||'—',
-      topTrack:  topTracks[0]?.[0]||'—',
-      skipRate:  s.length?Math.round(skipped/s.length*100):0,
-      peakHour:  ph+':00',
-      topArtists, topTracks,
-      topGenre: (()=>{ const top5=topArtists.slice(0,5).map(([a])=>a); const scenes=top5.map(a=>(typeof KNOWN!=='undefined'?KNOWN[a]:null)||(typeof inferScene==='function'?inferScene(a):null)).filter(Boolean); if(!scenes.length) return 'Mixed'; const freq={}; scenes.forEach(sc=>freq[sc]=(freq[sc]||0)+1); return Object.entries(freq).sort((a,b)=>b[1]-a[1])[0][0]; })(),
-      loyalty: s.length?(()=>{ const am={}; s.forEach(x=>{const a=x.artistName||x.artist||'';am[a]=(am[a]||0)+1;}); const top1=Object.values(am).sort((a,b)=>b-a)[0]||0; return Math.min(99,Math.round(top1/s.length*400)); })():50,
-      explorer: s.length?(()=>{ const am={}; s.forEach(x=>{const a=x.artistName||x.artist||'';am[a]=(am[a]||0)+1;}); return Math.min(99,Math.round(Object.keys(am).length/s.length*500)); })():50,
-      archetype: 'Listener'
-    };
-  }
-
-  function p9TwinScore(a, b) {
-    function toNames(arr) { return (arr||[]).map(x=>Array.isArray(x)?x[0]:(x.name||x.artist||'')); }
-    const artistsA = new Set(toNames(a.topArtists));
-    const artistsB = new Set(toNames(b.topArtists));
-    const shared = [...artistsA].filter(x=>artistsB.has(x)).length;
-    const artistMatch = Math.round(shared / Math.max(artistsA.size, artistsB.size, 1) * 100);
-    const peakMatch = a.peakHour===b.peakHour ? 100 : Math.max(0, 100 - Math.abs(parseInt(a.peakHour)-parseInt(b.peakHour))*12);
-    const skipMatch = Math.max(0, 100 - Math.abs(a.skipRate-b.skipRate)*3);
-    const loyaltyMatch = Math.max(0, 100 - Math.abs(a.loyalty-b.loyalty));
-    const dims = {
-      'Artist Match': artistMatch,
-      'Peak Hour': peakMatch,
-      'Skip Rate': skipMatch,
-      'Loyalty': loyaltyMatch,
-      'Explorer': Math.max(0,100-Math.abs(a.explorer-b.explorer)),
-    };
-    const total = Math.round(Object.values(dims).reduce((s,v)=>s+v,0)/Object.keys(dims).length);
-    return { total, dims };
-  }
-
-  function p9SharedArtists(a, b) {
-    function toTuples(arr) { return (arr||[]).map(x=>Array.isArray(x)?x:[x.name||'',x.count||x.plays||1]); }
-    const ma = new Map(toTuples(a.topArtists));
-    const mb = new Map(toTuples(b.topArtists));
-    const shared = [];
-    const maxA = a.topArtists[0]?.[1]||1;
-    const maxB = b.topArtists[0]?.[1]||1;
-    ma.forEach((ca, artist) => {
-      if (mb.has(artist)) {
-        const cb = mb.get(artist);
-        shared.push({ artist, pctA: Math.round(ca/maxA*100), pctB: Math.round(cb/maxB*100), combined: Math.round((ca/maxA+cb/maxB)*50) });
-      }
-    });
-    return shared.sort((a,b)=>b.combined-a.combined);
-  }
-
-  /* ── INIT ── */
-  function initPhase9() {
-    const wrap = document.getElementById('phase9-wrap');
-    if (!wrap) return;
-    wrap.style.display = '';
-    p9RenderLoad();
-  }
-
-  /* ── Patch render() to call initPhase9 (Bug 7 fix) ── */
-  (function(){
-    const _orig=render;
-    render=function(demo){_orig(demo);setTimeout(initPhase9,900);};
-  })();
-
-  /* ── F1: LOAD UI ── */
-  function p9RenderLoad() {
-    const el = document.getElementById('p9LoadContent');
-    if (!el) return;
-    const myData = p9S();
-    const hasMyData = myData.length > 0;
-    const friend = window._p9Profile;
-
-    el.innerHTML = `
-<div class="p9-load-wrap">
-  <div class="p9-zones">
-    <div class="p9-zone loaded-a">
-      <div class="p9-zone-ico">${hasMyData ? '✅' : '📂'}</div>
-      <div class="p9-zone-t" style="color:var(--g)">${hasMyData ? 'You' : 'Your Data'}</div>
-      <div class="p9-zone-s" style="color:var(--g)">${hasMyData ? myData.length.toLocaleString()+' streams · loaded' : 'Load your Spotify data first'}</div>
-    </div>
-    <div class="p9-vs">VS</div>
-    <div class="p9-zone${friend?' loaded-b':''}" id="p9DropB" onclick="p9TriggerFriendLoad()">
-      <div class="p9-zone-ico">${friend ? '✅' : '📂'}</div>
-      <div class="p9-zone-t" style="color:${friend?'#5b9cf6':'var(--text)'}">${friend ? friend.name : 'Drop Profile B'}</div>
-      <div class="p9-zone-s" style="color:${friend?'#5b9cf6':'var(--muted)'}">${friend ? (friend.streams||'').toLocaleString()+ ' streams · loaded' : 'drag .statify.json here\nor click to browse'}</div>
-    </div>
-  </div>
-  <input type="file" id="p9FriendFile" accept=".json" style="display:none" onchange="p9LoadFriend(this.files[0])">
-  <button class="p9-go-btn${hasMyData && friend?' ready':''}" id="p9GoBtn" onclick="p9RunCompare()" ${hasMyData&&friend?'':'disabled'}>
-    ${hasMyData && friend ? '⚡ COMPARE NOW' : '⚡ COMPARE — load both profiles first'}
-  </button>
-</div>`;
-
-    if (friend && hasMyData) {
-      setTimeout(p9RunCompare, 100);
-    }
-  }
-
-  window.p9TriggerFriendLoad = function() {
-    document.getElementById('p9FriendFile')?.click();
-  };
-
-  window.p9LoadFriend = function(file) {
-    if (!file) return;
-    const r = new FileReader();
-    r.onload = e => {
-      try {
-        const data = JSON.parse(e.target.result);
-        // Normalize topArtists/topTracks to [name,count] tuple format regardless of source
-        function normalizeTuples(arr) {
-          if (!arr || !arr.length) return [];
-          if (Array.isArray(arr[0])) return arr; // already tuples
-          return arr.map(x => [x.name||x.artist||x.track||String(x), x.count||x.plays||1]);
-        }
-        window._p9Profile = {
-          name: data.name || file.name.replace(/\.statify\.json|\.json/,''),
-          streams: (()=>{
-            // Handle statify export nested schema: data.spotify.streams / data.youtube.history
-            if (data.spotify?.streams?.length) return data.spotify.streams;
-            if (data.youtube?.history?.length) return data.youtube.history;
-            if (Array.isArray(data.streams) && data.streams.length) return data.streams;
-            if (Array.isArray(data.history) && data.history.length) return data.history;
-            return [];
-          })(),
-          topArtists: normalizeTuples(data.topArtists),
-          topTracks: normalizeTuples(data.topTracks),
-        };
-        // if streams array present, compute full stats from it (overrides pre-computed)
-        if (window._p9Profile.streams.length) {
-          const computed = p9FriendStats(window._p9Profile);
-          window._p9Profile = { ...window._p9Profile, ...computed };
-        } else if (window._p9Profile.topArtists.length) {
-          // Shareable profile with no raw streams — synthesize missing stats from topArtists
-          window._p9Profile.hours = data.hours || 0;
-          window._p9Profile.streams = data.streams_count || window._p9Profile.topArtists.reduce((a,x)=>a+x[1],0);
-          window._p9Profile.topArtist = window._p9Profile.topArtists[0]?.[0] || '—';
-          window._p9Profile.topTrack = window._p9Profile.topTracks[0]?.[0] || '—';
-          window._p9Profile.skipRate = data.skipRate || 0;
-          window._p9Profile.peakHour = data.peakHour || '0:00';
-          window._p9Profile.loyalty = data.loyalty || 50;
-          window._p9Profile.explorer = data.explorer || 50;
-        }
-        p9RenderLoad();
-      } catch(err) {
-        alert("Could not parse profile. Make sure it's a .statify.json export.");
-      }
-    };
-    r.readAsText(file);
-  };
-
-  window.p9RunCompare = function() {
-    if (!window._p9Profile || !p9S().length) return;
-    const myStats = p9MyStats();
-    const friendStats = window._p9Profile.hours !== undefined ? window._p9Profile : p9FriendStats(window._p9Profile);
-    const twin = p9TwinScore(myStats, friendStats);
-    const shared = p9SharedArtists(myStats, friendStats);
-
-    p9RenderStats(myStats, friendStats);
-    p9RenderCharts(myStats, friendStats);
-    p9RenderTwin(twin, myStats, friendStats);
-    p9RenderShared(shared, myStats, friendStats);
-
-    // Expand the sections
-    ['p9StatsBody','p9ChartsBody','p9TwinBody','p9SharedBody'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.style.display = '';
-    });
-    ['p9StatsHeader','p9ChartsHeader','p9TwinHeader','p9SharedHeader'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.classList.remove('collapsed');
-    });
-    if (typeof ScrollTrigger !== 'undefined') debouncedSTRefresh();
-  };
-
-  /* ── F2: STATS COMPARED ── */
-  function p9RenderStats(a, b) {
-    const el = document.getElementById('p9StatsContent');
-    if (!el) return;
-    const rows = [
-      ['Streams', a.streams.toLocaleString(), b.streams.toLocaleString()],
-      ['Listen Time', a.hours+'h', b.hours+'h'],
-      ['Top Artist', a.topArtist, b.topArtist],
-      ['Top Track',  a.topTrack,  b.topTrack],
-      ['Skip Rate',  a.skipRate+'%', b.skipRate+'%'],
-      ['Peak Hour',  a.peakHour,  b.peakHour],
-      ['Loyalty',    a.loyalty+'/100', b.loyalty+'/100'],
-      ['Explorer',   a.explorer+'/100', b.explorer+'/100'],
-      ['Archetype',  a.archetype, b.archetype],
-    ];
-
-    let activeLayout = 'A';
-    function renderLayout() {
-      const inner = document.getElementById('p9StatsInner');
-      if (!inner) return;
-      if (activeLayout === 'A') {
-        inner.innerHTML = `
-<div class="p9-side-wrap">
-  <div class="p9-side-bar">
-    <div class="p9-side-dot" style="color:var(--g);background:var(--g)"></div>
-    <div class="p9-side-lbl" style="color:var(--g)">COMPARE MODE</div>
-  </div>
-  <div class="p9-side-body">
-    <div class="p9-side-panel">
-      <div class="p9-user-row"><div class="p9-av a">A</div><div><div class="p9-uname">${a.name}</div><div class="p9-umeta">${a.streams.toLocaleString()} streams</div></div></div>
-      ${rows.map(r=>`<div class="p9-stat-row"><span class="p9-stat-k">${r[0]}</span><span class="p9-stat-v a">${r[1]}</span></div>`).join('')}
-    </div>
-    <div class="p9-side-div"></div>
-    <div class="p9-side-panel r">
-      <div class="p9-user-row"><div class="p9-av b">B</div><div><div class="p9-uname">${b.name}</div><div class="p9-umeta">${b.streams.toLocaleString()} streams</div></div></div>
-      ${rows.map(r=>`<div class="p9-stat-row"><span class="p9-stat-k">${r[0]}</span><span class="p9-stat-v b">${r[2]}</span></div>`).join('')}
-    </div>
-  </div>
-</div>`;
-      } else if (activeLayout === 'B') {
-        inner.innerHTML = `
-<div class="p9-side-wrap" style="border-radius:10px;overflow:hidden">
-  <div style="display:flex;border-bottom:1px solid var(--border);background:var(--s2)">
-    ${['Overview','Stats','⚡ Compare','Shared'].map((t,i)=>`<div style="padding:10px 14px;font-size:.65rem;font-weight:600;color:${i===2?'var(--g)':'var(--muted)'};border-bottom:2px solid ${i===2?'var(--g)':'transparent'};cursor:pointer">${t}</div>`).join('')}
-  </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;padding:16px;gap:14px">
-    <div style="display:flex;flex-direction:column;gap:6px">
-      <div style="display:flex;align-items:center;gap:8px;padding-bottom:10px;border-bottom:1px solid var(--border)">
-        <div class="p9-av a" style="width:28px;height:28px;font-size:10px">A</div>
-        <div><div style="font-size:.75rem;font-weight:700">${a.name}</div><div style="font-family:var(--mono);font-size:.52rem;color:var(--muted)">${a.streams.toLocaleString()} streams</div></div>
-      </div>
-      ${rows.map(r=>`<div class="p9-stat-row"><span class="p9-stat-k">${r[0]}</span><span class="p9-stat-v a">${r[1]}</span></div>`).join('')}
-    </div>
-    <div style="display:flex;flex-direction:column;gap:6px">
-      <div style="display:flex;align-items:center;gap:8px;padding-bottom:10px;border-bottom:1px solid var(--border)">
-        <div class="p9-av b" style="width:28px;height:28px;font-size:10px">B</div>
-        <div><div style="font-size:.75rem;font-weight:700">${b.name}</div><div style="font-family:var(--mono);font-size:.52rem;color:var(--muted)">${b.streams.toLocaleString()} streams</div></div>
-      </div>
-      ${rows.map(r=>`<div class="p9-stat-row"><span class="p9-stat-k">${r[0]}</span><span class="p9-stat-v b">${r[2]}</span></div>`).join('')}
-    </div>
-  </div>
-</div>`;
-      } else {
-        inner.innerHTML = `
-<div class="p9-side-wrap" style="display:flex;min-height:280px">
-  <div style="width:50px;background:var(--s2);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:8px">
-    ${['📊','📈','🎵','🔗'].map((ico,i)=>`<div style="width:32px;height:32px;border-radius:6px;background:${i===0?'var(--g)':'var(--s3)'};display:flex;align-items:center;justify-content:center;font-size:13px;cursor:pointer">${ico}</div>`).join('')}
-  </div>
-  <div style="flex:1;display:grid;grid-template-columns:1fr 1fr">
-    <div class="p9-side-panel" style="border-right:1px solid var(--border)">
-      <div style="font-family:var(--mono);font-size:.52rem;letter-spacing:.12em;color:var(--g);border-bottom:1px solid rgba(29,185,84,.3);padding-bottom:8px;margin-bottom:4px">◉ ${a.name.toUpperCase()}</div>
-      ${rows.map(r=>`<div class="p9-stat-row"><span class="p9-stat-k">${r[0]}</span><span class="p9-stat-v a">${r[1]}</span></div>`).join('')}
-    </div>
-    <div class="p9-side-panel">
-      <div style="font-family:var(--mono);font-size:.52rem;letter-spacing:.12em;color:#5b9cf6;border-bottom:1px solid rgba(91,156,246,.3);padding-bottom:8px;margin-bottom:4px">◉ ${b.name.toUpperCase()}</div>
-      ${rows.map(r=>`<div class="p9-stat-row"><span class="p9-stat-k">${r[0]}</span><span class="p9-stat-v b">${r[2]}</span></div>`).join('')}
-    </div>
-  </div>
-</div>`;
-      }
-    }
-
-    el.innerHTML = `
-<div class="p9-layout-toggle">
-  <span class="p9-lt-lbl">LAYOUT</span>
-  <button class="p9-lt-btn act" onclick="p9SetLayout('A',this)">A — OVERLAY</button>
-  <button class="p9-lt-btn" onclick="p9SetLayout('B',this)">B — TABS</button>
-  <button class="p9-lt-btn" onclick="p9SetLayout('C',this)">C — DRAWER</button>
-</div>
-<div id="p9StatsInner"></div>`;
-
-    window.p9SetLayout = function(l, btn) {
-      activeLayout = l;
-      document.querySelectorAll('.p9-lt-btn').forEach(x=>x.classList.remove('act'));
-      btn.classList.add('act');
-      renderLayout();
-    };
-    renderLayout();
-  }
-
-  /* ── F3: OVERLAY CHARTS ── */
-  function p9RenderCharts(a, b) {
-    const el = document.getElementById('p9ChartsContent');
-    if (!el) return;
-
-    // Build monthly stream counts for both
-    const allS = p9S();
-    const monthlyA = {}, monthlyB = {};
-    allS.forEach(s => {
-      const d=new Date(s.ts||s.endTime||s.played_at||0);
-      const mk=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-      monthlyA[mk]=(monthlyA[mk]||0)+1;
-    });
-    const friendStreams = (window._p9Profile?.streams)||[];
-    friendStreams.forEach(s => {
-      const d=new Date(s.ts||s.endTime||s.played_at||0);
-      const mk=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-      monthlyB[mk]=(monthlyB[mk]||0)+1;
-    });
-
-    const allKeys = [...new Set([...Object.keys(monthlyA),...Object.keys(monthlyB)])].sort().slice(-12);
-    const valsA = allKeys.map(k=>monthlyA[k]||0);
-    const valsB = allKeys.map(k=>monthlyB[k]||0);
-    const maxV = Math.max(...valsA,...valsB,1);
-    const W=580, H=160, pad=30;
-    const xStep = (W-pad*2)/(allKeys.length-1||1);
-
-    function pts(vals) {
-      return vals.map((v,i)=>`${pad+i*xStep},${H-10-(v/maxV*(H-30))}`).join(' ');
-    }
-    const pA=pts(valsA), pB=pts(valsB);
-    const firstA=pA.split(' ')[0], firstB=pB.split(' ')[0];
-
-    el.innerHTML = `
-<div class="p9-chart-wrap">
-  <div class="p9-chart-head">
-    <div class="p9-chart-title">Monthly Listening</div>
-    <div class="p9-chart-legend">
-      <div class="p9-chart-leg"><div class="p9-chart-line" style="background:var(--g)"></div>${a.name}</div>
-      <div class="p9-chart-leg"><div class="p9-chart-line" style="background:#5b9cf6;background:repeating-linear-gradient(90deg,#5b9cf6 0 6px,transparent 6px 10px)"></div>${b.name}</div>
-    </div>
-  </div>
-  <svg viewBox="0 0 ${W} ${H+20}" style="width:100%;height:auto;overflow:visible">
-    <line x1="${pad}" y1="0" x2="${pad}" y2="${H}" stroke="var(--border)" stroke-width="1"/>
-    <line x1="${pad}" y1="${H}" x2="${W-pad}" y2="${H}" stroke="var(--border)" stroke-width="1"/>
-    ${[0.25,0.5,0.75,1].map(f=>`<line x1="${pad}" y1="${H-10-(f*(H-30))}" x2="${W-pad}" y2="${H-10-(f*(H-30))}" stroke="var(--border)" stroke-width="1" stroke-dasharray="3 3"/>`).join('')}
-    <polygon points="${pA} ${W-pad},${H} ${pad},${H}" fill="rgba(29,185,84,.08)"/>
-    <polyline points="${pA}" fill="none" stroke="#1DB954" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
-    <polygon points="${pB} ${W-pad},${H} ${pad},${H}" fill="rgba(91,156,246,.06)"/>
-    <polyline points="${pB}" fill="none" stroke="#5b9cf6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" stroke-dasharray="7 4"/>
-    ${allKeys.filter((_,i)=>i%Math.ceil(allKeys.length/6)===0).map((k,_,arr)=>{
-      const i=allKeys.indexOf(k);
-      return `<text x="${pad+i*xStep}" y="${H+14}" fill="var(--muted)" font-size="8" font-family="monospace" text-anchor="middle">${k.slice(2)}</text>`;
-    }).join('')}
-  </svg>
-</div>`;
-  }
-
-  /* ── F4: TWIN SCORE ── */
-  function p9RenderTwin(twin, a, b) {
-    const el = document.getElementById('p9TwinContent');
-    if (!el) return;
-    let activeTwinStyle = 'ring';
-
-    const label = twin.total>=80?'Music Soulmates':twin.total>=60?'Strong Overlap':twin.total>=40?'Compatible':'Different Tastes';
-    const dimEntries = Object.entries(twin.dims);
-    const dimColor = v => v>=70?'var(--g)':v>=45?'var(--amber)':'var(--red)';
-
-    function renderTwin() {
-      const inner = document.getElementById('p9TwinInner');
-      if (!inner) return;
-      if (activeTwinStyle==='ring') {
-        const circ=351.9, offset=circ-(twin.total/100*circ);
-        inner.innerHTML = `
-<div class="p9-ring-wrap">
-  <div class="p9-ring">
-    <svg viewBox="0 0 140 140"><circle cx="70" cy="70" r="56" fill="none" stroke="var(--s3)" stroke-width="10"/>
-    <circle cx="70" cy="70" r="56" fill="none" stroke="var(--g)" stroke-width="10" stroke-dasharray="${circ}" stroke-dashoffset="${offset}" stroke-linecap="round"/></svg>
-    <div class="p9-ring-txt"><div class="p9-ring-pct">${twin.total}%</div><div class="p9-ring-sub">MATCH</div></div>
-  </div>
-  <div class="p9-ring-right">
-    <div><div class="p9-ring-title">${label}</div><div class="p9-ring-tag">${twin.total>=70?'High compatibility':'Moderate compatibility'}</div></div>
-    <div class="p9-dim-grid">${dimEntries.map(([k,v])=>`<div class="p9-dim-cell"><span>${k}</span><span style="color:${dimColor(v)}">${v}%</span></div>`).join('')}</div>
-  </div>
-</div>`;
-      } else if (activeTwinStyle==='bars') {
-        inner.innerHTML = `
-<div class="p9-bars-wrap">
-  <div class="p9-bars-top">
-    <div class="p9-bars-score">${twin.total}<sup>%</sup></div>
-    <div class="p9-bars-info"><div class="p9-bars-title">${label}</div><div class="p9-bars-tag">${dimEntries.filter(([,v])=>v>=60).length} of ${dimEntries.length} dimensions matched</div></div>
-  </div>
-  <div class="p9-bar-list">${dimEntries.map(([k,v])=>`
-    <div class="p9-bar-item">
-      <div class="p9-bar-top"><span>${k}</span><span style="font-family:var(--mono);color:${dimColor(v)}">${v}%</span></div>
-      <div class="p9-bar-bg"><div class="p9-bar-fill" style="width:${v}%;background:${dimColor(v)}"></div></div>
-    </div>`).join('')}
-  </div>
-</div>`;
-      } else {
-        // DNA style
-        const rungs = dimEntries.map(([k,v])=>({ k, matched: v>=60, v }));
-        inner.innerHTML = `
-<div class="p9-dna-wrap">
-  <div class="p9-dna-col">
-    <div class="p9-dna-lbl">DNA</div>
-    ${rungs.map(r=>`<div class="p9-rung"><div class="p9-rh" style="background:${r.matched?'var(--g)':'#e05555'}"></div><div class="p9-rdot"></div><div class="p9-rh" style="background:${r.matched?'var(--g)':'#5b9cf6'}"></div></div>`).join('')}
-  </div>
-  <div class="p9-dna-right">
-    <div class="p9-dna-score-row">
-      <div class="p9-dna-pct">${twin.total}%</div>
-      <div class="p9-dna-info"><div class="p9-dna-title">${label}</div><div class="p9-dna-sub">${rungs.filter(r=>r.matched).length}/${rungs.length} DIMENSIONS MATCH</div></div>
-    </div>
-    <div style="font-size:.65rem;color:var(--muted)">Green rungs = shared · Split = differ</div>
-    <div class="p9-dna-dims">${rungs.map(r=>`<div class="p9-dna-dim"><span class="k">${r.k}</span><span class="${r.matched?'m':'d'}">${r.matched?'✓ Matched':'✗ Differ'} — ${r.v}%</span></div>`).join('')}</div>
-  </div>
-</div>`;
-      }
-    }
-
-    el.innerHTML = `
-<div class="p9-twin-style-row">
-  <span class="p9-ts-lbl">STYLE</span>
-  <button class="p9-ts-btn act" onclick="p9SetTwinStyle('ring',this)">A — RING</button>
-  <button class="p9-ts-btn" onclick="p9SetTwinStyle('bars',this)">B — BARS</button>
-  <button class="p9-ts-btn" onclick="p9SetTwinStyle('dna',this)">C — DNA</button>
-</div>
-<div id="p9TwinInner"></div>`;
-
-    window.p9SetTwinStyle = function(style, btn) {
-      activeTwinStyle = style;
-      document.querySelectorAll('.p9-ts-btn').forEach(x=>x.classList.remove('act'));
-      btn.classList.add('act');
-      renderTwin();
-    };
-    renderTwin();
-  }
-
-  /* ── F5: SHARED MUSIC ── */
-  function p9RenderShared(shared, a, b) {
-    const el = document.getElementById('p9SharedContent');
-    if (!el) return;
-    let activeTab='artists', activeView='list';
-    const COLORS=['#1DB954','#a78bfa','#f5a623','#e05555','#5b9cf6','#34d399'];
-
-    const myArtistSet = new Set(a.topArtists.map(x=>x[0]));
-    const friendArtistSet = new Set(b.topArtists.map(x=>x[0]));
-    const onlyA = a.topArtists.map(x=>x[0]).filter(x=>!friendArtistSet.has(x));
-    const onlyB = b.topArtists.map(x=>x[0]).filter(x=>!myArtistSet.has(x));
-    const both = shared.map(x=>x.artist);
-
-    function renderShared() {
-      const inner = document.getElementById('p9SharedInner');
-      if (!inner) return;
-      if (activeView==='list') {
-        inner.innerHTML = shared.length
-          ? shared.slice(0,8).map((s,i)=>`
-<div class="p9-shared-item">
-  <div class="p9-shared-rank">#${i+1}</div>
-  <div class="p9-shared-art" style="background:linear-gradient(135deg,${COLORS[i%COLORS.length]},${COLORS[(i+2)%COLORS.length]});">${s.artist.slice(0,2).toUpperCase()}</div>
-  <div class="p9-shared-info">
-    <div class="p9-shared-name">${s.artist}</div>
-    <div class="p9-shared-sub">Combined passion ${s.combined}/100</div>
-  </div>
-  <div class="p9-shared-bars">
-    <div class="p9-shared-bar-lbl" style="color:var(--g)">A ${s.pctA}%</div>
-    <div class="p9-shared-bar-bg"><div class="p9-shared-bar-fill" style="width:${s.pctA}%;background:var(--g)"></div></div>
-    <div class="p9-shared-bar-lbl" style="color:#5b9cf6">B ${s.pctB}%</div>
-    <div class="p9-shared-bar-bg"><div class="p9-shared-bar-fill" style="width:${s.pctB}%;background:#5b9cf6"></div></div>
-  </div>
-</div>`).join('')
-          : '<div style="color:var(--muted);font-size:.78rem">No shared artists found in top lists.</div>';
-      } else {
-        inner.innerHTML = `
-<div class="p9-venn-stats">
-  <div><div class="p9-venn-stat-v" style="color:var(--g)">${a.topArtists.length} artists</div><div class="p9-venn-stat-l">${a.name}'s top</div></div>
-  <div style="text-align:center"><div class="p9-venn-stat-v" style="color:#a78bfa">${both.length} shared</div><div class="p9-venn-stat-l">in common</div></div>
-  <div style="text-align:right"><div class="p9-venn-stat-v" style="color:#5b9cf6">${b.topArtists.length} artists</div><div class="p9-venn-stat-l">${b.name}'s top</div></div>
-</div>
-<div class="p9-venn-cols">
-  <div class="p9-venn-col">
-    <div class="p9-venn-col-head a">ONLY ${a.name.toUpperCase().slice(0,8)}</div>
-    ${onlyA.slice(0,5).map(x=>`<div class="p9-venn-tag a">${x}</div>`).join('')}
-  </div>
-  <div class="p9-venn-col">
-    <div class="p9-venn-col-head s">⚡ BOTH</div>
-    ${both.slice(0,6).map(x=>`<div class="p9-venn-tag s">${x}</div>`).join('')}
-  </div>
-  <div class="p9-venn-col">
-    <div class="p9-venn-col-head b">ONLY ${b.name.toUpperCase().slice(0,8)}</div>
-    ${onlyB.slice(0,5).map(x=>`<div class="p9-venn-tag b">${x}</div>`).join('')}
-  </div>
-</div>`;
-      }
-    }
-
-    el.innerHTML = `
-<div class="p9-shared-view-tabs" style="margin-bottom:10px">
-  <button class="p9-shared-view-tab act" onclick="p9SetSharedView('list',this)">List</button>
-  <button class="p9-shared-view-tab" onclick="p9SetSharedView('venn',this)">Venn</button>
-</div>
-<div id="p9SharedInner"></div>`;
-
-    window.p9SetSharedView = function(v, btn) {
-      activeView = v;
-      document.querySelectorAll('.p9-shared-view-tab').forEach(x=>x.classList.remove('act'));
-      btn.classList.add('act');
-      renderShared();
-    };
-    renderShared();
-  }
-
-  /* ── Hide phase9 on goHome ── */
-  (function(){
-    const _origG9 = goHome;
-    goHome = function() {
-      _origG9();
-      window._p9Profile = null;
-      const w=document.getElementById('phase9-wrap'); if(w) w.style.display='none';
-    };
-  })();
   </script>
 
 
@@ -15692,704 +14880,6 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
   </script>
 
 
-  <script>
-  /* ══════════════════════════════════════════
-     PHASE 11 — GLOBE & VISUAL SHOWSTOPPERS
-  ══════════════════════════════════════════ */
-  /* ── PASTE JSON MODAL ── */
-  window.openPasteModal = function() {
-    let modal = document.getElementById('pasteJsonModal');
-    if (!modal) {
-      modal = document.createElement('div');
-      modal.id = 'pasteJsonModal';
-      modal.style.cssText = 'position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;padding:20px';
-      modal.innerHTML = `
-        <div style="background:var(--s1);border:1px solid var(--border2);border-radius:8px;padding:28px;width:100%;max-width:580px;display:flex;flex-direction:column;gap:14px">
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <span style="font-family:var(--mono);font-size:.72rem;color:var(--g);letter-spacing:.12em">PASTE JSON DATA</span>
-            <button onclick="document.getElementById('pasteJsonModal').remove()" style="background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;line-height:1">✕</button>
-          </div>
-          <p style="font-size:.78rem;color:var(--muted);line-height:1.6">Paste the contents of your <code style="background:var(--s3);padding:2px 6px;border-radius:3px;font-family:var(--mono);font-size:.7rem">StreamingHistory_music_0.json</code> (or any Spotify JSON file) directly here.</p>
-          <textarea id="pasteJsonArea" placeholder='[{"endTime":"2024-01-01 12:00","artistName":"Artist","trackName":"Track","msPlayed":230000}, ...]' style="width:100%;height:180px;background:var(--s2);border:1px solid var(--border2);border-radius:4px;padding:12px;color:var(--text);font-family:var(--mono);font-size:.68rem;resize:vertical;outline:none;line-height:1.5"></textarea>
-          <div style="display:flex;gap:10px;justify-content:flex-end">
-            <button onclick="document.getElementById('pasteJsonModal').remove()" style="font-family:var(--mono);font-size:.62rem;padding:8px 18px;background:none;border:1px solid var(--border2);border-radius:3px;color:var(--muted);cursor:pointer">CANCEL</button>
-            <button onclick="window.parsePastedJSON()" style="font-family:var(--mono);font-size:.62rem;padding:8px 18px;background:var(--g);border:none;border-radius:3px;color:#000;font-weight:700;cursor:pointer">LOAD DATA</button>
-          </div>
-        </div>`;
-      document.body.appendChild(modal);
-      modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
-    }
-    document.getElementById('pasteJsonArea')?.focus();
-  };
-
-  window.parsePastedJSON = function() {
-    const raw = document.getElementById('pasteJsonArea')?.value?.trim();
-    if (!raw) return;
-    try {
-      const parsed = JSON.parse(raw);
-      document.getElementById('pasteJsonModal')?.remove();
-      // Could be array directly or wrapped
-      const arr = Array.isArray(parsed) ? parsed : (parsed.spotify?.streams || []);
-      if (!arr.length) { showToast('No stream data found in pasted JSON'); return; }
-      showLoader('PARSING PASTED DATA...');
-      setTimeout(() => {
-        // Normalize same as parseFiles
-        S = arr.map(s => ({
-          ts: s.endTime || s.ts || s.timestamp || '',
-          artist: s.artistName || s.master_metadata_album_artist_name || s.artist || 'Unknown',
-          track: s.trackName || s.master_metadata_track_name || s.track || 'Unknown',
-          ms: s.msPlayed || s.ms_played || s.ms || 0,
-          skipped: s.skipped || false,
-          platform: s.platform || '',
-          fullMs: s.fullMs || 0
-        }));
-        saveSessionToDB().catch(()=>{});
-        showDash(false);
-      }, 400);
-    } catch(e) {
-      showToast('Invalid JSON — check format and try again');
-    }
-  };
-
-  /* ── PHASE 11 STYLES ── */
-  (function injectP11Styles(){
-    const s = document.createElement('style');
-    s.textContent = `
-      /* Fingerprint cards */
-      .p11-fp-wrap{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-      @media(max-width:800px){.p11-fp-wrap{grid-template-columns:1fr}}
-      .p11-fp-card{background:var(--s1);border:1px solid var(--border);border-radius:8px;overflow:hidden;display:flex;flex-direction:column}
-      .p11-fp-card-header{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--s2)}
-      .p11-fp-card-title{font-family:var(--mono);font-size:.6rem;color:var(--text2);letter-spacing:.08em}
-      .p11-fp-card-label{font-family:var(--mono);font-size:.52rem;color:var(--muted);letter-spacing:.1em}
-      .p11-fp-svg-area{padding:16px;display:flex;align-items:center;justify-content:center;flex:1}
-      .p11-fp-svg-area svg{width:110px;height:110px}
-      .p11-fp-card-footer{padding:10px 14px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
-      .p11-fp-export-btn{font-family:var(--mono);font-size:.55rem;padding:5px 12px;background:none;border:1px solid var(--border2);border-radius:3px;color:var(--muted);cursor:pointer;letter-spacing:.06em;transition:all .15s}
-      .p11-fp-export-btn:hover{border-color:var(--g);color:var(--g)}
-      /* PDF tabs */
-      .p11-pdf-tabs{display:flex;gap:0;border:1px solid var(--border2);border-radius:4px;overflow:hidden;margin-bottom:16px;width:fit-content}
-      .p11-pdf-tab{font-family:var(--mono);font-size:.62rem;padding:8px 20px;background:none;border:none;color:var(--muted);cursor:pointer;transition:background .2s,color .2s;letter-spacing:.06em}
-      .p11-pdf-tab:hover{background:var(--s2);color:var(--text)}
-      .p11-pdf-tab.act{background:var(--g);color:#000;font-weight:700}
-      /* PDF preview */
-      .p11-pdf-preview{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px;margin-top:4px}
-      .p11-pdf-page-wrap{position:relative;cursor:pointer;border-radius:4px;overflow:hidden;border:2px solid var(--border2);transition:border-color .2s;aspect-ratio:210/297}
-      .p11-pdf-page-wrap:hover{border-color:var(--g)}
-      .p11-pdf-page-wrap.sel{border-color:var(--g);box-shadow:0 0 0 1px var(--g)}
-      .p11-pdf-page-wrap iframe{width:100%;height:100%;pointer-events:none;transform-origin:top left}
-      .p11-pdf-page-label{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.7);padding:3px 6px;display:flex;justify-content:space-between;align-items:center}
-      .p11-pdf-page-label span{font-family:var(--mono);font-size:.44rem;color:#eee;letter-spacing:.04em}
-      .p11-pdf-page-num{color:var(--muted)!important}
-      .p11-pdf-check{position:absolute;top:5px;right:5px;width:16px;height:16px;border-radius:50%;background:var(--g);display:flex;align-items:center;justify-content:center;font-size:.52rem;color:#000;font-weight:700;opacity:0;transition:opacity .15s}
-      .p11-pdf-page-wrap.sel .p11-pdf-check{opacity:1}
-      /* Meta info */
-      .p11-vmeta{display:flex;flex-wrap:wrap;gap:6px}
-      .p11-vmeta-item{font-family:var(--mono);font-size:.58rem;color:var(--muted);background:var(--s2);border:1px solid var(--border);padding:4px 10px;border-radius:3px}
-      .p11-vmeta-item span{color:var(--text2)}
-      /* Globe legend */
-      .p11-legend-row{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:.58rem;color:var(--muted)}
-      .p11-legend-dot{border-radius:50%;flex-shrink:0}
-    `;
-    document.head.appendChild(s);
-  })();
-
-  (function(){
-
-  /* ── static artist→country map (top ~60 known) ── */
-  const ARTIST_COUNTRY = {
-    'taylor swift':'United States','the weeknd':'Canada','drake':'Canada',
-    'arctic monkeys':'United Kingdom','tame impala':'Australia','daft punk':'France',
-    'bts':'South Korea','blackpink':'South Korea','abba':'Sweden','rammstein':'Germany',
-    'burna boy':'Nigeria','shakira':'Colombia','ar rahman':'India','anitta':'Brazil',
-    'rosalia':'Spain','lorde':'New Zealand','hozier':'Ireland','hikaru utada':'Japan',
-    'within temptation':'Netherlands','gustavo cerati':'Argentina','cafe tacvba':'Mexico',
-    'freshlyground':'South Africa','harry styles':'United Kingdom','adele':'United Kingdom',
-    'ed sheeran':'United Kingdom','coldplay':'United Kingdom','dua lipa':'United Kingdom',
-    'kendrick lamar':'United States','billie eilish':'United States','beyonce':'United States',
-    'lady gaga':'United States','post malone':'United States','olivia rodrigo':'United States',
-    'ariana grande':'United States','eminem':'United States','jay-z':'United States',
-    'the beatles':'United Kingdom','radiohead':'United Kingdom','amy winehouse':'United Kingdom',
-    'massive attack':'United Kingdom','gorillaz':'United Kingdom',
-    'stromae':'Belgium','angele':'Belgium','aya nakamura':'France','indochine':'France',
-    'caetano veloso':'Brazil','gilberto gil':'Brazil','seu jorge':'Brazil',
-    'psy':'South Korea','iu':'South Korea','exo':'South Korea',
-    'björk':'Iceland','sigur ros':'Iceland',
-    'infected mushroom':'Israel','asaf avidan':'Israel',
-  };
-
-  const COUNTRY_COORDS = {
-    'United States':{lat:37.09,lon:-95.71},'United Kingdom':{lat:55.37,lon:-3.43},
-    'Canada':{lat:56.13,lon:-106.3},'Australia':{lat:-25.27,lon:133.77},
-    'Sweden':{lat:60.12,lon:18.64},'South Korea':{lat:35.9,lon:127.76},
-    'Brazil':{lat:-14.23,lon:-51.92},'Germany':{lat:51.16,lon:10.45},
-    'Japan':{lat:36.2,lon:138.25},'France':{lat:46.22,lon:2.21},
-    'Nigeria':{lat:9.08,lon:8.67},'Colombia':{lat:4.57,lon:-74.29},
-    'India':{lat:20.59,lon:78.96},'Argentina':{lat:-38.41,lon:-63.61},
-    'Netherlands':{lat:52.13,lon:5.29},'Mexico':{lat:23.63,lon:-102.55},
-    'Spain':{lat:40.46,lon:-3.74},'New Zealand':{lat:-40.9,lon:174.88},
-    'Ireland':{lat:53.41,lon:-8.24},'South Africa':{lat:-30.56,lon:22.94},
-    'Belgium':{lat:50.5,lon:4.47},'Iceland':{lat:64.96,lon:-19.02},
-    'Israel':{lat:31.05,lon:34.85},'Italy':{lat:41.87,lon:12.56},
-    'Portugal':{lat:39.39,lon:-8.22},'Norway':{lat:60.47,lon:8.47},
-  };
-
-  function ll2v(lat,lon,r){
-    const phi=(90-lat)*(Math.PI/180), theta=(lon+180)*(Math.PI/180);
-    return new THREE.Vector3(-r*Math.sin(phi)*Math.cos(theta), r*Math.cos(phi), r*Math.sin(phi)*Math.sin(theta));
-  }
-  function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
-
-  /* ── build country data from streams ── */
-  function buildCountryData(){
-    const S = (typeof window.S !== "undefined" && window.S && window.S.length) ? window.S : [];
-    const countryMap = {};
-    S.forEach(x=>{
-      const artist = (x.artist||x.channel||'').toLowerCase().trim();
-      const country = ARTIST_COUNTRY[artist];
-      if(!country) return;
-      if(!countryMap[country]) countryMap[country]={streams:0,topArtist:'',topCount:0,artistCounts:{}};
-      countryMap[country].streams++;
-      const key = x.artist||x.channel||'';
-      countryMap[country].artistCounts[key]=(countryMap[country].artistCounts[key]||0)+1;
-    });
-    // find top artist per country
-    Object.entries(countryMap).forEach(([co,d])=>{
-      let top='',cnt=0;
-      Object.entries(d.artistCounts).forEach(([a,n])=>{ if(n>cnt){top=a;cnt=n;} });
-      d.topArtist=top; d.topCount=cnt;
-    });
-
-    // If no real data, use demo
-    if(!Object.keys(countryMap).length){
-      return [
-        {name:'United States',lat:37.09,lon:-95.71,streams:24891,artist:'Taylor Swift',size:14},
-        {name:'United Kingdom',lat:55.37,lon:-3.43,streams:18200,artist:'Arctic Monkeys',size:12},
-        {name:'Canada',lat:56.13,lon:-106.3,streams:9400,artist:'Drake',size:9},
-        {name:'Australia',lat:-25.27,lon:133.77,streams:7800,artist:'Tame Impala',size:8},
-        {name:'Sweden',lat:60.12,lon:18.64,streams:6200,artist:'ABBA',size:7},
-        {name:'South Korea',lat:35.9,lon:127.76,streams:5400,artist:'BTS',size:7},
-        {name:'Brazil',lat:-14.23,lon:-51.92,streams:4800,artist:'Anitta',size:6},
-        {name:'Germany',lat:51.16,lon:10.45,streams:4200,artist:'Rammstein',size:6},
-        {name:'Japan',lat:36.2,lon:138.25,streams:3900,artist:'Hikaru Utada',size:6},
-        {name:'France',lat:46.22,lon:2.21,streams:3400,artist:'Daft Punk',size:5},
-        {name:'Nigeria',lat:9.08,lon:8.67,streams:2800,artist:'Burna Boy',size:5},
-        {name:'Colombia',lat:4.57,lon:-74.29,streams:2100,artist:'Shakira',size:4},
-        {name:'India',lat:20.59,lon:78.96,streams:1900,artist:'AR Rahman',size:4},
-        {name:'Ireland',lat:53.41,lon:-8.24,streams:510,artist:'Hozier',size:2},
-      ];
-    }
-
-    const maxSt = Math.max(...Object.values(countryMap).map(d=>d.streams));
-    return Object.entries(countryMap).map(([name,d])=>{
-      const coords = COUNTRY_COORDS[name]||{lat:0,lon:0};
-      const size = Math.round(2+(d.streams/maxSt)*12);
-      return {name,lat:coords.lat,lon:coords.lon,streams:d.streams,artist:d.topArtist,size};
-    }).sort((a,b)=>b.streams-a.streams);
-  }
-
-  /* ── GLOBE ── */
-  let _globeInited=false;
-  function buildGlobe(){
-    if(_globeInited) return;
-    if(typeof THREE==='undefined'){ console.warn('Three.js not loaded'); const hint=document.querySelector('.p11-globe-hint'); if(hint) hint.style.display='none'; return; }
-
-    const canvas=document.getElementById('p11GlobeCanvas');
-    const wrap=document.getElementById('p11GlobeWrap');
-    if(!canvas||!wrap) return;
-    _globeInited=true;
-
-    const H=500, getW=()=>wrap.clientWidth;
-    let W=getW();
-    canvas.style.height=H+'px';
-
-    const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
-    renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setSize(W,H);
-
-    const scene=new THREE.Scene();
-    const camera=new THREE.PerspectiveCamera(42,W/H,0.1,1000);
-    camera.position.z=2.9;
-
-    scene.add(new THREE.AmbientLight(0xffffff,0.2));
-    const dl=new THREE.DirectionalLight(0x1DB954,1.0); dl.position.set(4,2,4); scene.add(dl);
-    const dl2=new THREE.DirectionalLight(0xffffff,0.12); dl2.position.set(-3,-2,-2); scene.add(dl2);
-
-    // Stars
-    const sp=[];
-    for(let i=0;i<3000;i++){
-      const t=Math.random()*Math.PI*2,p=Math.acos(2*Math.random()-1),r=40+Math.random()*20;
-      sp.push(r*Math.sin(p)*Math.cos(t),r*Math.cos(p),r*Math.sin(p)*Math.sin(t));
-    }
-    const sg=new THREE.BufferGeometry();
-    sg.setAttribute('position',new THREE.Float32BufferAttribute(sp,3));
-    scene.add(new THREE.Points(sg,new THREE.PointsMaterial({color:0xffffff,size:0.055,opacity:.4,transparent:true})));
-
-    const pivot=new THREE.Group(); scene.add(pivot);
-
-    const accentHex = typeof isYT!=='undefined'&&isYT ? 0xFF0000 : 0x1DB954;
-    const accentStr = typeof isYT!=='undefined'&&isYT ? '#FF0000' : '#1DB954';
-    const globeColor = typeof isYT!=='undefined'&&isYT ? 0x1a0a0a : 0x0d1a11;
-    const wireColor  = typeof isYT!=='undefined'&&isYT ? 0x3a1a1a : 0x1a3020;
-    const gratColor  = typeof isYT!=='undefined'&&isYT ? 0x3a1a1a : 0x1a3a20;
-
-    pivot.add(new THREE.Mesh(new THREE.SphereGeometry(1,64,64),new THREE.MeshPhongMaterial({color:globeColor,shininess:35})));
-    pivot.add(new THREE.Mesh(new THREE.SphereGeometry(1.002,28,28),new THREE.MeshBasicMaterial({color:wireColor,wireframe:true,transparent:true,opacity:0.18})));
-
-    const gMat=new THREE.LineBasicMaterial({color:gratColor,transparent:true,opacity:0.2});
-    for(let lat=-80;lat<=80;lat+=20){
-      const pts=[];
-      for(let lon=0;lon<=360;lon+=4) pts.push(ll2v(lat,lon-180,1.003));
-      pivot.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),gMat));
-    }
-    for(let lon=-180;lon<180;lon+=30){
-      const pts=[];
-      for(let lat=-90;lat<=90;lat+=4) pts.push(ll2v(lat,lon,1.003));
-      pivot.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),gMat));
-    }
-
-    const countryData=buildCountryData();
-    document.getElementById('p11GlobeCountryCount').textContent=countryData.length+' ORIGIN COUNTRIES';
-    document.getElementById('p11GlobeCountryMeta').textContent=countryData.length+' countries detected';
-
-    const dotMeshes=[]; const ringData=[];
-    countryData.forEach(c=>{
-      const pos=ll2v(c.lat,c.lon,1.026);
-      const size=0.011+(c.size/14)*0.036;
-      const dot=new THREE.Mesh(new THREE.SphereGeometry(size,10,10),new THREE.MeshBasicMaterial({color:accentHex}));
-      dot.position.copy(pos); dot.userData=c; pivot.add(dot); dotMeshes.push(dot);
-      const rMat=new THREE.MeshBasicMaterial({color:accentHex,side:THREE.DoubleSide,transparent:true,opacity:.5});
-      const ring=new THREE.Mesh(new THREE.RingGeometry(size*1.7,size*2.6,20),rMat);
-      ring.position.copy(pos);
-      ring.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),pos.clone().normalize());
-      ring.userData={rMat,phase:Math.random()*Math.PI*2};
-      pivot.add(ring); ringData.push(ring);
-    });
-
-    // Update legend colors
-    document.querySelectorAll('.p11-legend-dot').forEach(d=>{d.style.background=accentStr;});
-
-    let isDrag=false,prevX=0,prevY=0,velX=0,velY=0,autoRotate=true;
-    canvas.addEventListener('mousedown',e=>{isDrag=true;autoRotate=false;prevX=e.clientX;prevY=e.clientY;velX=velY=0;});
-    canvas.addEventListener('mousemove',e=>{
-      if(isDrag){const dx=(e.clientX-prevX)*0.006,dy=(e.clientY-prevY)*0.006;pivot.rotation.y+=dx;pivot.rotation.x=clamp(pivot.rotation.x+dy,-1.2,1.2);velX=dx;velY=dy;prevX=e.clientX;prevY=e.clientY;}
-      showTT(e);
-    });
-    window.addEventListener('mouseup',()=>{isDrag=false;setTimeout(()=>autoRotate=true,2200);});
-    canvas.addEventListener('mouseleave',()=>{document.getElementById('p11GlobeTT').style.display='none';});
-
-    let lt=null;
-    canvas.addEventListener('touchstart',e=>{isDrag=true;autoRotate=false;lt=e.touches[0];velX=velY=0;e.preventDefault();},{passive:false});
-    canvas.addEventListener('touchmove',e=>{if(!isDrag||!lt)return;const t=e.touches[0];const dx=(t.clientX-lt.clientX)*0.006,dy=(t.clientY-lt.clientY)*0.006;pivot.rotation.y+=dx;pivot.rotation.x=clamp(pivot.rotation.x+dy,-1.2,1.2);velX=dx;velY=dy;lt=t;e.preventDefault();},{passive:false});
-    canvas.addEventListener('touchend',()=>{isDrag=false;setTimeout(()=>autoRotate=true,2200);});
-
-    const ray=new THREE.Raycaster(),m2=new THREE.Vector2();
-    const tt=document.getElementById('p11GlobeTT');
-    function showTT(e){
-      const rect=canvas.getBoundingClientRect();
-      m2.x=((e.clientX-rect.left)/rect.width)*2-1;
-      m2.y=-((e.clientY-rect.top)/rect.height)*2+1;
-      ray.setFromCamera(m2,camera);
-      const hits=ray.intersectObjects(dotMeshes);
-      if(hits.length){
-        const c=hits[0].object.userData;
-        document.getElementById('p11TTCountry').textContent=c.name;
-        document.getElementById('p11TTArtist').textContent='🎵 '+(c.artist||'Various');
-        document.getElementById('p11TTStreams').textContent='▶ '+c.streams.toLocaleString()+' streams';
-        tt.style.display='block';
-        tt.style.left=(e.clientX-canvas.getBoundingClientRect().left+18)+'px';
-        tt.style.top=(e.clientY-canvas.getBoundingClientRect().top-10)+'px';
-      } else { tt.style.display='none'; }
-    }
-
-    let t=0;
-    (function animate(){
-      requestAnimationFrame(animate);
-      t+=0.012;
-      if(autoRotate&&!isDrag) pivot.rotation.y+=0.0025;
-      else if(!isDrag){pivot.rotation.y+=velX;pivot.rotation.x=clamp(pivot.rotation.x+velY,-1.2,1.2);velX*=0.93;velY*=0.93;}
-      ringData.forEach(r=>{const p2=(t+r.userData.phase)%(Math.PI*2);r.userData.rMat.opacity=(Math.sin(p2)+1)*0.32;r.scale.setScalar(1+Math.sin(p2)*0.22);});
-      renderer.render(scene,camera);
-    })();
-
-    window.addEventListener('resize',()=>{W=getW();renderer.setSize(W,H);camera.aspect=W/H;camera.updateProjectionMatrix();});
-  }
-
-  /* ── FINGERPRINTS ── */
-  const NS='http://www.w3.org/2000/svg';
-  function svgEl(tag,attrs,parent){
-    const e=document.createElementNS(NS,tag);
-    Object.entries(attrs).forEach(([k,v])=>e.setAttribute(k,v));
-    if(parent) parent.appendChild(e);
-    return e;
-  }
-
-  function buildFpStats(){
-    const S=(typeof window.S !== 'undefined' && window.S && window.S.length) ? window.S : [];
-    if(!S.length){ const accent=getComputedStyle(document.documentElement).getPropertyValue('--g').trim()||'#1DB954'; const accent2=getComputedStyle(document.documentElement).getPropertyValue('--g2').trim()||'#1ed760'; return {loyalty:0.74,skipRate:0.12,peakHour:23,genre:'pop',accent,accent2}; }
-    // loyalty = top artist streams / total
-    const artistCounts={};
-    S.forEach(x=>{const a=x.artist||x.channel||'?';artistCounts[a]=(artistCounts[a]||0)+1;});
-    const maxA=Math.max(...Object.values(artistCounts));
-    const loyalty=Math.min(maxA/S.length*10,1);
-    // skip rate
-    const skipped=S.filter(x=>(x.ms||x.ms_played||x.msPlayed||0)<30000).length;
-    const skipRate=S.length?skipped/S.length:0.12;
-    // peak hour
-    const hourCounts=Array(24).fill(0);
-    S.forEach(x=>{const ts=x.ts||x.date||'';const h=ts?new Date(ts).getHours():0;hourCounts[h]++;});
-    const peakHour=hourCounts.indexOf(Math.max(...hourCounts));
-    // Resolve actual hex values — SVG attributes don't support CSS vars
-    const accent = getComputedStyle(document.documentElement).getPropertyValue('--g').trim() || '#1DB954';
-    const accent2 = getComputedStyle(document.documentElement).getPropertyValue('--g2').trim() || '#1ed760';
-    return {loyalty,skipRate,peakHour,accent,accent2};
-  }
-
-  function buildFingerprints(){
-    const st=buildFpStats();
-    const acc=st.accent, acc2=st.accent2;
-    // A: Mandala
-    const arms=document.getElementById('p11MandalaArms');
-    const rings=document.getElementById('p11MandalaRings');
-    if(arms&&rings){
-      arms.innerHTML=''; rings.innerHTML='';
-      const cx=100,cy=100,nArms=16,thick=0.8+st.loyalty*2.8,chaos=st.skipRate*18;
-      const nRings=Math.round(2+(st.peakHour/24)*4);
-      for(let r=1;r<=nRings;r++) svgEl('circle',{cx,cy,r:12+(r/nRings)*76,fill:'none',stroke:acc,'stroke-width':'0.4',opacity:(0.1*r).toFixed(2),'stroke-dasharray':`${3+r} ${9-r*0.5}`},rings);
-      for(let i=0;i<nArms;i++){
-        const a=(i/nArms)*Math.PI*2, j=Math.sin(i*2.3)*chaos*0.5;
-        const len=38+(i%4)*14+j, x2=cx+Math.cos(a)*len, y2=cy+Math.sin(a)*len;
-        const cpX=cx+Math.cos(a+0.35)*len*0.55, cpY=cy+Math.sin(a+0.35)*len*0.55;
-        svgEl('path',{d:`M${cx},${cy} Q${cpX},${cpY} ${x2},${y2}`,stroke:acc,'stroke-width':thick.toFixed(1),fill:'none',opacity:(0.35+(i/nArms)*0.55).toFixed(2)},arms);
-        svgEl('circle',{cx:x2,cy:y2,r:(0.8+st.loyalty*2).toFixed(1),fill:acc,opacity:'0.75'},arms);
-        svgEl('circle',{cx:(cx+Math.cos(a)*len*0.55).toFixed(2),cy:(cy+Math.sin(a)*len*0.55).toFixed(2),r:'1.2',fill:acc2,opacity:'0.4'},arms);
-      }
-    }
-    // B: Blob
-    const bOuter=document.getElementById('p11BlobOuter');
-    const bInner=document.getElementById('p11BlobInner');
-    if(bOuter&&bInner){
-      bOuter.innerHTML=''; bInner.innerHTML='';
-      const cx=100,cy=100,pts=64,baseR=52;
-      const seed=st.loyalty*1000+st.skipRate*100+st.peakHour;
-      function sr(n){const x=Math.sin(n+seed)*43758.5453;return x-Math.floor(x);}
-      const coords=Array.from({length:pts},(_,i)=>{
-        const a=(i/pts)*Math.PI*2;
-        const r=baseR+Math.sin(a*3)*18*st.loyalty+Math.cos(a*5)*10*st.loyalty+(sr(i)-0.5)*st.skipRate*28;
-        return [cx+Math.cos(a)*r,cy+Math.sin(a)*r];
-      });
-      function makePath(cs,scale){
-        const sc=cs.map(([x,y])=>[cx+(x-cx)*scale,cy+(y-cy)*scale]);
-        let d=`M${sc[0][0].toFixed(2)},${sc[0][1].toFixed(2)}`;
-        for(let i=0;i<pts;i++){
-          const p0=sc[(i-1+pts)%pts],p1=sc[i],p2=sc[(i+1)%pts];
-          d+=` S${(p1[0]+(p2[0]-p0[0])*0.18).toFixed(2)},${(p1[1]+(p2[1]-p0[1])*0.18).toFixed(2)} ${p2[0].toFixed(2)},${p2[1].toFixed(2)}`;
-        }
-        return d+'Z';
-      }
-      svgEl('path',{d:makePath(coords,1),fill:'url(#p11rgB)',stroke:acc,'stroke-width':'1.8',opacity:'0.9'},bOuter);
-      [0.72,0.50,0.30].forEach((s,i)=>svgEl('path',{d:makePath(coords,s),fill:'none',stroke:acc,'stroke-width':'0.6',opacity:(0.15+i*0.08).toFixed(2)},bInner));
-      svgEl('circle',{cx:100,cy:100,r:'5',fill:acc},bInner);
-      svgEl('circle',{cx:100,cy:100,r:'2.5',fill:acc2},bInner);
-    }
-    // C: Polar
-    const pBars=document.getElementById('p11PolarBars');
-    if(pBars){
-      pBars.innerHTML='';
-      const cx=100,cy=100,bars=48,thick=0.9+st.loyalty*1.8;
-      for(let i=0;i<bars;i++){
-        const a=(i/bars)*Math.PI*2-Math.PI/2;
-        const v=0.25+Math.abs(Math.sin(i*1.27+st.loyalty*4))*0.65+Math.cos(i*0.8)*0.15*st.skipRate;
-        svgEl('line',{x1:(cx+Math.cos(a)*14).toFixed(2),y1:(cy+Math.sin(a)*14).toFixed(2),x2:(cx+Math.cos(a)*(14+v*72)).toFixed(2),y2:(cy+Math.sin(a)*(14+v*72)).toFixed(2),stroke:acc,'stroke-width':thick.toFixed(1),opacity:(0.45+v*0.5).toFixed(2),'stroke-linecap':'round'},pBars);
-      }
-      [25,50,75].forEach(r=>svgEl('circle',{cx,cy,r,fill:'none',stroke:acc,'stroke-width':'0.3',opacity:'0.12'},pBars));
-    }
-    // Meta
-    const meta=document.getElementById('p11FpMeta');
-    if(meta) meta.innerHTML=`
-      <div class="p11-vmeta-item">Loyalty: <span>${(st.loyalty*100).toFixed(0)}%</span></div>
-      <div class="p11-vmeta-item">Skip rate: <span>${(st.skipRate*100).toFixed(0)}%</span></div>
-      <div class="p11-vmeta-item">Peak hour: <span>${st.peakHour}:00</span></div>
-    `;
-  }
-
-  window.p11ExportSVG=function(id,fn){
-    const s=document.getElementById(id);
-    if(!s) return;
-    const b=new Blob([new XMLSerializer().serializeToString(s)],{type:'image/svg+xml'});
-    const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=fn+'.svg';a.click();
-  };
-  window.p11ExportPNG=function(id,fn){
-    const s=document.getElementById(id);
-    if(!s) return;
-    const xml=new XMLSerializer().serializeToString(s);
-    const cv=document.createElement('canvas');cv.width=cv.height=800;
-    const ctx=cv.getContext('2d');
-    const img=new Image();
-    img.onload=()=>{ctx.fillStyle='#0a0a0a';ctx.fillRect(0,0,800,800);ctx.drawImage(img,0,0,800,800);const a=document.createElement('a');a.href=cv.toDataURL('image/png');a.download=fn+'.png';a.click();};
-    img.src=URL.createObjectURL(new Blob([xml],{type:'image/svg+xml'}));
-  };
-
-  /* ── PDF ── */
-  let _p11PdfStyle='A';
-  const _p11SelPages=new Set(['cover','overview','tracks','calendar','archetype','timeline','map','artists','back']);
-  const _p11PAL=(function(){
-    const acc=getComputedStyle(document.documentElement).getPropertyValue('--g').trim()||'#1DB954';
-    const acc2=getComputedStyle(document.documentElement).getPropertyValue('--g2').trim()||'#1ed760';
-    return {
-      A:{bg:'#080808',bg2:'#0d0d0d',bg3:'#111',acc,acc2,tx:'#f0f0f0',tx2:'#aaa',mu:'#444',brd:'#1e1e1e'},
-      B:{bg:'#f5f0eb',bg2:'#ede8e2',bg3:'#e8e2da',acc,acc2,tx:'#1a1a1a',tx2:'#444',mu:'#888',brd:'#ccc'},
-    };
-  })();
-  const _p11Pages=[
-    {id:'cover',label:'COVER',num:'01',render:p11RenderCover},
-    {id:'overview',label:'OVERVIEW STATS',num:'02',render:p11RenderOverview},
-    {id:'tracks',label:'TOP TRACKS',num:'03',render:p11RenderTracks},
-    {id:'calendar',label:'EMOTIONAL CALENDAR',num:'04',render:p11RenderCalendar},
-    {id:'archetype',label:'ARCHETYPE + RADAR',num:'05',render:p11RenderRadar},
-    {id:'timeline',label:'MILESTONES',num:'06',render:p11RenderTimeline},
-    {id:'map',label:'LISTENING MAP',num:'07',render:p11RenderMap},
-    {id:'artists',label:'TOP ARTISTS',num:'08',render:p11RenderArtists},
-    {id:'back',label:'BACK COVER',num:'09',render:p11RenderBack},
-  ];
-
-  window.p11SwitchPDF=function(s,btn){
-    _p11PdfStyle=s;
-    document.querySelectorAll('.p11-pdf-tab').forEach(t=>t.classList.remove('act'));
-    btn.classList.add('act');
-    buildPDFPreview();
-  };
-
-  function buildPDFPreview(){
-    const container=document.getElementById('p11PdfPreview');
-    if(!container) return;
-    container.innerHTML='';
-    _p11Pages.forEach(p=>{
-      const card=document.createElement('div');
-      card.className='p11-pdf-page'+(_p11SelPages.has(p.id)?' p11-selected':'');
-      card.onclick=()=>{
-        _p11SelPages.has(p.id)?_p11SelPages.delete(p.id):_p11SelPages.add(p.id);
-        card.classList.toggle('p11-selected',_p11SelPages.has(p.id));
-        const el=document.getElementById('p11PagesCount');
-        if(el) el.textContent=_p11SelPages.size+' / '+_p11Pages.length;
-      };
-      const inner=document.createElement('div');inner.className='p11-pdf-page-inner';inner.innerHTML=p.render(_p11PdfStyle);
-      const lbl=document.createElement('div');lbl.className='p11-pdf-page-label';lbl.innerHTML=`<span>${p.label}</span><span class="p11-pdf-page-num">${p.num}</span>`;
-      const ring=document.createElement('div');ring.className='p11-selected-ring';
-      card.append(inner,lbl,ring);container.appendChild(card);
-    });
-  }
-
-  /* PDF page renderers — pulled from phase11-preview */
-  function p11RenderCover(s){const p=_p11PAL[s];const grad=s==='A'?'linear-gradient(145deg,#080808 0%,#0a1a0f 60%,#080808 100%)':'linear-gradient(145deg,#f5f0eb 0%,#d8f5e5 50%,#f5f0eb 100%)';const arms=Array.from({length:10},(_,i)=>{const a=(i/10)*Math.PI*2,len=18+i%3*9;return `<line x1="40" y1="40" x2="${(40+Math.cos(a)*len).toFixed(1)}" y2="${(40+Math.sin(a)*len).toFixed(1)}" stroke="${p.acc}" stroke-width="1.3" opacity="${(0.3+i/10*0.6).toFixed(2)}"/>`;}).join('');return `<div style="background:${grad};height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:16px;text-align:center"><svg width="80" height="80" viewBox="0 0 80 80"><circle cx="40" cy="40" r="36" fill="none" stroke="${p.acc}" stroke-width="0.7" opacity="0.22"/>${arms}<circle cx="40" cy="40" r="5" fill="${p.acc}"/><circle cx="40" cy="40" r="2.5" fill="${p.acc2}"/></svg><div style="font-family:'Space Mono',monospace;font-size:2rem;color:${p.acc};font-weight:700;line-height:1">${(()=>{const _S2=(window.p7S?window.p7S():(window.S||[]));const _yrs=_S2.map(x=>new Date(x.ts||x.endTime||x.watchedAt||0).getFullYear()).filter(y=>y>1990&&y<2100);return _yrs.length?Math.max(..._yrs):new Date().getFullYear();})()}</div><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.tx};opacity:.5;letter-spacing:.14em">LISTENING REPORT</div><div style="font-family:'Space Mono',monospace;font-size:.3rem;color:${p.mu};letter-spacing:.1em;margin-top:4px">STATIFY · YOUR YEAR IN SOUND</div></div>`;}
-  function p11RenderOverview(s){const p=_p11PAL[s];const S=(window.p7S?window.p7S():(window.S||[]));const n=S.length;const hrs=Math.round(S.reduce((a,x)=>a+(x.ms||x.ms_played||x.msPlayed||0),0)/3600000);const rows=[['TOTAL STREAMS',n.toLocaleString()],['EST. HOURS',hrs||'—'],['TOP ARTIST',(()=>{const m={};S.forEach(x=>{const a=x.artist||x.channel||'?';m[a]=(m[a]||0)+1;});return Object.entries(m).sort((a,b)=>b[1]-a[1])[0]?.[0]||'—';})()],['PEAK DAY',(()=>{const dm={};S.forEach(x=>{const d=new Date(x.ts||x.endTime||x.watchedAt||0).getDay();dm[d]=(dm[d]||0)+1;});const best=Object.entries(dm).sort((a,b)=>b[1]-a[1])[0];return best?['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][+best[0]]:'—';})()],['UNIQUE TRACKS',(()=>{const t=new Set(S.map(x=>x.track||x.title));return t.size||'—';})()],['COUNTRIES',(()=>{const cd=(typeof buildCountryData==='function')?buildCountryData():[];return cd.length||'—';})()]];return `<div style="background:${p.bg};padding:12px;height:100%;display:flex;flex-direction:column"><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.acc};letter-spacing:.1em;margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid ${p.brd}">OVERVIEW</div>${rows.map(([l,v])=>`<div style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid ${p.brd}"><span style="font-family:'Space Mono',monospace;font-size:.32rem;color:${p.mu}">${l}</span><span style="font-family:'Space Mono',monospace;font-size:.6rem;color:${p.acc};font-weight:700">${v}</span></div>`).join('')}</div>`;}
-  function p11RenderTracks(s){const p=_p11PAL[s];const S=(window.p7S?window.p7S():(window.S||[]));const m={};S.forEach(x=>{const k=(x.track||x.title||'?')+'||'+(x.artist||x.channel||'?');m[k]=(m[k]||0)+1;});const top=Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,7);const mx=top[0]?.[1]||1;return `<div style="background:${p.bg2};padding:10px;height:100%;display:flex;flex-direction:column"><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.acc};letter-spacing:.1em;margin-bottom:7px">TOP TRACKS</div>${top.map(([k,cnt],i)=>{const [t,ar]=k.split('||');return `<div style="display:flex;align-items:center;gap:5px;padding:3.5px 0;border-bottom:1px solid ${p.brd}"><span style="font-family:'Space Mono',monospace;font-size:.3rem;color:${p.acc};opacity:.6;width:9px">${i+1}</span><div style="flex:1;overflow:hidden"><div style="font-size:.36rem;color:${p.tx};font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t}</div><div style="font-size:.28rem;color:${p.mu}">${ar}</div></div><div style="width:${((cnt/mx)*50).toFixed(0)}px;height:2px;background:${p.acc};border-radius:1px;flex-shrink:0"></div></div>`;}).join('')}</div>`;}
-  function p11RenderCalendar(s){const p=_p11PAL[s];const _calS=(window.p7S?window.p7S():(window.S||[]));const _calYear=(()=>{const ys=_calS.map(x=>new Date(x.ts||x.endTime||x.watchedAt||0).getFullYear()).filter(y=>y>1990&&y<2100);return ys.length?Math.max(...ys):new Date().getFullYear();})();const _calStart=new Date(_calYear,0,1);const _calBuckets={};_calS.forEach(x=>{const d=new Date(x.ts||x.endTime||x.watchedAt||0);if(d.getFullYear()===_calYear){const key=Math.floor((d-_calStart)/86400000);_calBuckets[key]=(_calBuckets[key]||0)+1;}});const _calMax=Math.max(1,...Object.values(_calBuckets));const cells=Array.from({length:371},(_,i)=>{const v=_calBuckets[i]||0;return v?v/_calMax:0;});return `<div style="background:${p.bg};padding:10px;height:100%;display:flex;flex-direction:column"><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.acc};letter-spacing:.1em;margin-bottom:7px">EMOTIONAL CALENDAR</div><div style="display:grid;grid-template-columns:repeat(53,1fr);gap:1.2px;flex:1">${cells.map(v=>`<div style="background:${p.acc};opacity:${(v*0.85+0.08).toFixed(2)};border-radius:1px;aspect-ratio:1"></div>`).join('')}</div><div style="display:flex;justify-content:space-between;margin-top:5px"><span style="font-size:.28rem;color:${p.mu};font-family:'Space Mono',monospace">JAN</span><span style="font-size:.28rem;color:${p.mu};font-family:'Space Mono',monospace">DEC</span></div></div>`;}
-  function p11RenderRadar(s){
-    const p=_p11PAL[s];
-    const dims=['LOYALTY','EXPLORER','NIGHTOWL','SKIPPER','BINGE','FOCUS'];
-    // Compute real vals from actual stream data instead of hardcoded placeholders
-    const S=(window.S||[]);
-    let vals=[0.5,0.5,0.5,0.5,0.5,0.5];
-    let archetypeLabel='LISTENER';
-    if(S.length>=20){
-      const artMap={};
-      S.forEach(x=>{const a=x.artist||x.channel||'?';if(!artMap[a])artMap[a]={streams:0};artMap[a].streams++;});
-      const sorted=Object.entries(artMap).sort((a,b)=>b[1].streams-a[1].streams);
-      const top10=sorted.slice(0,10).reduce((acc,e)=>acc+e[1].streams,0);
-      const loyalty=Math.min(1,top10/S.length);
-      const uniqueArtists=sorted.length;
-      const explorer=Math.min(1,uniqueArtists/S.length*20);
-      const lateCount=S.filter(x=>{const ts=x.endTime||x.ts||x.watchedAt||'';if(!ts)return false;const h=new Date(ts).getHours();return h>=22||h<4;}).length;
-      const nightowl=Math.min(1,lateCount/S.length*3);
-      const skipped=S.filter(x=>(x.msPlayed||x.ms_played||0)<30000).length;
-      const skipper=Math.min(1,skipped/S.length*2);
-      const dayCounts={};
-      S.forEach(x=>{const ts=x.endTime||x.ts||x.watchedAt||'';if(!ts)return;const d=new Date(ts).toDateString();dayCounts[d]=(dayCounts[d]||0)+1;});
-      const dayVals=Object.values(dayCounts);
-      const mean=dayVals.reduce((a,b)=>a+b,0)/dayVals.length;
-      const binge=Math.min(1,Math.max(...dayVals)/Math.max(1,mean)/10);
-      const avgDepth=Object.values(artMap).reduce((a,e)=>a+(e.streams>1?1:0),0)/Math.max(1,uniqueArtists);
-      const focus=Math.min(1,avgDepth);
-      vals=[loyalty,explorer,nightowl,skipper,binge,focus];
-      // Determine archetype label from top axes
-      const axNames=['LOYALIST','EXPLORER','NIGHT OWL','SKIPPER','BINGE','FOCUSED'];
-      const topIdx=vals.indexOf(Math.max(...vals));
-      archetypeLabel=axNames[topIdx];
-    }
-    const cx=60,cy=65,r=42;
-    const pts=dims.map((_,i)=>{const a=(i/6)*Math.PI*2-Math.PI/2;return[(cx+Math.cos(a)*r*vals[i]).toFixed(1),(cy+Math.sin(a)*r*vals[i]).toFixed(1)];});
-    const poly=pts.map(pp=>pp.join(',')).join(' ');
-    const grids=[0.25,0.5,0.75,1].map(f=>`<polygon points="${dims.map((_,i)=>{const a=(i/6)*Math.PI*2-Math.PI/2;return`${(cx+Math.cos(a)*r*f).toFixed(1)},${(cy+Math.sin(a)*r*f).toFixed(1)}`;}).join(' ')}" fill="none" stroke="${p.acc}" stroke-width="0.4" opacity="${(f*0.28).toFixed(2)}"/>`).join('');
-    const spokes=dims.map((_,i)=>{const a=(i/6)*Math.PI*2-Math.PI/2;return`<line x1="${cx}" y1="${cy}" x2="${(cx+Math.cos(a)*r).toFixed(1)}" y2="${(cy+Math.sin(a)*r).toFixed(1)}" stroke="${p.acc}" stroke-width="0.3" opacity="0.2"/>`;}).join('');
-    const labels=dims.map((d,i)=>{const a=(i/6)*Math.PI*2-Math.PI/2;return`<text x="${(cx+Math.cos(a)*(r+10)).toFixed(1)}" y="${(cy+Math.sin(a)*(r+10)+2).toFixed(1)}" font-size="3.6" fill="${p.tx2}" text-anchor="middle" font-family="Space Mono">${d}</text>`;}).join('');
-    return `<div style="background:${p.bg2};height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px"><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.acc};letter-spacing:.1em;margin-bottom:6px">ARCHETYPE · ${archetypeLabel}</div><svg viewBox="0 0 120 130" style="width:100%;max-height:160px">${grids}${spokes}<polygon points="${poly}" fill="${p.acc}" opacity="0.17" stroke="${p.acc}" stroke-width="1.2"/>${pts.map(pt=>`<circle cx="${pt[0]}" cy="${pt[1]}" r="2" fill="${p.acc}"/>`).join('')}${labels}</svg></div>`;
-  }
-  function p11RenderTimeline(s){
-    const p=_p11PAL[s];
-    const S=(window.S||[]);
-    const events=[];
-    if(S.length){
-      // Sort by time
-      const sorted=[...S].sort((a,b)=>new Date(getTs(a)||0)-new Date(getTs(b)||0));
-      const fmtDate=ts=>{try{const d=new Date(ts);return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});}catch(e){return'?';}};
-      // First ever stream
-      if(sorted[0]){events.push([fmtDate(getTs(sorted[0])),'First stream: '+getTrack(sorted[0])+' · '+getArtist(sorted[0])]);}
-      // 1000 streams milestone
-      if(sorted.length>=1000){events.push([fmtDate(getTs(sorted[999])),'1,000th stream reached']);}
-      // 10k streams milestone
-      if(sorted.length>=10000){events.push([fmtDate(getTs(sorted[9999])),'10,000th stream reached']);}
-      // Most played artist
-      const topArt=topBy(sorted,x=>getArtist(x))[0];
-      if(topArt){events.push(['—','#1 artist: '+topArt[0]+' ('+topArt[1].toLocaleString()+' streams)']);}
-      // Peak day
-      const peakDay=topBy(sorted,x=>(getTs(x)||'').slice(0,10))[0];
-      if(peakDay){events.push([fmtDate(peakDay[0]),'Peak day: '+peakDay[1]+' streams']);}
-      // Unique artists count — only push if we actually have data
-      const uniqArt=new Set(sorted.map(x=>getArtist(x)).filter(Boolean)).size;
-      if(uniqArt>0){events.push(['—',uniqArt.toLocaleString()+' unique artists discovered']);}
-      // Total hours — only push if non-zero
-      const totalMs=sorted.reduce((a,x)=>a+getMs(x),0);
-      const hrs=Math.round(totalMs/3600000);
-      if(hrs>0){events.push(['—',hrs.toLocaleString()+' total hours listened']);}
-    } else {
-      events.push(['—','No data loaded']);
-    }
-    return `<div style="background:${p.bg};padding:12px;height:100%;display:flex;flex-direction:column"><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.acc};letter-spacing:.1em;margin-bottom:10px">MILESTONES</div>${events.slice(0,6).map(([d,e])=>`<div style="display:flex;gap:8px;align-items:flex-start;padding-bottom:7px"><div style="width:5px;height:5px;border-radius:50%;background:${p.acc};margin-top:2px;flex-shrink:0"></div><div><div style="font-family:'Space Mono',monospace;font-size:.28rem;color:${p.acc};margin-bottom:1px">${d}</div><div style="font-size:.32rem;color:${p.tx2};line-height:1.4">${e}</div></div></div>`).join('')}</div>`;
-  }
-  function p11RenderMap(s){const p=_p11PAL[s];const data=buildCountryData().slice(0,14);const dots=data.map(c=>{const x=((c.lon+180)/360)*140+15,y=((90-c.lat)/180)*80+10;return`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(c.size/5+0.4).toFixed(1)}" fill="${p.acc}" opacity="0.85"/>`;}).join('');return `<div style="background:${p.bg};height:100%;display:flex;flex-direction:column;padding:10px"><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.acc};letter-spacing:.1em;margin-bottom:6px">LISTENING MAP</div><div style="flex:1;display:flex;align-items:center"><svg viewBox="0 0 170 100" style="width:100%"><rect width="170" height="100" fill="${p.bg2}" rx="3"/>${dots}</svg></div></div>`;}
-  function p11RenderArtists(s){const p=_p11PAL[s];const S=(window.S||[]);const m={};S.forEach(x=>{const a=x.artist||x.channel||'?';m[a]=(m[a]||0)+1;});const top=Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,7);const mx=top[0]?.[1]||1;return `<div style="background:${p.bg2};padding:10px;height:100%;display:flex;flex-direction:column"><div style="font-family:'Space Mono',monospace;font-size:.36rem;color:${p.acc};letter-spacing:.1em;margin-bottom:7px">TOP ARTISTS</div>${top.map(([name,cnt],i)=>`<div style="display:flex;align-items:center;gap:5px;padding:3.5px 0;border-bottom:1px solid ${p.brd}"><span style="font-family:'Space Mono',monospace;font-size:.3rem;color:${p.acc};opacity:.6;width:9px">${i+1}</span><div style="flex:1;overflow:hidden"><div style="font-size:.36rem;color:${p.tx};font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name}</div><div style="font-size:.28rem;color:${p.mu}">${cnt.toLocaleString()} plays</div></div><div style="width:${((cnt/mx)*55).toFixed(0)}px;height:2px;background:${p.acc};border-radius:1px;flex-shrink:0"></div></div>`).join('')}</div>`;}
-  function p11RenderBack(s){const p=_p11PAL[s];const grad=s==='A'?'linear-gradient(180deg,#080808 0%,#0a1a0f 100%)':'linear-gradient(180deg,#f5f0eb 0%,#d4f0e0 100%)';const S=(window.S||[]);const hrs=Math.round(S.reduce((a,x)=>a+(x.ms||x.ms_played||x.msPlayed||0),0)/3600000)||'—';const uTracks=new Set(S.map(x=>x.track||x.title)).size||'—';return `<div style="background:${grad};height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;text-align:center;gap:9px"><div style="font-family:'Space Mono',monospace;font-size:.55rem;color:${p.acc};letter-spacing:.16em;font-weight:700">STATIFY</div><div style="font-size:.36rem;color:${p.tx2};opacity:.65;line-height:1.7;max-width:110px">Your year in music. Every stream, every moment.</div><div style="font-family:'Space Mono',monospace;font-size:.28rem;color:${p.acc};letter-spacing:.08em">${hrs} HRS · ${uTracks} TRACKS</div><div style="font-family:'Space Mono',monospace;font-size:.24rem;color:${p.mu};letter-spacing:.06em">100% LOCAL · 100% PRIVATE</div></div>`;}
-
-  window.p11ExportPDF=function(){
-    if(typeof window.jspdf==='undefined'){alert('jsPDF not loaded');return;}
-    // Ensure window.S is populated (may not be set if render() hasn't been called yet in this session)
-    if(!window.S || !window.S.length){
-      if(typeof S !== 'undefined' && S && S.length) window.S = S;
-    }
-    const btn=document.getElementById('p11PdfExportBtn');
-    if(btn){btn.textContent='Generating…';btn.disabled=true;}
-    const {jsPDF}=window.jspdf;
-    const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
-    const pages=_p11Pages.filter(p=>_p11SelPages.has(p.id));
-    if(!pages.length){if(btn){btn.textContent='↓ Export PDF';btn.disabled=false;}return;}
-
-    const bgColor = _p11PdfStyle==='A'?'#080808':'#f5f0eb';
-
-    const tmpDiv=document.createElement('div');
-    tmpDiv.style.cssText=`position:fixed;left:0;top:0;width:794px;height:1123px;overflow:hidden;background:${bgColor};pointer-events:none;opacity:0;z-index:9999;`;
-    document.body.appendChild(tmpDiv);
-
-    const safetyTimer=setTimeout(()=>{
-      try{document.body.removeChild(tmpDiv);}catch(e){}
-      if(btn){btn.textContent='↓ Export PDF';btn.disabled=false;}
-      alert('PDF export timed out. Try selecting fewer pages.');
-    },90000);
-
-    let idx=0;
-    function nextPage(){
-      if(idx>=pages.length){
-        clearTimeout(safetyTimer);
-        try{document.body.removeChild(tmpDiv);}catch(e){}
-        doc.save('statify-annual-report.pdf');
-        if(btn){btn.textContent='↓ Export PDF';btn.disabled=false;}
-        return;
-      }
-      const page=pages[idx++];
-      if(btn) btn.textContent=`Generating… (${idx}/${pages.length})`;
-      // Wrap: catch synchronous render failures
-      try {
-        tmpDiv.innerHTML=`<div style="width:794px;height:1123px;overflow:hidden;position:relative;background:${bgColor}">${page.render(_p11PdfStyle)}</div>`;
-      } catch(renderErr) {
-        console.warn('Page render threw, skipping:',renderErr);
-        nextPage();
-        return;
-      }
-      // Per-page timeout (30s max)
-      const pageTimer=setTimeout(()=>{
-        console.warn('Page timed out, skipping:',page.id);
-        nextPage();
-      },30000);
-      // Wait for layout + fonts to settle, then capture
-      requestAnimationFrame(()=>{
-        setTimeout(()=>{
-          if(typeof html2canvas==='undefined'){
-            clearTimeout(pageTimer);
-            nextPage();
-            return;
-          }
-          // Briefly make visible so html2canvas can measure layout correctly
-          tmpDiv.style.opacity='1';
-          requestAnimationFrame(()=>{
-          html2canvas(tmpDiv,{
-            scale:2,
-            useCORS:true,
-            allowTaint:true,
-            backgroundColor:_p11PdfStyle==='A'?'#080808':'#f5f0eb',
-            width:794,
-            height:1123,
-            windowWidth:794,
-            windowHeight:1123,
-            logging:false,
-            onclone:(clonedDoc)=>{
-              const cs=getComputedStyle(document.documentElement);
-              const root=clonedDoc.documentElement;
-              ['--g','--g2','--bg','--s1','--s2','--s3','--text','--text2','--muted','--border','--border2','--muted2','--red','--blue','--amber'].forEach(p=>{
-                root.style.setProperty(p,cs.getPropertyValue(p).trim());
-              });
-              // Ensure clone is visible for capture
-              const clonedEl=clonedDoc.body.querySelector('div');
-              if(clonedEl){ clonedEl.style.opacity='1'; clonedEl.style.pointerEvents='auto'; }
-            }
-          }).then(canvas=>{
-            clearTimeout(pageTimer);
-            tmpDiv.style.opacity='0';
-            if(idx>1) doc.addPage();
-            doc.addImage(canvas.toDataURL('image/jpeg',0.92),'JPEG',0,0,210,297);
-            nextPage();
-          }).catch(err=>{
-            clearTimeout(pageTimer);
-            tmpDiv.style.opacity='0';
-            console.warn('Page render failed, skipping:',err);
-            nextPage();
-          });
-          }); // end inner rAF
-        }, 400);
-      });
-    }
-    nextPage();
-  };
-
-  /* ── INIT ── */
-  function initPhase11(){
-    const wrap=document.getElementById('phase11-wrap');
-    if(!wrap) return;
-    wrap.style.display='';
-    if(typeof ScrollTrigger!=='undefined') debouncedSTRefresh();
-    buildFingerprints();
-    buildPDFPreview();
-    // Globe lazy: only build when section is expanded
-    const globeHeader=document.getElementById('p11GlobeHeader');
-    if(globeHeader){
-      const origClick=globeHeader.onclick;
-      globeHeader.onclick=function(e){if(origClick) origClick.call(this,e);setTimeout(()=>{buildGlobe();if(typeof ScrollTrigger!=='undefined')debouncedSTRefresh();},100);};
-    }
-  }
-
-  /* ── Patch render ── */
-  (function(){
-    const _orig=render;
-    render=function(demo){_orig(demo);setTimeout(initPhase11,1200);};
-  })();
-
-  /* ── Patch goHome ── */
-  (function(){
-    const _orig=goHome;
-    goHome=function(){_orig();const w=document.getElementById('phase11-wrap');if(w)w.style.display='none';_globeInited=false;};
-  })();
-
-  })();
-  </script>
 
   <script>
     /* ═══════════════════════════════════════
