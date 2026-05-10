@@ -3980,12 +3980,14 @@
 
     /* ── Context sidebar panel (always in DOM, off-screen right) ── */
     #np-ctx {
-      position: fixed; top: var(--header-h); right: -380px; bottom: var(--footer-h);
+      position: fixed; top: 0; right: -380px; bottom: 0;
       width: 380px; z-index: 90;
       background: var(--s1);
       border-left: 1px solid var(--border);
       display: flex; flex-direction: column;
       overflow-y: auto; overflow-x: hidden;
+      padding-top: var(--header-h);
+      padding-bottom: var(--footer-h);
       transition: right .38s cubic-bezier(.4,0,.2,1)
     }
     #np-ctx::-webkit-scrollbar { width: 4px }
@@ -4355,7 +4357,7 @@
     body.yt-theme .npc-bar { background: var(--g) }
 
     /* When bottom bar is NOT visible, sidebar extends to viewport bottom */
-    body:not(:has(#np-bar.visible)) #np-ctx { bottom: 0; }
+    body:not(:has(#np-bar.visible)) #np-ctx { padding-bottom: 0; }
 
     @media(max-width:640px) {
       .np-card { flex-direction: row }
