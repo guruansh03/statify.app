@@ -3986,10 +3986,18 @@
       border-left: 1px solid var(--border);
       display: flex; flex-direction: column;
       overflow-y: auto; overflow-x: hidden;
-      padding-top: var(--header-h);
-      padding-bottom: var(--footer-h);
       transition: right .38s cubic-bezier(.4,0,.2,1)
     }
+    /* Spacers push content clear of header and footer */
+    #np-ctx::before {
+      content: ''; display: block; flex-shrink: 0;
+      height: var(--header-h);
+    }
+    #np-ctx::after {
+      content: ''; display: block; flex-shrink: 0;
+      height: var(--footer-h);
+    }
+    body:not(:has(#np-bar.visible)) #np-ctx::after { height: 0; }
     #np-ctx::-webkit-scrollbar { width: 4px }
     #np-ctx::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px }
     #np-ctx.open { right: 0 }
@@ -4357,7 +4365,7 @@
     body.yt-theme .npc-bar { background: var(--g) }
 
     /* When bottom bar is NOT visible, sidebar extends to viewport bottom */
-    body:not(:has(#np-bar.visible)) #np-ctx { padding-bottom: 0; }
+    
 
     @media(max-width:640px) {
       .np-card { flex-direction: row }
@@ -9997,7 +10005,7 @@
       const barFill = document.getElementById('npc-rank-bar-fill');
       const rankWrap = document.getElementById('npc-rank-wrap');
 
-      if (rankWrap) rankWrap.style.display = rank > 0 ? 'block' : 'none';
+      if (rankWrap) rankWrap.style.display = 'none';
       if (numEl) numEl.textContent = rank > 0 ? '#' + rank : '—';
       if (ofEl) ofEl.textContent = 'of ' + totalTracks.toLocaleString() + ' tracks';
       if (barDesc) barDesc.textContent = myPlays + ' streams';
