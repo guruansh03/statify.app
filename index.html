@@ -8526,11 +8526,6 @@
       }
       /* Home → scroll to top */
       if (e.key === 'Home') { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
-                if (body && body.classList.contains('collapsed') && hdr) hdr.click();
-          hdr && hdr.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-        return;
-      }
       /* P → Poster section */
       if (e.key === 'p' || e.key === 'P') {
         const el = document.getElementById('p6PosterEl') || document.getElementById('phase6-wrap');
