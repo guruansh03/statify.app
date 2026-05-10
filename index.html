@@ -3977,7 +3977,7 @@
     /* ── Context sidebar panel (always in DOM, off-screen right) ── */
     #np-ctx {
       position: fixed; top: 0; right: -380px; bottom: 0;
-      width: 380px; z-index: 290;
+      width: 380px; z-index: 90;
       background: var(--s1);
       border-left: 1px solid var(--border);
       display: flex; flex-direction: column;
@@ -4093,7 +4093,7 @@
     /* ── Sticky footer bar ── */
     #np-bar {
       position: fixed; bottom: 0; left: 0; right: 0;
-      z-index: 300; height: 66px;
+      z-index: 95; height: 66px;
       background: var(--s1);
       border-top: 1px solid var(--border);
       display: none; align-items: center;
@@ -6729,7 +6729,7 @@
         <button class="npc-cbtn" onclick="spPlayerCmd('previous')">⏮</button>
         <button class="npc-play-btn" id="npc-play-btn" onclick="spPlayerCmd('playpause')">▶</button>
         <button class="npc-cbtn" onclick="spPlayerCmd('next')">⏭</button>
-        <span class="npc-device-badge" id="npc-device-badge"></span>
+        <span class="npc-device-badge" id="npc-device-badge" style="font-family:var(--mono);font-size:.55rem;color:#f5a623;font-weight:700;cursor:default;white-space:nowrap;" title="Track rank in your library"></span>
       </div>
     </div>
 
@@ -8149,16 +8149,21 @@
       const cols = ['#1DB954', '#5b9cf6', '#f5a623', '#e05555', '#888', '#a78bfa'];
       document.getElementById('decChart').innerHTML = Object.entries(dm).filter(([,c])=>c>0).map(([e, c], i) => { const p = tot ? Math.round((c / tot) * 100) : 0; return `<div class="dr"><div class="de">${e}</div><div class="dt"><div class="df" data-target="${p}" style="background:${cols[i]}"></div></div><div class="dp">${p}%</div></div>` }).join('');
     }
+    let _platExpanded = false;
     function renderPlatform() {
       const pM = {}; S.forEach(x => { const p = x.platform || 'Unknown'; if (!pM[p]) pM[p] = { count: 0, ms: 0 }; pM[p].count++; pM[p].ms += getMs(x) });
       const sorted = Object.entries(pM).sort((a, b) => b[1].count - a[1].count);
       const tot = S.length;
       const icos = { 'iOS': '📱', 'Android': '📱', 'Windows': '💻', 'Web Player': '🌐', 'macOS': '💻', 'Unknown': '❓' };
       const cols = { 'iOS': 'rgba(91,156,246,.18)', 'Android': 'rgba(29,185,84,.14)', 'Windows': 'rgba(91,156,246,.12)', 'Web Player': 'rgba(245,166,35,.14)', 'macOS': 'rgba(91,156,246,.12)' };
-      document.getElementById('platList').innerHTML = sorted.map(([p, v]) => {
+      const PLAT_LIMIT = 5;
+      const visible = _platExpanded ? sorted : sorted.slice(0, PLAT_LIMIT);
+      const hasMore = sorted.length > PLAT_LIMIT;
+      const platEl = document.getElementById('platList');
+      platEl.innerHTML = visible.map(([p, v]) => {
         const pct = Math.round((v.count / tot) * 100);
         return `<div class="pi"><div class="pico" style="background:${cols[p] || 'var(--s3)'}">${icos[p] || '🎵'}</div><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px"><span class="pn">${p}</span><span style="font-family:var(--mono);font-size:.68rem;color:var(--g);font-weight:700">${pct}%</span></div><div style="height:3px;background:var(--s3);border-radius:2px;overflow:hidden"><div style="height:100%;background:var(--g);width:0%;border-radius:2px;transition:width 1.3s ease" data-target="${pct}"></div></div><div style="font-family:var(--mono);font-size:.58rem;color:var(--muted);margin-top:5px">${fN(v.count)} streams · ${fmt(v.ms)}</div></div></div>`;
-      }).join('');
+      }).join('') + (hasMore ? `<button class="exp-btn" onclick="_platExpanded=!_platExpanded;renderPlatform()"><span>${_platExpanded ? 'SHOW LESS' : 'SEE ALL '+sorted.length}</span><svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="transform:rotate(${_platExpanded?180:0}deg);transition:transform .3s"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>` : '');
     }
 
     /* ═══════════════════════════════════════
@@ -9785,20 +9790,26 @@
     async function fetchTrackStats(track) {
       SP._currentTrackData = track;
       renderTrackStats();
-      if (track && track.artists && track.artists[0] && track.artists[0].id) {
-        fetchArtistStats(track.artists[0].id, track.artists[0].name);
+      npcUpdateRankBadge();
+      // Multi-artist: fetch stats for ALL artists, not just the first
+      if (track && track.artists && track.artists.length) {
+        // Show combined artist name
+        const allNames = track.artists.map(a => a.name).join(', ');
+        // Fetch first artist's Spotify data for avatar/genres, but render stats for all
+        fetchArtistStats(track.artists[0].id, allNames, track.artists);
       }
     }
 
     /* ── Artist Stats for Sidebar Panel ── */
     SP._currentArtistData = null;
 
-    async function fetchArtistStats(artistId, artistName) {
+    async function fetchArtistStats(artistId, artistName, allArtists) {
       const wrap = document.getElementById('npc-artist-stats-wrap');
       if (!wrap) return;
       wrap.style.display = 'block';
+      SP._allTrackArtists = allArtists || [{ name: artistName }];
 
-      // Render local stats immediately from uploaded data
+      // Render local stats immediately from uploaded data (multi-artist)
       renderArtistStats(artistName, null);
 
       // Fetch Spotify artist data if connected
@@ -9819,7 +9830,7 @@
       if (!wrap) return;
       wrap.style.display = 'block';
 
-      // Name
+      // Name — show all artist names
       const nameEl = document.getElementById('npc-artist-stats-name');
       if (nameEl) nameEl.textContent = artistName || '—';
 
@@ -9834,15 +9845,19 @@
         }
       }
 
-      // Local listening stats
+      // Local listening stats — AGGREGATE across ALL artists on this track
       const now = new Date();
       const allData = typeof S !== 'undefined' ? S : [];
-      const artistLower = (artistName || '').toLowerCase();
+      const artistNames = (SP._allTrackArtists || [{ name: artistName }]).map(a => (a.name || '').toLowerCase());
+
+      // Match any artist name from the track
+      function matchesAnyArtist(x) {
+        const xArtist = (x.artist || '').toLowerCase();
+        return artistNames.some(name => xArtist.includes(name.split(' ')[0]));
+      }
 
       // All-time for artist (used for first heard + unique songs — always lifetime)
-      const allArtistData = allData.filter(x =>
-        (x.artist || '').toLowerCase().includes(artistLower.split(' ')[0])
-      );
+      const allArtistData = allData.filter(matchesAnyArtist);
 
       // Period-filtered for plays/minutes
       let localData = allArtistData.slice();
@@ -9862,7 +9877,7 @@
       const artistTimestamps = allArtistData.map(x => x.ts).filter(Boolean).sort();
       const artistFirstHeard = artistTimestamps.length ? fmtDate(artistTimestamps[0]) : (allData.length ? 'NOT YET' : '—');
 
-      // Unique songs played (all-time)
+      // Unique songs played (all-time) — across all artists
       const uniqueSongs = new Set(allArtistData.map(x => (x.track||'').toLowerCase())).size;
 
       // Listening share bar: artist plays / total plays (period)
@@ -9904,27 +9919,123 @@
     /* ── Album art dominant color → CSS var (kept for future use) ── */
     function extractGlowColor(artUrl, el) {}
 
-    /* Device badge */
+    /* Device badge → replaced with dynamic rank badge */
     async function fetchDeviceBadge() {
+      // Now a no-op — rank badge handled by npcUpdateRankBadge
+      npcUpdateRankBadge();
+    }
+
+    /* Dynamic rank badge: shows #N / total in the controls row */
+    function npcUpdateRankBadge() {
       const badge = document.getElementById('npc-device-badge');
       if (!badge) return;
-      try {
-        if (!await ensureToken()) return;
-        const res = await fetch('https://api.spotify.com/v1/me/player/devices', {
-          headers: { Authorization: 'Bearer ' + SP.accessToken }
-        });
-        if (!res.ok) return;
-        const data = await res.json();
-        const active = (data.devices || []).find(d => d.is_active);
-        if (!active) { badge.style.display='none'; return; }
-        badge.style.display='inline';
-        const type = (active.type||'').toLowerCase();
-        const icons = { computer:'💻', smartphone:'📱', tablet:'📱', speaker:'🔊', tv:'📺', castdongle:'📡', gameconsole:'🎮' };
-        const btNames = ['bluetooth','bt','airplay','airpods','sonos','homepod'];
-        const isBt = btNames.some(k=>active.name.toLowerCase().includes(k));
-        badge.title = active.name;
-        badge.textContent = isBt ? '🔵' : (icons[type]||'🔊');
-      } catch(e) {}
+      const track = SP._currentTrackData;
+      if (!track || !track.name) { badge.textContent = ''; return; }
+      const allData = typeof S !== 'undefined' ? S : [];
+      if (!allData.length) { badge.textContent = ''; return; }
+
+      const trackName = (track.name || '').toLowerCase();
+      const artistName = (track.artists && track.artists[0] ? track.artists[0].name : '').toLowerCase();
+
+      // Count plays per unique track
+      const trackCounts = {};
+      allData.forEach(x => {
+        const k = ((x.track||'')+'||'+(x.artist||'')).toLowerCase();
+        trackCounts[k] = (trackCounts[k] || 0) + 1;
+      });
+
+      // Sort by plays descending
+      const sorted = Object.entries(trackCounts).sort((a,b) => b[1] - a[1]);
+      const totalTracks = sorted.length;
+
+      // Find this track's rank
+      const searchKey = (trackName + '||' + artistName).toLowerCase();
+      let rank = -1;
+      for (let i = 0; i < sorted.length; i++) {
+        if (sorted[i][0].includes(trackName) && sorted[i][0].includes(artistName.split(' ')[0])) {
+          rank = i + 1;
+          break;
+        }
+      }
+
+      if (rank > 0) {
+        badge.textContent = '#' + rank.toLocaleString() + ' / ' + totalTracks.toLocaleString();
+        badge.title = 'Track rank #' + rank + ' out of ' + totalTracks + ' unique tracks in your library';
+        badge.style.display = 'inline';
+      } else {
+        badge.textContent = 'NEW';
+        badge.title = 'This track is not in your uploaded listening history';
+        badge.style.display = 'inline';
+      }
+    }
+
+    /* Rank section period tabs */
+    SP._rankPeriod = 'lifetime';
+    function npcSetRankPeriod(period, btn) {
+      SP._rankPeriod = period;
+      const wrap = btn.parentElement;
+      wrap.querySelectorAll('.npc-rank-ptab').forEach(b => b.classList.remove('act'));
+      btn.classList.add('act');
+      npcRenderRank();
+    }
+
+    function npcRenderRank() {
+      const track = SP._currentTrackData;
+      if (!track || !track.name) return;
+      const allData = typeof S !== 'undefined' ? S : [];
+      if (!allData.length) return;
+
+      const now = new Date();
+      let filtered = allData;
+      if (SP._rankPeriod === 'year') {
+        const cutoff = new Date(now.getFullYear(), 0, 1).toISOString();
+        filtered = allData.filter(x => x.ts && x.ts >= cutoff);
+      } else if (SP._rankPeriod === 'month') {
+        const cutoff = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+        filtered = allData.filter(x => x.ts && x.ts >= cutoff);
+      }
+
+      const trackName = (track.name || '').toLowerCase();
+      const artistName = (track.artists && track.artists[0] ? track.artists[0].name : '').toLowerCase();
+
+      const trackCounts = {};
+      filtered.forEach(x => {
+        const k = ((x.track||'')+'||'+(x.artist||'')).toLowerCase();
+        trackCounts[k] = (trackCounts[k] || 0) + 1;
+      });
+
+      const sorted = Object.entries(trackCounts).sort((a,b) => b[1] - a[1]);
+      const totalTracks = sorted.length;
+      let rank = -1, myPlays = 0;
+      for (let i = 0; i < sorted.length; i++) {
+        if (sorted[i][0].includes(trackName) && sorted[i][0].includes(artistName.split(' ')[0])) {
+          rank = i + 1;
+          myPlays = sorted[i][1];
+          break;
+        }
+      }
+      const topPlays = sorted.length ? sorted[0][1] : 1;
+      const pct = myPlays > 0 ? Math.round((myPlays / topPlays) * 100) : 0;
+
+      const numEl = document.getElementById('npc-rank-num');
+      const ofEl = document.getElementById('npc-rank-of-total');
+      const barDesc = document.getElementById('npc-rank-bar-desc');
+      const barMins = document.getElementById('npc-rank-bar-mins');
+      const barFill = document.getElementById('npc-rank-bar-fill');
+      const rankWrap = document.getElementById('npc-rank-wrap');
+
+      if (rankWrap) rankWrap.style.display = rank > 0 ? 'block' : 'none';
+      if (numEl) numEl.textContent = rank > 0 ? '#' + rank : '—';
+      if (ofEl) ofEl.textContent = 'of ' + totalTracks.toLocaleString() + ' tracks';
+      if (barDesc) barDesc.textContent = myPlays + ' streams';
+      if (barMins) barMins.textContent = rank > 0 ? 'top ' + Math.max(1, Math.round(rank/totalTracks*100)) + '%' : '—';
+      if (barFill) barFill.style.width = pct + '%';
+    }
+
+    /* npcRenderEnhancements — called by sidebar observer */
+    function npcRenderEnhancements() {
+      npcRenderRank();
+      npcUpdateRankBadge();
     }
 
     /* Playback controls */
@@ -10482,8 +10593,11 @@
 
       if (!rediscovered.length) { el.innerHTML='<div class="p2-empty">No tracks with 6+ month gaps found.</div>'; return; }
 
-      const top20 = rediscovered.slice(0,20);
-      el.innerHTML = `<div class="rd-list">${top20.map(r=>`
+      const RD_LIMIT = 10;
+      window._rdExpanded = window._rdExpanded || false;
+      const rdVisible = window._rdExpanded ? rediscovered : rediscovered.slice(0, RD_LIMIT);
+      const rdHasMore = rediscovered.length > RD_LIMIT;
+      el.innerHTML = `<div class="rd-list">${rdVisible.map(r=>`
         <div class="rd-card">
           <div class="rd-card-top">
             <div>
@@ -10503,7 +10617,7 @@
             <span class="rd-tl-date">peak ${r.peakDate}</span>
             <span class="rd-tl-date" style="color:var(--amber)">comeback ${r.comebackDate}</span>
           </div>
-        </div>`).join('')}</div>`;
+        </div>`).join('')}</div>${rdHasMore ? `<button class="exp-btn" onclick="window._rdExpanded=!window._rdExpanded;renderRediscovery()"><span>${window._rdExpanded ? 'SHOW LESS' : 'SEE ALL '+rediscovered.length}</span><svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="transform:rotate(${window._rdExpanded?180:0}deg);transition:transform .3s"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>` : ''}`;
     }
 
     /* ──────────────────────────────────────────
@@ -11040,15 +11154,8 @@
           <button class="ohw-tab" onclick="p3Tab('ohw','scatter',this)">SCATTER PLOT</button>
         </div>
         <div id="ohw-list-pane" class="ohw-pane act">
-          <div class="ohw-list">
-            ${ohw2.map((d,i)=>`
-              <div class="ohw-row">
-                <div class="ohw-dot" style="background:${COLORS[i%COLORS.length]}"></div>
-                <span class="ohw-artist">${d.artist}</span>
-                <span class="ohw-track">${d.topTrack}</span>
-                <span class="ohw-catalog">${d.uniqueCount} tracks · ${d.topShare}% on one song</span>
-              </div>`).join('')}
-          </div>
+          <div class="ohw-list" id="ohw-list-items"></div>
+          <div id="ohw-list-expand"></div>
         </div>
         <div id="ohw-scatter-pane" class="ohw-pane">
           <div class="ohw-scatter-wrap"><canvas id="ohwScatterChart"></canvas></div>
@@ -11060,6 +11167,21 @@
       // Build scatter on tab switch (lazy)
       window._ohwData = ohw2;
       window._ohwBuilt = false;
+      // Populate OHW list with expand/collapse
+      const OHW_LIMIT = 10;
+      window._ohwExpanded = window._ohwExpanded || false;
+      function _ohwRenderList() {
+        const vis = window._ohwExpanded ? ohw2 : ohw2.slice(0, OHW_LIMIT);
+        document.getElementById('ohw-list-items').innerHTML = vis.map((d,i)=>`
+          <div class="ohw-row">
+            <div class="ohw-dot" style="background:${COLORS[i%COLORS.length]}"></div>
+            <span class="ohw-artist">${d.artist}</span>
+            <span class="ohw-track">${d.topTrack}</span>
+            <span class="ohw-catalog">${d.uniqueCount} tracks \u00b7 ${d.topShare}% on one song</span>
+          </div>`).join('');
+        document.getElementById('ohw-list-expand').innerHTML = ohw2.length > OHW_LIMIT ? `<button class="exp-btn" onclick="window._ohwExpanded=!window._ohwExpanded;(${_ohwRenderList.toString()})()"><span>${window._ohwExpanded?'SHOW LESS':'SEE ALL '+ohw2.length}</span><svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="transform:rotate(${window._ohwExpanded?180:0}deg);transition:transform .3s"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>` : '';
+      }
+      _ohwRenderList();
       document.querySelector('[onclick*="ohw\',\'scatter"]').addEventListener('click', () => {
         if (window._ohwBuilt) return;
         window._ohwBuilt = true;
@@ -11351,29 +11473,8 @@
           <button class="res-tab" onclick="p3Tab('res','spark',this);if(window.p3BuildResSparkIfNeeded)window.p3BuildResSparkIfNeeded();">SPARKLINES</button>
         </div>
         <div id="res-cards-pane" class="res-pane act">
-          <div class="res-list">
-            ${resurrected.slice(0,10).map(r=>`
-              <div class="res-card">
-                <div class="res-card-top">
-                  <span class="res-track-name">${r.track}</span>
-                  <span class="res-artist">${r.artist}</span>
-                  <span class="res-gap-badge">${r.gap}mo gap</span>
-                </div>
-                <div class="res-peaks-row">
-                  <div class="res-peak-box">
-                    <div class="res-peak-count">${r.peak1.count}</div>
-                    <div class="res-peak-date">${p3MonthLabel(r.peak1.mk)}</div>
-                  </div>
-                  <span class="res-arrow">→</span>
-                  <div style="flex:1;height:1px;border-top:1.5px dashed var(--border2);margin:0 4px"></div>
-                  <span class="res-arrow">→</span>
-                  <div class="res-peak-box">
-                    <div class="res-peak-count">${r.peak2.count}</div>
-                    <div class="res-peak-date">${p3MonthLabel(r.peak2.mk)}</div>
-                  </div>
-                </div>
-              </div>`).join('')}
-          </div>
+          <div class="res-list" id="res-cards-list"></div>
+          <div id="res-cards-expand"></div>
         </div>
         <div id="res-spark-pane" class="res-pane">
           <div class="res-spark-wrap"><canvas id="resSparkChart"></canvas></div>
@@ -11381,6 +11482,35 @@
 
       window._resData = resurrected;
       window._resSparkBuilt = false;
+      // Populate resurrection cards with expand/collapse
+      const RES_LIMIT = 5;
+      window._resExpanded = window._resExpanded || false;
+      function _resRenderCards() {
+        const vis = window._resExpanded ? resurrected : resurrected.slice(0, RES_LIMIT);
+        document.getElementById('res-cards-list').innerHTML = vis.map(r=>`
+          <div class="res-card">
+            <div class="res-card-top">
+              <span class="res-track-name">${r.track}</span>
+              <span class="res-artist">${r.artist}</span>
+              <span class="res-gap-badge">${r.gap}mo gap</span>
+            </div>
+            <div class="res-peaks-row">
+              <div class="res-peak-box">
+                <div class="res-peak-count">${r.peak1.count}</div>
+                <div class="res-peak-date">${p3MonthLabel(r.peak1.mk)}</div>
+              </div>
+              <span class="res-arrow">\u2192</span>
+              <div style="flex:1;height:1px;border-top:1.5px dashed var(--border2);margin:0 4px"></div>
+              <span class="res-arrow">\u2192</span>
+              <div class="res-peak-box">
+                <div class="res-peak-count">${r.peak2.count}</div>
+                <div class="res-peak-date">${p3MonthLabel(r.peak2.mk)}</div>
+              </div>
+            </div>
+          </div>`).join('');
+        document.getElementById('res-cards-expand').innerHTML = resurrected.length > RES_LIMIT ? `<button class="exp-btn" onclick="window._resExpanded=!window._resExpanded;(${_resRenderCards.toString()})()"><span>${window._resExpanded?'SHOW LESS':'SEE ALL '+resurrected.length}</span><svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="transform:rotate(${window._resExpanded?180:0}deg);transition:transform .3s"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>` : '';
+      }
+      _resRenderCards();
       // Use a named global so p3Tab can call it — avoids duplicate listener stacking on re-render
       window.p3BuildResSparkIfNeeded = function() {
         if (window._resSparkBuilt) return;
@@ -11514,7 +11644,11 @@
       detail.innerHTML = `
         <div class="ew-detail-title">${lbl} — top tracks</div>
         <div class="ew-detail-tracks">
-          ${topTracks.map(([t,c])=>`<div class="ew-detail-track">${t} <span style="font-family:var(--mono);font-size:.55rem;color:var(--g)">${c}×</span></div>`).join('')}
+          ${topTracks.map(([t,c],i)=>`<div class="ew-detail-track" style="display:flex;align-items:center;gap:10px;padding:7px 0;${i<topTracks.length-1?'border-bottom:1px solid var(--border);':''}">
+            <span style="font-family:var(--mono);font-size:.6rem;color:var(--muted);width:18px;text-align:right;flex-shrink:0">${i+1}</span>
+            <span style="flex:1;font-size:.78rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t}</span>
+            <span style="font-family:var(--mono);font-size:.65rem;color:var(--g);font-weight:700;flex-shrink:0">${c}<span style="font-size:.5rem;color:var(--muted);margin-left:2px">plays</span></span>
+          </div>`).join('')}
         </div>`;
       detail.classList.add('open');
     }
@@ -11690,33 +11824,49 @@
           <button class="fm-tab" onclick="p3Tab('fm','list',this)">RANKED LIST</button>
         </div>
         <div id="fm-grid-pane" class="fm-pane act">
-          <div class="fm-card-grid">
-            ${middle.map((d,i)=>`
-              <div class="fm-card-item">
-                <div class="fm-card-rank">#${51+i}</div>
-                <div class="fm-card-track" title="${d.track}">${d.track}</div>
-                <div class="fm-card-artist" title="${d.artist}">${d.artist}</div>
-                <div class="fm-card-stats">
-                  <span class="fm-card-plays">${d.plays}</span>
-                  <span class="fm-card-last">${p3RelTime(d.lastTs)}</span>
-                </div>
-              </div>`).join('')}
-          </div>
+          <div class="fm-card-grid" id="fm-grid-items"></div>
+          <div id="fm-grid-expand"></div>
         </div>
         <div id="fm-list-pane" class="fm-pane">
-          <div>
-            ${middle.map((d,i)=>`
-              <div class="fm-list-row-p3">
-                <span class="fm-list-rank">#${51+i}</span>
-                <div class="fm-list-info">
-                  <div class="fm-list-track">${d.track}</div>
-                  <div class="fm-list-artist">${d.artist}</div>
-                </div>
-                <span class="fm-list-plays">${d.plays}</span>
-                <span class="fm-list-last">${p3RelTime(d.lastTs)}</span>
-              </div>`).join('')}
-          </div>
+          <div id="fm-list-items"></div>
+          <div id="fm-list-expand"></div>
         </div>`;
+
+      // Populate with expand/collapse
+      const FM_GRID_LIMIT = 20; // ~5 rows of 4
+      const FM_LIST_LIMIT = 10;
+      window._fmGridExp = window._fmGridExp || false;
+      window._fmListExp = window._fmListExp || false;
+      function _fmRenderGrid() {
+        const vis = window._fmGridExp ? middle : middle.slice(0, FM_GRID_LIMIT);
+        document.getElementById('fm-grid-items').innerHTML = vis.map((d,i)=>`
+          <div class="fm-card-item">
+            <div class="fm-card-rank">#${51+i}</div>
+            <div class="fm-card-track" title="${d.track}">${d.track}</div>
+            <div class="fm-card-artist" title="${d.artist}">${d.artist}</div>
+            <div class="fm-card-stats">
+              <span class="fm-card-plays">${d.plays}</span>
+              <span class="fm-card-last">${p3RelTime(d.lastTs)}</span>
+            </div>
+          </div>`).join('');
+        document.getElementById('fm-grid-expand').innerHTML = middle.length > FM_GRID_LIMIT ? `<button class="exp-btn" onclick="window._fmGridExp=!window._fmGridExp;(${_fmRenderGrid.toString()})()"><span>${window._fmGridExp?'SHOW LESS':'SEE ALL '+middle.length}</span><svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="transform:rotate(${window._fmGridExp?180:0}deg);transition:transform .3s"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>` : '';
+      }
+      function _fmRenderList() {
+        const vis = window._fmListExp ? middle : middle.slice(0, FM_LIST_LIMIT);
+        document.getElementById('fm-list-items').innerHTML = vis.map((d,i)=>`
+          <div class="fm-list-row-p3">
+            <span class="fm-list-rank">#${51+i}</span>
+            <div class="fm-list-info">
+              <div class="fm-list-track">${d.track}</div>
+              <div class="fm-list-artist">${d.artist}</div>
+            </div>
+            <span class="fm-list-plays">${d.plays}</span>
+            <span class="fm-list-last">${p3RelTime(d.lastTs)}</span>
+          </div>`).join('');
+        document.getElementById('fm-list-expand').innerHTML = middle.length > FM_LIST_LIMIT ? `<button class="exp-btn" onclick="window._fmListExp=!window._fmListExp;(${_fmRenderList.toString()})()"><span>${window._fmListExp?'SHOW LESS':'SEE ALL '+middle.length}</span><svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="transform:rotate(${window._fmListExp?180:0}deg);transition:transform .3s"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>` : '';
+      }
+      _fmRenderGrid();
+      _fmRenderList();
     }
 
     /* ── Generic tab switcher for p3 dual-tab sections ── */
