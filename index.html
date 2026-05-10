@@ -134,9 +134,9 @@
       border-bottom: 1px solid var(--border);
       transition: border-color .55s, margin-right .38s cubic-bezier(.4,0,.2,1)
     }
-    header.ctx-shifted { margin-right: 320px }
+    header.ctx-shifted { margin-right: 0 }
     @media(max-width:640px) {
-      header.ctx-shifted { margin-right: 260px }
+      header.ctx-shifted { margin-right: 0 }
     }
 
     /* ═══════════ LOGO ═══════════ */
@@ -3988,7 +3988,6 @@
       overflow-y: auto; overflow-x: hidden;
       transition: right .38s cubic-bezier(.4,0,.2,1)
     }
-    /* Spacers push content clear of header and footer */
     #np-ctx::before {
       content: ''; display: block; flex-shrink: 0;
       height: var(--header-h);
@@ -4117,7 +4116,7 @@
       transition: right .38s cubic-bezier(.4,0,.2,1)
     }
     #np-bar.visible { display: flex }
-    #np-bar.shifted { right: 320px }
+    #np-bar.shifted { right: 0 }
     #np-bar:hover { background: var(--s2) }
 
     /* art thumb */
@@ -4371,8 +4370,7 @@
       .np-card { flex-direction: row }
       .rp-list { gap: 0 }
       #np-ctx { width: 260px; right: -260px }
-      #np-bar.shifted { right: 380px }
-      .npb-info { flex: 0 0 120px }
+      #np-bar.shifted { right: 0 }
     }
 
     /* ═══════════ PHASE 2 STYLES ═══════════ */
@@ -5298,10 +5296,7 @@
       .hdr-tag { display: none }
     }
 
-    /* FIX 13: np-bar shifted width matches header at 640px breakpoint */
-    @media(max-width:640px) {
-      #np-bar.shifted { right: 380px }
-    }
+    /* FIX 13: np-bar always full width regardless of sidebar */
 
     /* FIX 14: YT logo-pulse → actual triangle shape */
     body.yt-theme .logo-pulse {
