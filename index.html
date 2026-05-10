@@ -22,6 +22,8 @@
     @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
     :root {
+      --header-h: 53px;
+      --footer-h: 67px;
       --g: #1DB954;
       --g2: #1ed760;
       --bg: #080808;
@@ -125,7 +127,8 @@
       display: flex;
       align-items: center;
       gap: 14px;
-      padding: 14px 40px;
+      padding: 0 40px;
+      height: var(--header-h);
       background: rgba(8, 8, 8, .92);
       backdrop-filter: blur(24px);
       border-bottom: 1px solid var(--border);
@@ -3298,8 +3301,9 @@
 
     /* ═══════════ COMPREHENSIVE MOBILE ═══════════ */
     @media(max-width:640px) {
+      :root { --header-h: 45px }
       header {
-        padding: 10px 12px
+        padding: 0 12px
       }
 
       .logo-text {
@@ -3972,11 +3976,11 @@
     ══════════════════════════════════════════ */
 
     /* body padding so content isn't hidden behind bar — only when bar visible */
-    body:has(#np-bar.visible) { padding-bottom: 66px }
+    body:has(#np-bar.visible) { padding-bottom: var(--footer-h) }
 
     /* ── Context sidebar panel (always in DOM, off-screen right) ── */
     #np-ctx {
-      position: fixed; top: 55px; right: -380px; bottom: 66px;
+      position: fixed; top: var(--header-h); right: -380px; bottom: var(--footer-h);
       width: 380px; z-index: 90;
       background: var(--s1);
       border-left: 1px solid var(--border);
@@ -4351,12 +4355,12 @@
     body.yt-theme .npc-bar { background: var(--g) }
 
     /* When bottom bar is NOT visible, sidebar extends to viewport bottom */
-    body:not(:has(#np-bar.visible)) #np-ctx { bottom: 0 }
+    body:not(:has(#np-bar.visible)) #np-ctx { bottom: 0; }
 
     @media(max-width:640px) {
       .np-card { flex-direction: row }
       .rp-list { gap: 0 }
-      #np-ctx { width: 260px; right: -260px; top: 47px }
+      #np-ctx { width: 260px; right: -260px }
       #np-bar.shifted { right: 380px }
       .npb-info { flex: 0 0 120px }
     }
