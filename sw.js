@@ -1,7 +1,7 @@
 const CACHE='statify-v4';
 const URLS=[
   './',
-  './Statify_v3.html',
+  './index.html',
   'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js',

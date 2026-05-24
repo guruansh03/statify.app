@@ -2,7 +2,7 @@
   "name": "Statify — Music Data Analyzer",
   "short_name": "Statify",
   "description": "Analyze your Spotify & YouTube Music data. Private, local, beautiful.",
-  "start_url": "./Statify_v3.html",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#080808",
   "theme_color": "#1DB954",

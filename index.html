@@ -5296,7 +5296,8 @@
       .hdr-tag { display: none }
     }
 
-    /* FIX 13: np-bar always full width regardless of sidebar */
+    /* np-bar always full width regardless of sidebar */
+    #np-bar { width: 100% !important; }
 
     /* FIX 14: YT logo-pulse → actual triangle shape */
     body.yt-theme .logo-pulse {
@@ -5570,7 +5571,7 @@
         <div class="accent-pop" id="accentPop"></div>
       </button>
       <button class="hbtn hbtn-g" onclick="loadDemo()">▶ Demo</button>
-      <button class="hbtn hbtn-live" id="spotifyConnectBtn" onclick="spotifyLogin()" title="Connect Spotify for live data" style="display:flex">
+      <button class="hbtn hbtn-live" id="spotifyConnectBtn" onclick="spotifyLogin()" title="Connect Spotify for live data" style="display:none">
         <span id="spotifyBtnIcon">🔗</span> <span id="spotifyBtnLabel">Login</span>
       </button>
     </div>
@@ -5707,7 +5708,7 @@
               <div class="pl-sort-row" style="margin-top:4px">
                 <button class="sort-btn pl-filter-btn act" data-filter="all" onclick="setPlFilter('all',this)">ALL</button>
                 <button class="sort-btn pl-filter-btn" data-filter="mine" onclick="setPlFilter('mine',this)">MADE BY YOU</button>
-                <button class="sort-btn pl-filter-btn" data-filter="following" onclick="setPlFilter('following',this)">FOLLOWING</button
+                <button class="sort-btn pl-filter-btn" data-filter="following" onclick="setPlFilter('following',this)">FOLLOWING</button>
               </div>
               <input class="pl-search" id="pl-search" type="text" placeholder="Search playlists…" oninput="renderPlaylists()">
             </div>
@@ -6959,7 +6960,7 @@
     /* ═══════════════════════════════════════
        STATE
     ═══════════════════════════════════════ */
-    let S = [], lib = null, mci = null, wmode = 'alltime', tkMap = {}, top50open = false, sort50 = 'streams', sortArt = 'streams', sortMon = 'time';
+    let SESSION_GAP_MS = 20 * 60 * 1000; // unified session gap threshold
     let isYT = false;          // current platform mode
     let dashboardOpen = false; // is dashboard showing?
     let ytMusicData = [];      // parsed music library CSV rows
@@ -7564,6 +7565,7 @@
         document.getElementById('yt-music-dash').style.display = 'none';
         document.getElementById('decPlatSection').style.display = '';
         dashboardOpen = true;
+        document.body.setAttribute('data-view', 'dashboard');
         lockToggle(true);
         document.getElementById('exportBtn').style.display = '';
         document.getElementById('dataExportBtn').style.display = '';
@@ -7582,6 +7584,7 @@
         }
         document.getElementById('dashboard').style.display = 'block';
         dashboardOpen = true;
+        document.body.setAttribute('data-view', 'dashboard');
         lockToggle(true);
         document.getElementById('exportBtn').style.display = '';
         document.getElementById('dataExportBtn').style.display = '';
@@ -7624,6 +7627,7 @@
       document.getElementById('dataExportMenu').style.display = 'none';
       clearSessionDB().catch(()=>{});
       dashboardOpen = false;
+      document.body.setAttribute('data-view', 'home');
       lockToggle(false);
       // Bug fix: ensure ctx-shifted state is cleared on home navigation
       if (typeof _setCtxShift === 'function') _setCtxShift(false);
@@ -8038,7 +8042,7 @@
     function renderDeep(span) {
       const sorted = S.filter(x => x.ts).sort((a, b) => new Date(a.ts) - new Date(b.ts));
       let sess = [], cs = 1, ls = 0, last = null, tc = 0, sc = 0;
-      sorted.forEach(x => { const t = new Date(x.ts).getTime(); if (last && t - last < 20 * 60 * 1000) cs++; else { if (cs > 1) { sess.push(cs); if (cs > ls) ls = cs; tc += cs; sc++ } cs = 1 } last = t });
+      sorted.forEach(x => { const t = new Date(x.ts).getTime(); if (last && t - last < SESSION_GAP_MS) cs++; else { if (cs > 1) { sess.push(cs); if (cs > ls) ls = cs; tc += cs; sc++ } cs = 1 } last = t });
       const avgSL = sc ? Math.round(tc / sc) : 0;
       const days = (window._SC && window._SC.daySet) || new Set(S.map(x => x.ts?.slice(0, 10)).filter(Boolean));
       const dl = [...days].sort(); let cStr = 1, mStr = 1;
@@ -8111,7 +8115,7 @@
        DECADE / PLATFORM (Spotify only)
     ═══════════════════════════════════════ */
     function renderDecade() {
-      const adec = { 'The Weeknd': '2010s', 'Drake': '2010s', 'Kendrick Lamar': '2010s', 'Taylor Swift': '2010s', 'Billie Eilish': '2010s', 'Post Malone': '2010s', 'Travis Scott': '2010s', 'Ed Sheeran': '2010s', 'Bad Bunny': '2020s', 'SZA': '2020s', 'Doja Cat': '2020s', 'Olivia Rodrigo': '2020s', 'Eminem': '2000s', 'Linkin Park': '2000s', 'Coldplay': '2000s', 'Michael Jackson': '80s', 'Prince': '80s', 'Madonna': '80s', 'The Beatles': '70s', 'Led Zeppelin': '70s', 'David Bowie': '70s' };
+      const adec = { 'The Weeknd': '2010s', 'Drake': '2010s', 'Kendrick Lamar': '2010s', 'Taylor Swift': '2010s', 'Billie Eilish': '2010s', 'Post Malone': '2010s', 'Travis Scott': '2010s', 'Ed Sheeran': '2010s', 'Bad Bunny': '2020s', 'SZA': '2020s', 'Doja Cat': '2020s', 'Olivia Rodrigo': '2020s', 'Eminem': '2000s', 'Linkin Park': '2000s', 'Coldplay': '2000s', 'Michael Jackson': '80s', 'Prince': '80s', 'Madonna': '80s', 'The Beatles': '70s', 'Led Zeppelin': '70s', 'David Bowie': '70s', 'Ariana Grande': '2010s', 'Justin Bieber': '2010s', 'Rihanna': '2010s', 'Bruno Mars': '2010s', 'Kanye West': '2010s', 'J. Cole': '2010s', 'Future': '2010s', 'Lil Wayne': '2000s', 'Nicki Minaj': '2010s', 'Chris Brown': '2010s', 'Usher': '2000s', 'Beyoncé': '2000s', 'Jay-Z': '2000s', 'OutKast': '2000s', 'Nas': '90s', 'The Notorious B.I.G.': '90s', '2Pac': '90s', 'Dr. Dre': '90s', 'Snoop Dogg': '90s', 'Aaliyah': '90s', 'TLC': '90s', 'Destiny\'s Child': '2000s', 'Alicia Keys': '2000s', 'John Legend': '2000s', 'Maroon 5': '2010s', 'One Direction': '2010s', 'Shawn Mendes': '2010s', 'Camila Cabello': '2010s', 'Dua Lipa': '2020s', 'Lil Nas X': '2020s', 'Jack Harlow': '2020s', 'Lil Baby': '2020s', 'Megan Thee Stallion': '2020s', 'Doechii': '2020s', 'Ice Spice': '2020s', '21 Savage': '2010s', 'Juice WRLD': '2010s', 'XXXTentacion': '2010s', 'Mac Miller': '2010s', 'Tyler, The Creator': '2010s', 'Frank Ocean': '2010s', 'Childish Gambino': '2010s', 'The xx': '2010s', 'Tame Impala': '2010s', 'Arctic Monkeys': '2000s', 'Radiohead': '90s', 'Nirvana': '90s', 'Pearl Jam': '90s', 'Foo Fighters': '90s', 'Green Day': '90s', 'Blink-182': '90s', 'Red Hot Chili Peppers': '90s', 'U2': '80s', 'Queen': '70s', 'Fleetwood Mac': '70s', 'Stevie Wonder': '70s', 'Marvin Gaye': '70s', 'Aretha Franklin': '60s', 'Elton John': '70s', 'Billy Joel': '70s', 'Bruce Springsteen': '70s', 'The Rolling Stones': '60s', 'Bob Marley': '70s', 'Bob Dylan': '60s', 'Jimi Hendrix': '60s', 'Pink Floyd': '70s', 'The Who': '60s', 'Adele': '2010s', 'Lorde': '2010s', 'Sam Smith': '2010s', 'Lana Del Rey': '2010s', 'Halsey': '2010s', 'Melanie Martinez': '2010s', 'Mitski': '2010s', 'Phoebe Bridgers': '2020s', 'Clairo': '2020s', 'beabadoobee': '2020s', 'boygenius': '2020s', 'Gracie Abrams': '2020s', 'Chappell Roan': '2020s', 'Sabrina Carpenter': '2020s', 'Tate McRae': '2020s', 'Benson Boone': '2020s', 'Charli xcx': '2010s', 'Troye Sivan': '2010s', 'Harry Styles': '2010s', 'Miley Cyrus': '2000s', 'Selena Gomez': '2010s', 'Demi Lovato': '2010s', 'Lady Gaga': '2000s', 'Katy Perry': '2010s', 'Britney Spears': '90s', 'Christina Aguilera': '90s', 'Shakira': '2000s', 'Pitbull': '2010s', 'Daddy Yankee': '2000s', 'J Balvin': '2010s', 'Rosalía': '2020s', 'Karol G': '2020s', 'Peso Pluma': '2020s', 'Metro Boomin': '2010s', 'Marshmello': '2010s', 'The Chainsmokers': '2010s', 'Calvin Harris': '2010s', 'David Guetta': '2000s', 'Skrillex': '2010s', 'Avicii': '2010s', 'Zedd': '2010s', 'twenty one pilots': '2010s', 'Panic! At The Disco': '2000s', 'Fall Out Boy': '2000s', 'My Chemical Romance': '2000s', 'Paramore': '2000s', 'Bring Me The Horizon': '2000s', 'Slipknot': '90s', 'Metallica': '80s', 'Iron Maiden': '80s', 'Black Sabbath': '70s', 'AC/DC': '70s', 'Guns N\' Roses': '80s', 'Aerosmith': '70s', 'Bon Jovi': '80s', 'Def Leppard': '80s', 'Mötley Crüe': '80s', 'Kiss': '70s', 'The Doors': '60s', 'The Eagles': '70s', 'Journey': '80s', 'Toto': '80s', 'Wham!': '80s', 'George Michael': '80s', 'Whitney Houston': '80s', 'Mariah Carey': '90s', 'Céline Dion': '90s', 'Janet Jackson': '80s', 'Tina Turner': '80s', 'Cher': '60s', 'ABBA': '70s', 'Bee Gees': '70s', 'Earth, Wind & Fire': '70s', 'Kool & The Gang': '80s', 'Luther Vandross': '80s', 'Anita Baker': '80s', 'Sade': '80s', 'Enya': '90s', 'Nelly': '2000s', '50 Cent': '2000s', 'Ludacris': '2000s', 'T.I.': '2000s', 'Rick Ross': '2000s', 'Lil Uzi Vert': '2010s', 'Playboi Carti': '2020s', 'Young Thug': '2010s', 'Gunna': '2020s', 'Roddy Ricch': '2020s', 'Polo G': '2020s', 'Lil Durk': '2020s', 'Central Cee': '2020s', 'Dave': '2020s', 'Stormzy': '2010s', 'Skepta': '2010s', 'AJ Tracey': '2020s', 'Disclosure': '2010s', 'ODESZA': '2010s', 'Flume': '2010s', 'RL Grime': '2010s', 'Kaytranada': '2010s', 'Flying Lotus': '2010s', 'Gorillaz': '2000s', 'Daft Punk': '90s', 'Kraftwerk': '70s', 'Depeche Mode': '80s', 'New Order': '80s', 'The Cure': '80s', 'The Smiths': '80s', 'Joy Division': '80s', 'Talking Heads': '80s', 'R.E.M.': '80s', 'Sonic Youth': '80s', 'Pixies': '80s', 'Weezer': '90s', 'Beck': '90s', 'Björk': '90s', 'Massive Attack': '90s', 'Portishead': '90s', 'Tricky': '90s', 'Aphex Twin': '90s', 'The Prodigy': '90s', 'The Chemical Brothers': '90s', 'Fatboy Slim': '90s', 'Moby': '90s', 'Nightwish': '90s', 'Evanescence': '2000s', 'Three Days Grace': '2000s', 'Disturbed': '2000s', 'System of a Down': '90s', 'Tool': '90s', 'Deftones': '90s', 'Incubus': '90s', 'Korn': '90s', 'Limp Bizkit': '90s', 'Linkin Park': '2000s', 'Sum 41': '2000s', 'Good Charlotte': '2000s', 'Simple Plan': '2000s', 'The Offspring': '90s', 'Rage Against The Machine': '90s', 'Soundgarden': '90s', 'Alice in Chains': '90s', 'Stone Temple Pilots': '90s', 'P!nk': '2000s', 'Kelly Clarkson': '2000s', 'Carrie Underwood': '2000s', 'Garth Brooks': '90s', 'Shania Twain': '90s', 'Dolly Parton': '70s', 'Johnny Cash': '60s', 'Willie Nelson': '60s', 'Kenny Rogers': '70s', 'Luke Combs': '2020s', 'Morgan Wallen': '2020s', 'Zach Bryan': '2020s', 'Noah Kahan': '2020s', 'Hozier': '2010s', 'Bon Iver': '2010s', 'Sufjan Stevens': '2000s', 'FKA twigs': '2010s', 'Grimes': '2010s', 'St. Vincent': '2000s', 'Janelle Monáe': '2010s', 'Solange': '2000s', 'The Weeknd': '2010s', 'PARTYNEXTDOOR': '2010s', 'dvsn': '2010s', 'Majid Jordan': '2010s', '070 Shake': '2020s', 'Steve Lacy': '2020s', 'Omar Apollo': '2020s', 'Kali Uchis': '2020s', 'Jorja Smith': '2010s', 'Mahalia': '2010s', 'Raye': '2020s', 'JADE': '2020s', 'The Marías': '2020s', 'Men I Trust': '2010s' };
       const dm = { '2020s': 0, '2010s': 0, '2000s': 0, '90s': 0, '80s': 0, '70s': 0 };
       function decadeKey(yr) { if(yr>=2020)return'2020s'; if(yr>=2010)return'2010s'; if(yr>=2000)return'2000s'; if(yr>=1990)return'90s'; if(yr>=1980)return'80s'; return'70s'; }
       // Build per-artist first-stream year (earliest listen ≈ era of discovery)
@@ -8127,15 +8131,19 @@
       const pM = {}; S.forEach(x => { const p = x.platform || 'Unknown'; if (!pM[p]) pM[p] = { count: 0, ms: 0 }; pM[p].count++; pM[p].ms += getMs(x) });
       const sorted = Object.entries(pM).sort((a, b) => b[1].count - a[1].count);
       const tot = S.length;
-      const icos = { 'iOS': '📱', 'Android': '📱', 'Windows': '💻', 'Web Player': '🌐', 'macOS': '💻', 'Unknown': '❓' };
-      const cols = { 'iOS': 'rgba(91,156,246,.18)', 'Android': 'rgba(29,185,84,.14)', 'Windows': 'rgba(91,156,246,.12)', 'Web Player': 'rgba(245,166,35,.14)', 'macOS': 'rgba(91,156,246,.12)' };
+      const icos = { 'iOS': '📱', 'Android': '📱', 'Windows': '💻', 'Web Player': '🌐', 'macOS': '💻', 'Unknown': '❓', 'Windows Phone': '📱', 'Linux': '🐧', 'Chromecast': '📺', 'TV': '📺', 'Car Thing': '🚗', 'PlayStation': '🎮', 'Xbox': '🎮', 'Nintendo': '🎮', 'Smart Speaker': '🔊', 'Web': '🌐', 'Desktop App': '💻', 'Partner': '🎵' };
+      const cols = { 'iOS': 'rgba(91,156,246,.18)', 'Android': 'rgba(29,185,84,.14)', 'Windows': 'rgba(91,156,246,.12)', 'Web Player': 'rgba(245,166,35,.14)', 'macOS': 'rgba(91,156,246,.12)', 'Windows Phone': 'rgba(91,156,246,.18)', 'Linux': 'rgba(245,166,35,.14)', 'Chromecast': 'rgba(91,156,246,.12)', 'TV': 'rgba(245,166,35,.14)', 'Car Thing': 'rgba(29,185,84,.14)', 'PlayStation': 'rgba(91,156,246,.12)', 'Xbox': 'rgba(29,185,84,.14)', 'Nintendo': 'rgba(245,166,35,.14)', 'Smart Speaker': 'rgba(91,156,246,.12)', 'Web': 'rgba(245,166,35,.14)', 'Desktop App': 'rgba(91,156,246,.12)', 'Partner': 'rgba(29,185,84,.14)' };
       const PLAT_LIMIT = 5;
       const visible = _platExpanded ? sorted : sorted.slice(0, PLAT_LIMIT);
       const hasMore = sorted.length > PLAT_LIMIT;
       const platEl = document.getElementById('platList');
       platEl.innerHTML = visible.map(([p, v]) => {
         const pct = Math.round((v.count / tot) * 100);
-        return `<div class="pi"><div class="pico" style="background:${cols[p] || 'var(--s3)'}">${icos[p] || '🎵'}</div><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px"><span class="pn">${p}</span><span style="font-family:var(--mono);font-size:.68rem;color:var(--g);font-weight:700">${pct}%</span></div><div style="height:3px;background:var(--s3);border-radius:2px;overflow:hidden"><div style="height:100%;background:var(--g);width:0%;border-radius:2px;transition:width 1.3s ease" data-target="${pct}"></div></div><div style="font-family:var(--mono);font-size:.58rem;color:var(--muted);margin-top:5px">${fN(v.count)} streams · ${fmt(v.ms)}</div></div></div>`;
+        const knownP = Object.keys(icos).some(k => k.toLowerCase() === p.toLowerCase());
+        const ico = knownP ? icos[Object.keys(icos).find(k => k.toLowerCase() === p.toLowerCase())] : '🎵';
+        const known2 = Object.keys(cols).some(k => k.toLowerCase() === p.toLowerCase());
+        const bg = known2 ? cols[Object.keys(cols).find(k => k.toLowerCase() === p.toLowerCase())] : 'var(--s3)';
+        return `<div class="pi"><div class="pico" style="background:${bg}">${ico}</div><div style="flex:1;min-width:0"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px"><span class="pn">${p}</span><span style="font-family:var(--mono);font-size:.68rem;color:var(--g);font-weight:700">${pct}%</span></div><div style="height:3px;background:var(--s3);border-radius:2px;overflow:hidden"><div style="height:100%;background:var(--g);width:0%;border-radius:2px;transition:width 1.3s ease" data-target="${pct}"></div></div><div style="font-family:var(--mono);font-size:.58rem;color:var(--muted);margin-top:5px">${fN(v.count)} streams · ${fmt(v.ms)}</div></div></div>`;
       }).join('') + (hasMore ? `<button class="exp-btn" onclick="_platExpanded=!_platExpanded;renderPlatform()"><span>${_platExpanded ? 'SHOW LESS' : 'SEE ALL '+sorted.length}</span><svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="transform:rotate(${_platExpanded?180:0}deg);transition:transform .3s"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>` : '');
     }
 
@@ -8145,9 +8153,12 @@
     function setWrapped(m, btn) { wmode = m; document.querySelectorAll('.wtab').forEach(t => t.classList.remove('act')); btn.classList.add('act'); renderWrapped(m) }
     function renderWrapped(mode) {
       let fl = S, label = 'All Time', period = 'Since the beginning';
+      // Use the latest timestamp in data, not today's date
+      const latestTs = S.reduce((max, x) => { const t = x.ts || x.endTime || x.watchedAt || ''; return t > max ? t : max; }, '');
       const now = new Date();
-      if (mode === 'year') { const y = now.getFullYear().toString(); fl = S.filter(x => x.ts && x.ts.startsWith(y)); label = y; period = `Jan – Dec ${y}` }
-      else if (mode === 'month') { const ym = now.toISOString().slice(0, 7); fl = S.filter(x => x.ts && x.ts.startsWith(ym)); const mn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']; label = mn[now.getMonth()] + ' ' + now.getFullYear(); period = mn[now.getMonth()] + ' ' + now.getFullYear() }
+      const dataDate = latestTs ? new Date(latestTs) : now;
+      if (mode === 'year') { const y = dataDate.getFullYear().toString(); fl = S.filter(x => x.ts && x.ts.startsWith(y)); label = y; period = `Jan – Dec ${y}` }
+      else if (mode === 'month') { const ym = dataDate.toISOString().slice(0, 7); fl = S.filter(x => x.ts && x.ts.startsWith(ym)); const mn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']; const mIdx = dataDate.getMonth(); label = mn[mIdx] + ' ' + dataDate.getFullYear(); period = label }
       const tm = fl.reduce((a, x) => a + getMs(x), 0);
       const artistEntries = topBy(fl, x => x.artist);
       const tA = artistEntries[0];
@@ -8334,8 +8345,8 @@
        ██████╗ THEME TOGGLE (HOME ONLY)
     ═══════════════════════════════════════ */
     function toggleTheme(e) {
-      // Guard: only on home screen
-      if (dashboardOpen) return;
+      // Guard: only on home screen — use body attribute instead of global boolean
+      if (document.body.getAttribute('data-view') === 'dashboard') return;
 
       isYT = !isYT;
       const overlay = document.getElementById('theme-overlay');
@@ -8614,35 +8625,71 @@
        GENRE BREAKDOWN
     ═══════════════════════════════════════ */
     const GENRE_MAP = {
-  /* Pop */'Taylor Swift': 'Pop', 'Ed Sheeran': 'Pop', 'Ariana Grande': 'Pop', 'Dua Lipa': 'Pop', 'Harry Styles': 'Pop', 'Olivia Rodrigo': 'Pop', 'Billie Eilish': 'Pop', 'Selena Gomez': 'Pop', 'Shawn Mendes': 'Pop', 'Justin Bieber': 'Pop', 'Camila Cabello': 'Pop', 'Halsey': 'Pop', 'Lorde': 'Pop', 'Charli XCX': 'Pop', 'Sabrina Carpenter': 'Pop', 'Chappell Roan': 'Pop',
-  /* Hip-Hop */'Drake': 'Hip-Hop', 'Kendrick Lamar': 'Hip-Hop', 'Travis Scott': 'Hip-Hop', 'Post Malone': 'Hip-Hop', 'Kanye West': 'Hip-Hop', 'J. Cole': 'Hip-Hop', '21 Savage': 'Hip-Hop', 'Lil Uzi Vert': 'Hip-Hop', 'Future': 'Hip-Hop', 'Eminem': 'Hip-Hop', 'Tyler, The Creator': 'Hip-Hop', 'Mac Miller': 'Hip-Hop', 'Juice WRLD': 'Hip-Hop', 'Metro Boomin': 'Hip-Hop',
-  /* R&B */'The Weeknd': 'R&B', 'SZA': 'R&B', 'Frank Ocean': 'R&B', 'Daniel Caesar': 'R&B', 'Doja Cat': 'R&B', 'Summer Walker': 'R&B', 'Brent Faiyaz': 'R&B', 'Jhené Aiko': 'R&B', 'Bryson Tiller': 'R&B', 'H.E.R.': 'R&B', 'Usher': 'R&B',
-  /* Rock */'Arctic Monkeys': 'Rock', 'Tame Impala': 'Rock', 'Radiohead': 'Rock', 'Imagine Dragons': 'Rock', 'Foo Fighters': 'Rock', 'Red Hot Chili Peppers': 'Rock', 'Nirvana': 'Rock', 'Coldplay': 'Rock', 'Paramore': 'Rock', 'Green Day': 'Rock', 'Linkin Park': 'Rock', 'Weezer': 'Rock', 'The 1975': 'Rock',
-  /* Electronic */'The Chainsmokers': 'Electronic', 'Calvin Harris': 'Electronic', 'Marshmello': 'Electronic', 'Kygo': 'Electronic', 'Skrillex': 'Electronic', 'Deadmau5': 'Electronic', 'Martin Garrix': 'Electronic', 'Flume': 'Electronic', 'ODESZA': 'Electronic', 'Disclosure': 'Electronic',
-  /* Latin */'Bad Bunny': 'Latin', 'J Balvin': 'Latin', 'Rosalía': 'Latin', 'Shakira': 'Latin', 'Ozuna': 'Latin', 'Daddy Yankee': 'Latin', 'Rauw Alejandro': 'Latin', 'Karol G': 'Latin', 'Feid': 'Latin',
-  /* K-Pop */'BTS': 'K-Pop', 'BLACKPINK': 'K-Pop', 'Stray Kids': 'K-Pop', 'TWICE': 'K-Pop', 'aespa': 'K-Pop', 'NewJeans': 'K-Pop', 'LE SSERAFIM': 'K-Pop', 'IVE': 'K-Pop',
-  /* Country */'Morgan Wallen': 'Country', 'Luke Combs': 'Country', 'Zach Bryan': 'Country', 'Chris Stapleton': 'Country',
-  /* Indie */'Phoebe Bridgers': 'Indie', 'Mitski': 'Indie', 'Hozier': 'Indie', 'Clairo': 'Indie', 'boygenius': 'Indie', 'Bon Iver': 'Indie', 'The Neighbourhood': 'Indie', 'Glass Animals': 'Indie', 'Cigarettes After Sex': 'Indie', 'Wallows': 'Indie', 'beabadoobee': 'Indie', 'Rex Orange County': 'Indie'
+  /* Pop */'Taylor Swift': 'Pop', 'Ed Sheeran': 'Pop', 'Ariana Grande': 'Pop', 'Dua Lipa': 'Pop', 'Harry Styles': 'Pop', 'Olivia Rodrigo': 'Pop', 'Billie Eilish': 'Pop', 'Selena Gomez': 'Pop', 'Shawn Mendes': 'Pop', 'Justin Bieber': 'Pop', 'Camila Cabello': 'Pop', 'Halsey': 'Pop', 'Lorde': 'Pop', 'Charli XCX': 'Pop', 'Sabrina Carpenter': 'Pop', 'Chappell Roan': 'Pop', 'Tate McRae': 'Pop', 'Benson Boone': 'Pop', 'Gracie Abrams': 'Pop', 'Troye Sivan': 'Pop', 'Carly Rae Jepsen': 'Pop', 'Katy Perry': 'Pop', 'Lady Gaga': 'Pop', 'Britney Spears': 'Pop', 'Christina Aguilera': 'Pop', 'Demi Lovato': 'Pop', 'Miley Cyrus': 'Pop', 'Sam Smith': 'Pop', 'Adele': 'Pop', 'Bruno Mars': 'Pop', 'Rihanna': 'Pop', 'P!nk': 'Pop',
+  /* Hip-Hop */'Drake': 'Hip-Hop', 'Kendrick Lamar': 'Hip-Hop', 'Travis Scott': 'Hip-Hop', 'Post Malone': 'Hip-Hop', 'Kanye West': 'Hip-Hop', 'J. Cole': 'Hip-Hop', '21 Savage': 'Hip-Hop', 'Lil Uzi Vert': 'Hip-Hop', 'Future': 'Hip-Hop', 'Eminem': 'Hip-Hop', 'Tyler, The Creator': 'Hip-Hop', 'Mac Miller': 'Hip-Hop', 'Juice WRLD': 'Hip-Hop', 'Metro Boomin': 'Hip-Hop', 'Nicki Minaj': 'Hip-Hop', 'Lil Wayne': 'Hip-Hop', 'Nas': 'Hip-Hop', 'Jay-Z': 'Hip-Hop', '2Pac': 'Hip-Hop', 'The Notorious B.I.G.': 'Hip-Hop', 'Dr. Dre': 'Hip-Hop', 'Snoop Dogg': 'Hip-Hop', 'OutKast': 'Hip-Hop', 'JID': 'Hip-Hop', 'Denzel Curry': 'Hip-Hop', 'Vince Staples': 'Hip-Hop', 'Playboi Carti': 'Hip-Hop', 'Lil Baby': 'Hip-Hop', 'Gunna': 'Hip-Hop', 'Young Thug': 'Hip-Hop', 'Meek Mill': 'Hip-Hop', 'Rick Ross': 'Hip-Hop', 'A$AP Rocky': 'Hip-Hop', 'Megan Thee Stallion': 'Hip-Hop', 'Cardi B': 'Hip-Hop', 'Ice Spice': 'Hip-Hop',
+  /* R&B */'The Weeknd': 'R&B', 'SZA': 'R&B', 'Frank Ocean': 'R&B', 'Daniel Caesar': 'R&B', 'Doja Cat': 'R&B', 'Summer Walker': 'R&B', 'Brent Faiyaz': 'R&B', 'Jhené Aiko': 'R&B', 'Bryson Tiller': 'R&B', 'H.E.R.': 'R&B', 'Usher': 'R&B', 'Kehlani': 'R&B', 'PartyNextDoor': 'R&B', 'dvsn': 'R&B', '6LACK': 'R&B', 'Ella Mai': 'R&B', 'Khalid': 'R&B', 'Solange': 'R&B', 'Janelle Monáe': 'R&B', 'Tinashe': 'R&B', 'Mahalia': 'R&B', 'Jorja Smith': 'R&B', 'Steve Lacy': 'R&B', 'Omar Apollo': 'R&B', 'Kali Uchis': 'R&B', 'Raye': 'R&B', 'Beyoncé': 'R&B', 'Alicia Keys': 'R&B', 'John Legend': 'R&B', 'Chris Brown': 'R&B', 'Jeremih': 'R&B', 'Snoh Aalegra': 'R&B', 'Muni Long': 'R&B', 'Tory Lanez': 'R&B', '070 Shake': 'R&B',
+  /* Rock */'Arctic Monkeys': 'Rock', 'Tame Impala': 'Rock', 'Radiohead': 'Rock', 'Imagine Dragons': 'Rock', 'Foo Fighters': 'Rock', 'Red Hot Chili Peppers': 'Rock', 'Nirvana': 'Rock', 'Coldplay': 'Rock', 'Paramore': 'Rock', 'Green Day': 'Rock', 'Linkin Park': 'Rock', 'Weezer': 'Rock', 'The 1975': 'Rock', 'Pearl Jam': 'Rock', 'Soundgarden': 'Rock', 'Alice In Chains': 'Rock', 'Stone Temple Pilots': 'Rock', 'Smashing Pumpkins': 'Rock', 'Rage Against The Machine': 'Rock', 'Incubus': 'Rock', 'Deftones': 'Rock', 'System Of A Down': 'Rock', 'Tool': 'Rock', 'A Perfect Circle': 'Rock', 'Nine Inch Nails': 'Rock', 'Queens Of The Stone Age': 'Rock', 'Kings Of Leon': 'Rock', 'The Black Keys': 'Rock', 'The Strokes': 'Rock', 'The Killers': 'Rock', 'Interpol': 'Rock', 'Muse': 'Rock', 'Oasis': 'Rock', 'Blur': 'Rock', 'Gorillaz': 'Rock', 'Greta Van Fleet': 'Rock', 'Royal Blood': 'Rock', 'Highly Suspect': 'Rock', 'Nothing But Thieves': 'Rock', 'Bad Omens': 'Rock', 'Sleep Token': 'Rock', 'Bring Me The Horizon': 'Rock', 'Three Days Grace': 'Rock', 'Disturbed': 'Rock', 'Shinedown': 'Rock', 'Breaking Benjamin': 'Rock',
+  /* Electronic */'The Chainsmokers': 'Electronic', 'Calvin Harris': 'Electronic', 'Marshmello': 'Electronic', 'Kygo': 'Electronic', 'Skrillex': 'Electronic', 'Deadmau5': 'Electronic', 'Martin Garrix': 'Electronic', 'Flume': 'Electronic', 'ODESZA': 'Electronic', 'Disclosure': 'Electronic', 'Avicii': 'Electronic', 'Zedd': 'Electronic', 'Illenium': 'Electronic', 'Porter Robinson': 'Electronic', 'Madeon': 'Electronic', 'San Holo': 'Electronic', 'Louis The Child': 'Electronic', 'Jai Wolf': 'Electronic', 'Kaytranada': 'Electronic', 'Flying Lotus': 'Electronic', 'Bonobo': 'Electronic', 'Jamie xx': 'Electronic', 'Four Tet': 'Electronic', 'Caribou': 'Electronic', 'Rufus Du Sol': 'Electronic', 'Fred Again..': 'Electronic', 'Swedish House Mafia': 'Electronic', 'David Guetta': 'Electronic', 'Tiësto': 'Electronic', 'Armin van Buuren': 'Electronic',
+  /* Latin */'Bad Bunny': 'Latin', 'J Balvin': 'Latin', 'Rosalía': 'Latin', 'Shakira': 'Latin', 'Ozuna': 'Latin', 'Daddy Yankee': 'Latin', 'Rauw Alejandro': 'Latin', 'Karol G': 'Latin', 'Feid': 'Latin', 'Peso Pluma': 'Latin', 'Maluma': 'Latin', 'Nicky Jam': 'Latin', 'Anuel AA': 'Latin', 'Becky G': 'Latin', 'Natti Natasha': 'Latin', 'Farruko': 'Latin', 'Sech': 'Latin', 'Myke Towers': 'Latin', 'Arcángel': 'Latin', 'Rels B': 'Latin', 'Quevedo': 'Latin',
+  /* K-Pop */'BTS': 'K-Pop', 'BLACKPINK': 'K-Pop', 'Stray Kids': 'K-Pop', 'TWICE': 'K-Pop', 'aespa': 'K-Pop', 'NewJeans': 'K-Pop', 'LE SSERAFIM': 'K-Pop', 'IVE': 'K-Pop', 'EXO': 'K-Pop', 'SEVENTEEN': 'K-Pop', 'NCT': 'K-Pop', 'TOMORROW X TOGETHER': 'K-Pop', 'ENHYPEN': 'K-Pop', 'ATEEZ': 'K-Pop', '(G)I-DLE': 'K-Pop', 'Red Velvet': 'K-Pop', 'IU': 'K-Pop', 'ITZY': 'K-Pop',
+  /* Country */'Morgan Wallen': 'Country', 'Luke Combs': 'Country', 'Zach Bryan': 'Country', 'Chris Stapleton': 'Country', 'Luke Bryan': 'Country', 'Blake Shelton': 'Country', 'Jason Aldean': 'Country', 'Carrie Underwood': 'Country', 'Kacey Musgraves': 'Country', 'Thomas Rhett': 'Country', 'Dan + Shay': 'Country', 'Florida Georgia Line': 'Country', 'Dolly Parton': 'Country', 'Johnny Cash': 'Country', 'Willie Nelson': 'Country', 'Garth Brooks': 'Country',
+  /* Indie */'Phoebe Bridgers': 'Indie', 'Mitski': 'Indie', 'Hozier': 'Indie', 'Clairo': 'Indie', 'boygenius': 'Indie', 'Bon Iver': 'Indie', 'The Neighbourhood': 'Indie', 'Glass Animals': 'Indie', 'Cigarettes After Sex': 'Indie', 'Wallows': 'Indie', 'beabadoobee': 'Indie', 'Rex Orange County': 'Indie', 'FKA twigs': 'Indie', 'Grimes': 'Indie', 'St. Vincent': 'Indie', 'Sufjan Stevens': 'Indie', 'Japanese Breakfast': 'Indie', 'The Marías': 'Indie', 'Men I Trust': 'Indie', 'Still Woozy': 'Indie', 'Mac DeMarco': 'Indie', 'Beach House': 'Indie', 'Alvvays': 'Indie', 'Snail Mail': 'Indie', 'Soccer Mommy': 'Indie', 'Weyes Blood': 'Indie', 'Big Thief': 'Indie', 'Car Seat Headrest': 'Indie',
+  /* Jazz */'Miles Davis': 'Jazz', 'John Coltrane': 'Jazz', 'Bill Evans': 'Jazz', 'Duke Ellington': 'Jazz', 'Thelonious Monk': 'Jazz', 'Charlie Parker': 'Jazz', 'Kamasi Washington': 'Jazz', 'Robert Glasper': 'Jazz', 'Esperanza Spalding': 'Jazz', 'Norah Jones': 'Jazz',
+  /* Classical */'Ludovico Einaudi': 'Classical', 'Max Richter': 'Classical', 'Ólafur Arnalds': 'Classical', 'Nils Frahm': 'Classical', 'Jóhann Jóhannsson': 'Classical', 'Philip Glass': 'Classical', 'Yiruma': 'Classical', 'Alexis Ffrench': 'Classical', 'Hans Zimmer': 'Classical',
+  /* Metal */'Metallica': 'Metal', 'Iron Maiden': 'Metal', 'Black Sabbath': 'Metal', 'Slipknot': 'Metal', 'Pantera': 'Metal', 'Megadeth': 'Metal', 'Judas Priest': 'Metal', 'Opeth': 'Metal', 'Gojira': 'Metal', 'Mastodon': 'Metal', 'Slayer': 'Metal', 'Avenged Sevenfold': 'Metal', 'Bullet For My Valentine': 'Metal', 'Trivium': 'Metal', 'Killswitch Engage': 'Metal', 'Lamb Of God': 'Metal',
+  /* Reggae */'Bob Marley': 'Reggae', 'Damian Marley': 'Reggae', 'Sean Paul': 'Reggae', 'Shaggy': 'Reggae', 'Toots & The Maytals': 'Reggae', 'Jimmy Cliff': 'Reggae',
+  /* Folk */'Noah Kahan': 'Folk', 'Mumford & Sons': 'Folk', 'The Lumineers': 'Folk', 'Iron & Wine': 'Folk', 'Fleet Foxes': 'Folk', 'Gregory Alan Isakov': 'Folk', 'Caamp': 'Folk', 'First Aid Kit': 'Folk', 'Simon & Garfunkel': 'Folk', 'Bob Dylan': 'Folk', 'Joni Mitchell': 'Folk',
+  /* Alternative */'Twenty One Pilots': 'Alternative', 'Panic! At The Disco': 'Alternative', 'Fall Out Boy': 'Alternative', 'My Chemical Romance': 'Alternative', 'All Time Low': 'Alternative', 'AJR': 'Alternative', 'Vampire Weekend': 'Alternative', 'Cage The Elephant': 'Alternative', 'Foster The People': 'Alternative', 'MGMT': 'Alternative', 'Alt-J': 'Alternative', 'Blink-182': 'Alternative', 'Sum 41': 'Alternative', 'Good Charlotte': 'Alternative'
     };
     const YT_GENRE_MAP = {
       'MrBeast': 'Entertainment', 'PewDiePie': 'Entertainment', 'Corridor Crew': 'Entertainment',
       'Dude Perfect': 'Entertainment', 'Mark Rober': 'Entertainment', 'Jimmy Fallon': 'Entertainment',
+      'GoodMythicalMorning': 'Entertainment', 'Ryan Trahan': 'Entertainment', 'Airrack': 'Entertainment',
+      'Sidemen': 'Entertainment', 'Beta Squad': 'Entertainment', 'Niko Omilana': 'Entertainment',
       'Veritasium': 'Science', '3Blue1Brown': 'Science', 'Vsauce': 'Science', 'Kurzgesagt': 'Science',
       'Nile Red': 'Science', 'SciShow': 'Science', 'MinutePhysics': 'Science', 'AsapSCIENCE': 'Science',
+      'Physics Girl': 'Science', 'PBS Space Time': 'Science', 'Anton Petrov': 'Science',
       'MKBHD': 'Tech', 'Linus Tech Tips': 'Tech', 'Unbox Therapy': 'Tech', 'Dave2D': 'Tech',
       'Mrwhosetheboss': 'Tech', 'JerryRigEverything': 'Tech', 'TechLinked': 'Tech',
-      'Practical Engineering': 'Engineering', 'Real Engineering': 'Engineering',
+      'Austin Evans': 'Tech', 'iJustine': 'Tech', 'Snazzy Labs': 'Tech', 'Hardware Unboxed': 'Tech',
+      'Practical Engineering': 'Engineering', 'Real Engineering': 'Engineering', 'SmarterEveryDay': 'Engineering',
+      'Mark Rober': 'Engineering', 'Colin Furze': 'Engineering', 'Stuff Made Here': 'Engineering',
       'Tom Scott': 'Education', 'CGP Grey': 'Education', 'Wendover Productions': 'Education',
       'Half as Interesting': 'Education', 'TED': 'Education', 'TEDx Talks': 'Education',
-      'Crash Course': 'Education', 'Khan Academy': 'Education',
-      'ESPN': 'Sports', 'NBA': 'Sports', 'NFL': 'Sports', 'FIFA': 'Sports',
-      'GoodMythicalMorning': 'Entertainment', 'jacksepticeye': 'Gaming', 'Markiplier': 'Gaming',
-      'Dream': 'Gaming', 'Technoblade': 'Gaming', 'GameTheory': 'Gaming', 'MatPat': 'Gaming',
-      'Valkyrae': 'Gaming', 'pokimane': 'Gaming', 'xQc': 'Gaming',
+      'Crash Course': 'Education', 'Khan Academy': 'Education', 'Kurzgesagt': 'Education',
+      'Johnny Harris': 'Education', 'Polymatter': 'Education', 'Vox': 'Education',
+      'ESPN': 'Sports', 'NBA': 'Sports', 'NFL': 'Sports', 'FIFA': 'Sports', 'MLB': 'Sports',
+      'Bleacher Report': 'Sports', 'JxmyHighroller': 'Sports', 'Secret Base': 'Sports',
+      'The Athletic': 'Sports', 'House of Highlights': 'Sports', 'Dude Perfect': 'Sports',
+      'jacksepticeye': 'Gaming', 'Markiplier': 'Gaming', 'Dream': 'Gaming', 'Technoblade': 'Gaming',
+      'GameTheory': 'Gaming', 'MatPat': 'Gaming', 'Valkyrae': 'Gaming', 'pokimane': 'Gaming',
+      'xQc': 'Gaming', 'TommyInnit': 'Gaming', 'KSI': 'Gaming', 'Ludwig': 'Gaming',
+      'MoistCr1TiKaL': 'Gaming', 'Sykkuno': 'Gaming', 'Corpse Husband': 'Gaming', 'Fuslie': 'Gaming',
       'Gordon Ramsay': 'Food', 'Joshua Weissman': 'Food', 'Babish Culinary Universe': 'Food',
-      'Tasty': 'Food', 'Bon Appétit': 'Food',
-      'NowThis': 'News', 'Vice': 'News', 'Vox': 'News', 'CNN': 'News', 'BBC News': 'News',
-      'The Late Show': 'Comedy', 'Saturday Night Live': 'Comedy', 'CollegeHumor': 'Comedy'
+      'Tasty': 'Food', 'Bon Appétit': 'Food', 'Ethan Chlebowski': 'Food', 'Adam Ragusea': 'Food',
+      'J. Kenji López-Alt': 'Food', 'Mythical Kitchen': 'Food',
+      'NowThis': 'News', 'Vice': 'News', 'CNN': 'News', 'BBC News': 'News', 'Sky News': 'News',
+      'Philip DeFranco': 'News', 'The Young Turks': 'News', 'NBC News': 'News', 'ABC News': 'News',
+      'The Late Show': 'Comedy', 'Saturday Night Live': 'Comedy', 'CollegeHumor': 'Comedy',
+      'Key & Peele': 'Comedy', 'Channel 4 Comedy': 'Comedy', 'CalebCity': 'Comedy',
+      'Noel Miller': 'Comedy', 'Cody Ko': 'Comedy', 'Drew Gooden': 'Comedy', 'Danny Gonzalez': 'Comedy',
+      'Kurtis Conner': 'Comedy', 'The Try Guys': 'Comedy', 'Dropout': 'Comedy',
+      'Yoga With Adriene': 'Fitness', 'Pamela Reif': 'Fitness', 'Chloe Ting': 'Fitness',
+      'Athlean-X': 'Fitness', 'Jeff Nippard': 'Fitness', 'Chris Heria': 'Fitness',
+      'Binging with Babish': 'Food', 'First We Feast': 'Food', 'Best Ever Food Review Show': 'Travel',
+      'Nas Daily': 'Travel', 'Kara and Nate': 'Travel', 'Lost LeBlanc': 'Travel', 'Peter Santenello': 'Travel',
+      'CaseyNeistat': 'Vlog', 'Emma Chamberlain': 'Vlog', 'Peter McKinnon': 'Vlog', 'Hayls World': 'Vlog',
+      'NikkieTutorials': 'Beauty', 'James Charles': 'Beauty', 'Jeffree Star': 'Beauty', 'Patrick Starrr': 'Beauty',
+      'Andrew Huberman': 'Health', 'Doctor Mike': 'Health', 'Medlife Crisis': 'Health', 'Dr. K': 'Health',
+      'Rick Beato': 'Music', 'Adam Neely': 'Music', 'Andrew Huang': 'Music', 'RoomieOfficial': 'Music',
+      'NPR Music': 'Music', 'COLORS': 'Music', 'Tiny Desk': 'Music', 'Genius': 'Music',
+      'Screen Rant': 'Film', 'Nerdwriter1': 'Film', 'Every Frame a Painting': 'Film', 'Lessons from the Screenplay': 'Film',
+      'Corridor': 'Film', 'Patrick H Willems': 'Film', 'The Royal Ocean Film Society': 'Film',
+      'Mentour Pilot': 'Aviation', '74 Gear': 'Aviation', 'Captain Joe': 'Aviation',
+      'This Old House': 'DIY', 'DIY Perks': 'DIY', 'I Like To Make Stuff': 'DIY', 'Modern Builds': 'DIY',
+      'Matt D\'Avella': 'Lifestyle', 'Nathaniel Drew': 'Lifestyle', 'Ali Abdaal': 'Productivity',
+      'Graham Stephan': 'Finance', 'Andrei Jikh': 'Finance', 'Meet Kevin': 'Finance', 'Patrick Boyle': 'Finance',
+      'Plain Bagel': 'Finance', 'The Financial Diet': 'Finance', 'CNBC': 'Finance'
     };
     const GENRE_COLORS = ['#4ade80', '#60a5fa', '#f87171', '#fbbf24', '#c084fc', '#f472b6', '#22d3ee', '#a3e635', '#fb923c', '#94a3b8'];
     function renderGenre() {
@@ -9105,7 +9152,7 @@
        SHARE CARD (Social Formats)
     ═══════════════════════════════════════ */
     function shareCard(format) {
-      if (!window.html2canvas) return alert('html2canvas not loaded');
+      if (!window.html2canvas) { showToast('Image library unavailable — check your connection and try again.'); return; }
       const card = document.getElementById('wcard');
       const w = format === 'story' ? 1080 : 1200, h = format === 'story' ? 1920 : 675;
       /* Create off-screen container */
@@ -10657,8 +10704,14 @@
       const el = document.getElementById('skipContent');
       if (!el || !S.length) { if(el) el.innerHTML='<div class="p2-empty">Not enough data.</div>'; return; }
 
-      // Derive skip: use explicit skipped field if available, else ms_played < 30s proxy
-      const isSkipped = x => x.skipped === true || x.skipped === 1 || (x.ms||x.msPlayed||x.ms_played||0) < 30000;
+      // Derive skip: use explicit skipped field if available, else ms_played < 25% of track duration (min floor 10s)
+      const isSkipped = x => {
+        if (x.skipped === true || x.skipped === 1) return true;
+        const ms = x.ms || x.msPlayed || x.ms_played || 0;
+        const durMs = x.track_duration_ms || x.duration_ms || x.durationMs || 0;
+        if (durMs > 0) return ms < Math.max(10000, durMs * 0.25);
+        return ms < 30000;
+      };
 
       const artistSkips = {};
       S.filter(x=>x.ts&&x.artist).forEach(x=>{
@@ -12439,7 +12492,7 @@
     const streams = p4Streams();
     if (streams.length < 30) { p4Empty(el, 'Needs 50+ streams with timestamps.'); return; }
 
-    // Group into sessions: gap > 30min = new session
+    // Group into sessions: gap > 20min = new session
     const sorted = [...streams].sort((a,b) => new Date(p4Ts(a)) - new Date(p4Ts(b)));
     const sessions = [];
     let cur = [];
@@ -12447,7 +12500,7 @@
       if (cur.length === 0) { cur.push(sorted[i]); continue; }
       const prev = new Date(p4Ts(cur[cur.length-1]));
       const now = new Date(p4Ts(sorted[i]));
-      if (now - prev > 30 * 60 * 1000) { sessions.push(cur); cur = [sorted[i]]; }
+      if (now - prev > SESSION_GAP_MS) { sessions.push(cur); cur = [sorted[i]]; }
       else cur.push(sorted[i]);
     }
     if (cur.length) sessions.push(cur);
@@ -14584,8 +14637,14 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
     S.forEach(x=>{ const k=x.track||x.title||''; if(k) vidCounts[k]=(vidCounts[k]||0)+1; });
     const uniqueVids = Object.keys(vidCounts).length;
 
-    // estimate: assume avg 12min per video (no oEmbed available in sandbox)
-    const avgMin = 12;
+    // estimate: use actual duration data if available, otherwise estimate per channel
+    let avgMin = 12;
+    const durEntries = S.filter(x => x.durationMs || x.duration_ms || x.duration).map(x => x.durationMs || x.duration_ms || x.duration || 0);
+    if (durEntries.length > S.length * 0.1) {
+      const sumDur = durEntries.reduce((a,b) => a + b, 0);
+      avgMin = Math.round(sumDur / durEntries.length / 60000) || 12;
+    }
+    const avgMinDisplay = avgMin;
     const totalMin = n * avgMin;
     const totalHours = Math.round(totalMin/60);
     const days = (totalHours/24).toFixed(1);
@@ -14697,7 +14756,7 @@ ${top.length?`<div class="p7-mood-track-list">${top.map((t,i)=>`
 
     // Compute sessions from watch history (gap > 20min = new session)
     const _S = (window.S||[]).filter(x=>x.ts||x.endTime||x.watchedAt).sort((a,b)=>new Date(a.ts||a.endTime||a.watchedAt)-new Date(b.ts||b.endTime||b.watchedAt));
-    const GAP_MS = 20*60*1000;
+    const GAP_MS = SESSION_GAP_MS;
     const sessions = [];
     let cur = null;
     _S.forEach(x => {
