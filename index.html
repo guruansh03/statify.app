@@ -6961,6 +6961,7 @@
        STATE
     ═══════════════════════════════════════ */
     let SESSION_GAP_MS = 20 * 60 * 1000; // unified session gap threshold
+    let S = [], lib = null, mci = null, wmode = 'alltime', tkMap = {}, top50open = false, sort50 = 'streams', sortArt = 'streams', sortMon = 'time';
     let isYT = false;          // current platform mode
     let dashboardOpen = false; // is dashboard showing?
     let ytMusicData = [];      // parsed music library CSV rows
