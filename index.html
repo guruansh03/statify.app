@@ -17,7 +17,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" crossorigin="anonymous" onerror="this.remove();this.insertAdjacentHTML('afterend','<script>console.warn(\"jszip CDN failed — some export features unavailable\")<\/script>')"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" crossorigin="anonymous" onerror="console.warn('jszip CDN failed')"></script>
   <script>
     window._vendorFallbacks={};
     (function loadFallback(global,cdn,local){
@@ -4428,17 +4428,17 @@
     /* ── 3. Rediscovery ── */
     .rd-list { display: flex; flex-direction: column; gap: 10px }
     .rd-card { background: var(--s2); border: 1px solid var(--border); border-radius: var(--r); padding: 14px 16px }
-    .rd-card-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px }
+    .rd-card-top { display: flex; gap: 12px; align-items: center; margin-bottom: 8px }
+    .rd-card-rank { width: 22px; height: 22px; border-radius: 50%; background: var(--s3); display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: .55rem; color: var(--muted); flex-shrink: 0 }
     .rd-track-name { font-size: .88rem; font-weight: 600 }
     .rd-artist-name { font-size: .72rem; color: var(--muted); margin-top: 1px }
-    .rd-gap-badge { font-family: var(--mono); font-size: .58rem; color: var(--amber); background: rgba(245,166,35,.1); border: 1px solid rgba(245,166,35,.25); padding: 2px 8px; border-radius: 2px; white-space: nowrap; flex-shrink: 0 }
-    .rd-timeline-row { display: flex; align-items: center; gap: 0 }
-    .rd-tl-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--s3); border: 2px solid var(--g); flex-shrink: 0; transition: border-color .55s }
-    body.yt-theme .rd-tl-dot { border-color: var(--g) }
-    .rd-tl-line { flex: 1; height: 1px; border-top: 1.5px dashed var(--border2) }
-    .rd-tl-mid { font-family: var(--mono); font-size: .5rem; color: var(--amber); margin: 0 6px; white-space: nowrap; flex-shrink: 0 }
-    .rd-tl-dates { display: flex; justify-content: space-between; margin-top: 5px }
-    .rd-tl-date { font-family: var(--mono); font-size: .52rem; color: var(--muted) }
+    .rd-timeline { display: flex; align-items: center; gap: 8px; margin-top: 6px }
+    .rd-tl-start, .rd-tl-end { display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0 }
+    .rd-tl-dot-fill { width: 10px; height: 10px; border-radius: 50%; background: var(--g) }
+    .rd-tl-sdate { font-family: var(--mono); font-size: .48rem; color: var(--muted) }
+    .rd-tl-segment { flex: 1; height: 4px; background: var(--s3); border-radius: 2px; overflow: hidden }
+    .rd-tl-bar { height: 100%; background: var(--amber); border-radius: 2px; min-width: 4px }
+    .rd-gap-badge { font-family: var(--mono); font-size: .58rem; color: var(--amber); background: rgba(245,166,35,.1); border: 1px solid rgba(245,166,35,.25); padding: 2px 8px; border-radius: 2px; white-space: nowrap; flex-shrink: 0; margin-left: auto }
 
     /* ── 4. Seasonal Personality ── */
     .seasonal-radar-wrap { display: flex; justify-content: center; align-items: center }
@@ -4520,6 +4520,19 @@
     .hyper-pulse-dots { display: flex; flex-wrap: wrap; gap: 4px; align-items: center }
     .hpd { border-radius: 50%; cursor: pointer; transition: transform .15s; flex-shrink: 0 }
     .hpd:hover { transform: scale(1.4); z-index: 5; position: relative }
+    /* Hyperfixation cards */
+    .hyper-cards-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(300px,1fr)); gap:12px }
+    .hyper-card { display: flex; gap: 14px; background: var(--s2); border:1px solid var(--border); border-radius: var(--r); padding: 16px; cursor: default }
+    .hyper-card:hover { border-color: var(--g) }
+    .hyper-card-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--s3); display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: .65rem; font-weight: 700; flex-shrink: 0; color: var(--text) }
+    .hyper-card-body { flex: 1; min-width: 0 }
+    .hyper-card-artist { font-size: .88rem; font-weight: 700; margin-bottom: 2px }
+    .hyper-card-meta { font-family: var(--mono); font-size: .55rem; color: var(--muted); margin-bottom: 8px }
+    .hyper-card-stats { display: flex; gap: 12px; font-family: var(--mono); font-size: .55rem; color: var(--text2); margin-bottom: 8px }
+    .hyper-card-stats span { background: var(--s3); padding: 2px 8px; border-radius: 3px; white-space: nowrap }
+    .hyper-card-weekly { display: flex; flex-wrap: wrap; gap: 4px }
+    .hyper-week-chip { font-family: var(--mono); font-size: .48rem; padding: 2px 6px; border-radius: 3px; color: #fff; white-space: nowrap }
+    .hyper-week-chip span { opacity: .7; margin-left: 3px }
     .hyper-pulse-hint { font-family: var(--mono); font-size: .52rem; color: var(--muted2); margin-top: 8px }
 
     /* ── 9. Guilty Placeholder (reuses guilty styles) ── */
@@ -5606,7 +5619,6 @@
         <div class="accent-pop" id="accentPop"></div>
       </button>
       <button class="hbtn hbtn-g" onclick="loadDemo()">▶ Demo</button>
-      <button class="hbtn" id="storyBtn" onclick="toggleStory()" title="Your listening story" style="display:none">📖 Story</button>
       <button class="hbtn hbtn-live" id="spotifyConnectBtn" onclick="spotifyLogin()" title="Connect Spotify for live data" style="display:none">
         <span id="spotifyBtnIcon">🔗</span> <span id="spotifyBtnLabel">Login</span>
       </button>
@@ -8348,7 +8360,7 @@
       const topAList = Object.entries(aMap).sort((a, b) => sortArt === 'time' ? b[1].ms - a[1].ms : b[1].count - a[1].count).slice(0, 12);
       const u = unit('plays');
       document.getElementById('topArtists').innerHTML = topAList.map(([a, v], i) => {
-        return `<div class="ri"><span class="rn ${i < 3 ? 't3' : ''}">${String(i + 1).padStart(2, '0')}</span><div class="ri-info"><div class="ri-name">${a}</div><div class="ri-sub">${isYT ? v.count + ' videos watched' : fmt(v.ms) + ' total'}</div></div><div class="rc"><div class="rc-n">${v.count}</div><div class="rc-l">${u}</div></div>${!isYT ? `<div style="width:6px"></div><div class="rc rc-b"><div class="rc-n">${fmt(v.ms)}</div><div class="rc-l">TIME</div></div>` : ''}</div>`;
+        return `<div class="ri"><span class="rn ${i < 3 ? 't3' : ''}">${String(i + 1).padStart(2, '0')}</span><div class="ri-info"><div class="ri-name">${a}</div><div class="ri-sub">${isYT ? v.count + ' videos watched' : v.count + ' streams'}</div></div><div class="rc"><div class="rc-n">${v.count}</div><div class="rc-l">${u}</div></div>${!isYT ? `<div style="width:6px"></div><div class="rc rc-b"><div class="rc-n">${fmt(v.ms)}</div><div class="rc-l">TIME</div></div>` : ''}</div>`;
       }).join('');
       document.querySelectorAll('.sart-btn').forEach(b => b.classList.toggle('act', b.dataset.sort === sortArt));
     }
@@ -8842,8 +8854,10 @@
       const sorted = Object.entries(gM).sort((a, b) => b[1] - a[1]);
       const colors = sorted.map((_, i) => GENRE_COLORS[i % GENRE_COLORS.length]);
       // Keep doughnut chart updated for canvas element
-      if (genreCI) genreCI.destroy();
-      const ctx = document.getElementById('genreChart').getContext('2d');
+      if (genreCI && typeof genreCI.destroy === 'function') { try { genreCI.destroy() } catch(e){}; genreCI = null; }
+      const chartCanvas = document.getElementById('genreChart');
+      if (!chartCanvas) return;
+      const ctx = chartCanvas.getContext('2d');
       genreCI = new Chart(ctx, { type: 'doughnut', data: { labels: sorted.map(([g])=>g), datasets: [{ data: sorted.map(([,c])=>c), backgroundColor: colors, borderColor: 'transparent', borderWidth: 3, hoverBorderColor: 'rgba(255,255,255,.2)', hoverOffset: 6 }] }, options: { responsive: true, maintainAspectRatio: false, animation: { animateRotate: true, duration: 1200 }, cutout: '65%', plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(20,20,20,.95)', titleFont: { family: 'Space Mono', size: 11 }, bodyFont: { family: 'Space Mono', size: 10 }, cornerRadius: 4, padding: 10 } } } });
       // Spectrum bars weighted by ms
       const totalMs = S.reduce((a,x)=>a+(x.ms||x.msPlayed||x.ms_played||30000),0)||1;
@@ -10832,25 +10846,26 @@
       window._rdExpanded = window._rdExpanded || false;
       const rdVisible = window._rdExpanded ? rediscovered : rediscovered.slice(0, RD_LIMIT);
       const rdHasMore = rediscovered.length > RD_LIMIT;
-      el.innerHTML = `<div class="rd-list">${rdVisible.map(r=>`
+      el.innerHTML = `<div class="rd-list">${rdVisible.map((r,i)=>`
         <div class="rd-card">
           <div class="rd-card-top">
+            <div class="rd-card-rank">#${i+1}</div>
             <div>
               <div class="rd-track-name">${r.track}</div>
               <div class="rd-artist-name">${r.artist}</div>
             </div>
-            <div class="rd-gap-badge">${r.gapMonths} month gap</div>
+            <div class="rd-gap-badge">${r.gapMonths} mo gap</div>
           </div>
-          <div class="rd-timeline-row">
-            <div class="rd-tl-dot"></div>
-            <div class="rd-tl-line"></div>
-            <div class="rd-tl-mid">— ${r.gapMonths} mo —</div>
-            <div class="rd-tl-line"></div>
-            <div class="rd-tl-dot" style="border-color:var(--amber)"></div>
-          </div>
-          <div class="rd-tl-dates">
-            <span class="rd-tl-date">peak ${r.peakDate}</span>
-            <span class="rd-tl-date" style="color:var(--amber)">comeback ${r.comebackDate}</span>
+          <div class="rd-timeline">
+            <div class="rd-tl-start">
+              <div class="rd-tl-dot-fill"></div>
+              <div class="rd-tl-sdate">${r.peakDate}</div>
+            </div>
+            <div class="rd-tl-segment"><div class="rd-tl-bar" style="width:${Math.min(r.gapMonths,18)*5}%"></div></div>
+            <div class="rd-tl-end">
+              <div class="rd-tl-dot-fill" style="background:var(--amber)"></div>
+              <div class="rd-tl-sdate" style="color:var(--amber)">${r.comebackDate}</div>
+            </div>
           </div>
         </div>`).join('')}</div>${rdHasMore ? `<button class="exp-btn" onclick="window._rdExpanded=!window._rdExpanded;renderRediscovery()"><span>${window._rdExpanded ? 'SHOW LESS' : 'SEE ALL '+rediscovered.length}</span><svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="transform:rotate(${window._rdExpanded?180:0}deg);transition:transform .3s"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>` : ''}`;
     }
@@ -11126,10 +11141,29 @@
 
       el.innerHTML = `
         <div class="hyper-views">
-          <button class="hyper-view-btn act" onclick="switchHyperView('arc',this)">Spike Arcs</button>
+          <button class="hyper-view-btn act" onclick="switchHyperView('cards',this)">Cards</button>
+          <button class="hyper-view-btn" onclick="switchHyperView('arc',this)">Spike Arcs</button>
           <button class="hyper-view-btn" onclick="switchHyperView('pulse',this)">Pulse Stream</button>
         </div>
-        <div class="hyper-pane act" id="hyperArcPane">
+        <div class="hyper-pane act" id="hyperCardsPane">
+          <div class="hyper-cards-grid">${obsessions.slice(0,6).map((ob,i)=>{
+            const color = colors[i%colors.length];
+            return `<div class="hyper-card" style="border-left:3px solid ${color}">
+              <div class="hyper-card-avatar">${ob.artist.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}</div>
+              <div class="hyper-card-body">
+                <div class="hyper-card-artist">${ob.artist}</div>
+                <div class="hyper-card-meta">${ob.weeks.length} week${ob.weeks.length>1?'s':''} · ${ob.startWeek} → ${ob.endWeek}</div>
+                <div class="hyper-card-stats">
+                  <span>${ob.maxPct}% dominance</span>
+                  <span>${ob.maxCount} streams peak</span>
+                  <span>${ob.total||ob.weeks.reduce((s,w)=>s+w.count,0)} total</span>
+                </div>
+                <div class="hyper-card-weekly">${ob.weeks.map(w=>`<div class="hyper-week-chip" style="background:${color}${Math.round(w.pct/100*40+10).toString(16)}">W${w.week.slice(5)}<span>${w.pct}%</span></div>`).join('')}</div>
+              </div>
+            </div>`;
+          }).join('')}</div>
+        </div>
+        <div class="hyper-pane" id="hyperArcPane">
           <div class="hyper-arc-list">${obsessions.slice(0,6).map((ob,i)=>{
             const color=colors[i%colors.length];
             const wkCount=ob.weeks.length;
@@ -13760,7 +13794,7 @@ ${top5Artists.map((a,i)=>`<div class="p6-wc-art-item"><div class="p6-wc-rank">#$
       if (descEl && stats) {
         const topArtist = stats.topArtists?.[0]?.[0] || '—';
         const totalStreams = stats.totalStreams || 0;
-        const totalHours = stats.totalHours ? Math.round(stats.totalHours) : 0;
+        const totalHours = stats.hours || 0;
         const peakHour = stats.peakHour !== undefined ? stats.peakHour : '—';
         descEl.innerHTML = `<span style="color:var(--text2)">${styleDescs[activeStyle]||''}</span>
           <div style="margin-top:10px;display:flex;flex-direction:column;gap:4px;font-family:var(--mono);font-size:.6rem;color:var(--text2)">
@@ -13769,21 +13803,6 @@ ${top5Artists.map((a,i)=>`<div class="p6-wc-art-item"><div class="p6-wc-rank">#$
             <div>⏱ <b style="color:var(--text)">${totalHours.toLocaleString()}</b> hours</div>
             <div>🕐 Peak hour: <b style="color:var(--text)">${peakHour}:00</b></div>
 </div>`;
-  }
-
-  /* Radar click-to-filter (6.3) */
-  let _axisFilter = null;
-  function filterByAxis(axis, e) {
-    if (_axisFilter === axis) { _axisFilter = null; showToast('Filter cleared — showing all data'); }
-    else { _axisFilter = axis; showToast('Filtering by ' + axis + ' — click again to clear'); }
-    // Re-render only the filtered dashboard sections
-    if (typeof render === 'function') render(false);
-    document.querySelectorAll('.ral-row').forEach(r => r.style.background = '');
-    if (_axisFilter) {
-      const target = document.querySelector(`.ral-row[onclick*="${_axisFilter}"]`);
-      if (target) target.style.background = 'rgba(167,139,250,.1)';
-    }
-  }
     }
 
     el.innerHTML = `
@@ -14094,7 +14113,8 @@ ${top5Artists.map((a,i)=>`<div class="p6-wc-art-item"><div class="p6-wc-rank">#$
   <button class="p7-yr-btn play-btn" id="p7RacePlay">▶ PLAY</button>
   <button class="p7-race-speed act" onclick="p7RaceSpd(900,this)">1×</button>
   <button class="p7-race-speed" onclick="p7RaceSpd(450,this)">2×</button>
-  <button class="p7-race-speed" onclick="p7RaceSpd(200,this)">4×</button>
+  <button class="p7-race-speed" onclick="p7RaceSpd(300,this)">3×</button>
+  <button class="p7-race-speed" onclick="p7RaceSpd(180,this)">5×</button>
   <div class="p7-race-month-display" id="p7RaceMonth">—</div>
 </div>
 <div class="p7-race-stage" id="p7RaceStage"></div>`;
@@ -15920,48 +15940,7 @@ self.addEventListener('fetch',e=>{
   })();
   </script>
 
-  <!-- Story mode overlay (6.6) -->
-  <div id="story-overlay" style="display:none;position:fixed;inset:0;z-index:2000;background:#080808;overflow-y:auto;overflow-x:hidden">
-    <button onclick="toggleStory()" style="position:fixed;top:16px;right:16px;z-index:2010;background:var(--s3);border:1px solid var(--border);color:var(--text);width:36px;height:36px;border-radius:50%;font-size:1rem;cursor:pointer">✕</button>
-    <div id="story-content"></div>
-  </div>
-
   <script>
-    /* Story mode (6.6) */
-    let _storyActive = false;
-    function toggleStory() {
-      _storyActive = !_storyActive;
-      const overlay = document.getElementById('story-overlay');
-      overlay.style.display = _storyActive ? 'block' : 'none';
-      if (_storyActive) buildStory();
-      document.body.style.overflow = _storyActive ? 'hidden' : '';
-    }
-    function buildStory() {
-      const el = document.getElementById('story-content');
-      if (!S.length) { el.innerHTML = '<div style="height:100vh;display:flex;align-items:center;justify-content:center;font-family:var(--mono);color:var(--muted)">Upload your data first to see your story</div>'; return; }
-      const total = S.length;
-      const topA = Object.entries(S.reduce((m,x)=>{m[x.artist||'Unknown']=(m[x.artist||'Unknown']||0)+1;return m},{})).sort((a,b)=>b[1]-a[1]);
-      const peakH = S.reduce((m,x)=>{const h=new Date(x.ts).getHours();if(!isNaN(h))m[h]=(m[h]||0)+1;return m},{}); const peak = Object.entries(peakH).sort((a,b)=>b[1]-a[1])[0];
-      const firstD = S.map(x=>x.ts).filter(Boolean).sort()[0];
-      
-      const chapters = [
-        { title: 'Welcome', emoji: '🎵', text: `This is your personal listening story. ${fN(total)} streams, ${topA.length} artists, one journey.`, color: '#1DB954' },
-        { title: 'Your #1', emoji: '👑', text: `Say hi to <strong>${topA[0]?.[0]||'—'}</strong> — ${fN(topA[0]?.[1]||0)} streams. That\'s dedication.`, color: '#f5a623' },
-        { title: 'Peak Hour', emoji: '⏰', text: `You listen most at <strong>${peak?.[0]||'?'}:00</strong>. ${peak?.[1]||0} streams during that golden hour.`, color: '#5b9cf6' },
-        { title: 'Where It Began', emoji: '📅', text: `Your first recorded listen was on <strong>${firstD||'?'}</strong>. Every journey starts somewhere.`, color: '#a78bfa' },
-        { title: 'Continue', emoji: '✨', text: `Your story is still being written. Upload more data, explore deeper insights, and share with friends.`, color: '#4ade80' }
-      ];
-      
-      el.innerHTML = chapters.map((c, i) => 
-        `<div class="story-chapter" style="min-height:85vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center;scroll-snap-align:start">
-          <div style="font-size:4rem;margin-bottom:16px">${c.emoji}</div>
-          <h2 style="font-size:2rem;font-weight:800;margin-bottom:12px;color:${c.color};font-family:'Plus Jakarta Sans',sans-serif">${c.title}</h2>
-          <p style="font-size:1.1rem;color:var(--text2);max-width:480px;line-height:1.7;font-family:'Plus Jakarta Sans',sans-serif">${c.text}</p>
-          ${i < chapters.length-1 ? '<div style="margin-top:40px;font-size:.7rem;color:var(--muted);font-family:var(--mono)">scroll ▼</div>' : ''}
-        </div>`
-      ).join('');
-    }
-
     /* Period compare slider toggle (6.2) */
     window._cmpSliderMode = false;
     function toggleCmpSlider() {
@@ -15989,15 +15968,6 @@ self.addEventListener('fetch',e=>{
         if (typeof renderCompare === 'function') renderCompare();
       }
     }
-    // Show story button when dashboard opens
-    (function(){
-      const origRender = typeof render !== 'undefined' ? render : null;
-      if (origRender) {
-        const orig = origRender;
-        window._storyOrigRender = orig;
-        render = function(d) { orig(d); const btn = document.getElementById('storyBtn'); if (btn && S && S.length) btn.style.display = ''; };
-      }
-    })();
   </script>
 
 </body>
