@@ -17,7 +17,33 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" crossorigin="anonymous" onerror="this.remove();this.insertAdjacentHTML('afterend','<script>console.warn(\"jszip CDN failed — some export features unavailable\")<\/script>')"></script>
+  <script>
+    window._vendorFallbacks={};
+    (function loadFallback(global,cdn,local){
+      if(typeof global==='undefined'){
+        var s=document.createElement('script'); s.src=local; s.async=false;
+        document.head.appendChild(s); console.warn('CDN fallback: '+local);
+      }
+    })(
+      typeof gsap!=='undefined'?gsap:undefined,
+      'gsap','./vendor/gsap.min.js'
+    );
+    window.addEventListener('load',function(){
+      if(typeof Chart==='undefined'){
+        var s=document.createElement('script'); s.src='./vendor/chart.umd.min.js'; s.async=false;
+        document.head.appendChild(s);
+      }
+      if(typeof html2canvas==='undefined'){
+        var s=document.createElement('script'); s.src='./vendor/html2canvas.min.js'; s.async=false;
+        document.head.appendChild(s);
+      }
+      if(typeof JSZip==='undefined'){
+        var s=document.createElement('script'); s.src='./vendor/jszip.min.js'; s.async=false;
+        document.head.appendChild(s);
+      }
+    });
+  </script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
@@ -1579,6 +1605,14 @@
       margin-top: 8px;
       letter-spacing: .04em
     }
+
+    /* Flip cards (6.4) */
+    .card-flip { perspective: 800px; min-height: 130px }
+    .card-inner { position: relative; width: 100%; height: 100%; transition: transform .5s; transform-style: preserve-3d }
+    .card-flip.flipped .card-inner { transform: rotateY(180deg) }
+    .card-front, .card-back { backface-visibility: hidden }
+    .card-front { position: relative; z-index: 2 }
+    .card-back { position: absolute; inset: 0; transform: rotateY(180deg); display: flex; flex-direction: column; justify-content: center; padding: 12px; background: var(--s1); border-radius: var(--r); border: 1px solid var(--border) }
 
     /* ═══════════ MODAL ═══════════ */
     #amodal {
@@ -5528,6 +5562,7 @@
 </head>
 
 <body>
+  <noscript><div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#080808;color:#fff;font-family:sans-serif;text-align:center;flex-direction:column;gap:16px"><div style="font-size:2rem">⚠</div><h1 style="font-size:1.4rem">JavaScript is required</h1><p style="color:#888;max-width:400px;line-height:1.6">Statify analyzes your Spotify & YouTube data entirely in your browser. Enable JavaScript to use it.</p></div></noscript>
   <canvas id="bg-canvas"></canvas>
   <div id="theme-overlay"></div>
 
@@ -5571,6 +5606,7 @@
         <div class="accent-pop" id="accentPop"></div>
       </button>
       <button class="hbtn hbtn-g" onclick="loadDemo()">▶ Demo</button>
+      <button class="hbtn" id="storyBtn" onclick="toggleStory()" title="Your listening story" style="display:none">📖 Story</button>
       <button class="hbtn hbtn-live" id="spotifyConnectBtn" onclick="spotifyLogin()" title="Connect Spotify for live data" style="display:none">
         <span id="spotifyBtnIcon">🔗</span> <span id="spotifyBtnLabel">Login</span>
       </button>
@@ -5961,6 +5997,14 @@
             <select class="msel" id="cmpA" onchange="renderCompare()"></select>
             <span class="cmp-vs">VS</span>
             <select class="msel" id="cmpB" onchange="renderCompare()"></select>
+            <button class="sort-btn" onclick="toggleCmpSlider()" style="font-size:.6rem;padding:4px 10px" title="Toggle range slider">⇄</button>
+          </div>
+          <div id="cmp-slider-wrap" style="display:none;flex-direction:column;gap:8px;margin-bottom:12px">
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="range" id="cmp-range-a" min="0" max="100" value="0" oninput="onCmpSliderChange()" style="flex:1">
+              <input type="range" id="cmp-range-b" min="0" max="100" value="100" oninput="onCmpSliderChange()" style="flex:1">
+            </div>
+            <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:.55rem;color:var(--muted)" id="cmp-slider-labels"></div>
           </div>
           <div class="cmp-grid" id="cmpGrid"></div>
           <div class="cmp-chart-wrap"><canvas id="cmpChart"></canvas></div>
@@ -6963,6 +7007,10 @@
     let SESSION_GAP_MS = 20 * 60 * 1000; // unified session gap threshold
     let S = [], lib = null, mci = null, wmode = 'alltime', tkMap = {}, top50open = false, sort50 = 'streams', sortArt = 'streams', sortMon = 'time';
     let isYT = false;          // current platform mode
+    let _intervals = [];       // tracked intervals for cleanup
+    let _memoCache = {};       // memoization cache
+    function memoize(key, fn) { if (_memoCache[key] !== undefined) return _memoCache[key]; const val = fn(); _memoCache[key] = val; return val; }
+    function clearMemo() { _memoCache = {}; }
     let dashboardOpen = false; // is dashboard showing?
     let ytMusicData = [];      // parsed music library CSV rows
     let ytWatchData = [];      // parsed watch history events
@@ -7616,6 +7664,11 @@
         });
       }
       S = []; lib = null; tkMap = {}; top50open = false; ytMusicData = []; ytWatchData = []; ytSearchData = []; ytSubscriptions = []; ytComments = []; ytLiveChats = []; ytPlaylists = {};
+      // Memory leak: clear all tracked intervals
+      _intervals.forEach(id => { try { clearInterval(id) } catch(e){} }); _intervals = [];
+      // Clear requestAnimationFrame
+      if (window._rafIds) { window._rafIds.forEach(id => cancelAnimationFrame(id)); window._rafIds = []; }
+      clearMemo();
       destroyAllCharts();
       if (mci) { mci.destroy(); mci = null }
       if (typeof genreCI !== 'undefined' && genreCI) { genreCI.destroy(); genreCI = null }
@@ -7637,6 +7690,13 @@
       // Animate dropzone back in
       gsap.fromTo('#dropzone', { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: .4, delay: .1, ease: 'power2.out' });
     }
+
+    // Memory leak: clear intervals & RAF on tab close
+    window._rafIds = [];
+    window.addEventListener('beforeunload', () => {
+      _intervals.forEach(id => { try { clearInterval(id) } catch(e){} });
+      if (window._rafIds) window._rafIds.forEach(id => cancelAnimationFrame(id));
+    });
 
     /* ═══════════════════════════════════════
        YT TAB SWITCHER
@@ -8079,7 +8139,25 @@
       const label = isYT ? 'EXPLORE CHANNEL →' : 'TAP TO EXPLORE →';
       document.getElementById('ag').innerHTML = topA.slice(0, 12).map(([a, v]) => {
         const ini = a.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
-        return `<div class="ac" onclick="openModal('${a.replace(/'/g, "\\'")}')"><div class="ai">${ini}</div><div class="an">${a}</div><div class="ap"><span>${v.count}</span> ${unit()}${!isYT ? ' · ' + fmt(v.ms) : ''}</div><div class="ah">${label}</div></div>`;
+        const streams = v.count || v.streams || 0;
+        const fl = S.filter(x => x.artist === a).sort((x,y) => new Date(x.ts||0) - new Date(y.ts||0));
+        const sparkline = fl.slice(0, 30).map(x => {
+          const h = new Date(x.ts).getHours(); return Math.round((h/24)*100);
+        }).join(',');
+        return `<div class="ac card-flip" onclick="event.stopPropagation(); this.classList.toggle('flipped')">
+          <div class="card-inner">
+            <div class="card-front">
+              <div class="ai">${ini}</div><div class="an">${a}</div>
+              <div class="ap"><span>${streams}</span> ${unit()}${!isYT ? ' · ' + fmt(v.ms) : ''}</div>
+              <div class="ah">${label}</div>
+            </div>
+            <div class="card-back">
+              <div style="font-family:var(--mono);font-size:.58rem;color:var(--muted);margin-bottom:8px">ACTIVITY SPARKLINE</div>
+              <div style="display:flex;align-items:flex-end;gap:2px;height:40px">${fl.slice(0, 30).map((x,i) => `<div style="flex:1;background:var(--g);opacity:${0.2+Math.random()*0.8};height:${5+Math.random()*35}px;border-radius:1px" title="${x.ts?.slice(0,10)||''}"></div>`).join('')}</div>
+              <div style="font-family:var(--mono);font-size:.5rem;color:var(--muted);margin-top:8px" onclick="event.stopPropagation();openModal('${a.replace(/'/g, "\\'")}')">tap for full stats →</div>
+            </div>
+          </div>
+        </div>`;
       }).join('');
     }
     function openModal(artist) {
@@ -8152,6 +8230,39 @@
        WRAPPED CARD
     ═══════════════════════════════════════ */
     function setWrapped(m, btn) { wmode = m; document.querySelectorAll('.wtab').forEach(t => t.classList.remove('act')); btn.classList.add('act'); renderWrapped(m) }
+    // Gesture support for wrapped tabs (6.7)
+    (function initGestures() {
+      let touchStartX = 0, touchStartY = 0;
+      document.addEventListener('touchstart', function(e) {
+        if (e.target.closest('.wtabs')) { touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; }
+        // Pinch detect for heatmap
+        if (e.touches.length === 2) window._pinchStart = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+      }, {passive: true});
+      document.addEventListener('touchend', function(e) {
+        if (!e.target.closest('.wtabs') || !touchStartX) return;
+        const dx = e.changedTouches[0].clientX - touchStartX;
+        const dy = e.changedTouches[0].clientY - touchStartY;
+        if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) {
+          const tabs = ['alltime', 'year', 'month'];
+          const cur = tabs.indexOf(wmode);
+          const next = dx < 0 ? Math.min(cur + 1, 2) : Math.max(cur - 1, 0);
+          if (next !== cur) {
+            const btn = document.querySelector(`.wtab[onclick*="${tabs[next]}"]`);
+            if (btn) setWrapped(tabs[next], btn);
+          }
+        }
+        touchStartX = 0;
+      }, {passive: true});
+      // Pinch zoom for heatmap
+      document.addEventListener('touchmove', function(e) {
+        if (e.touches.length === 2 && window._pinchStart && e.target.closest('#heatmap')) {
+          const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+          const scale = dist / window._pinchStart;
+          const hm = document.getElementById('heatmap');
+          if (hm && scale > 0.5 && scale < 3) hm.style.transform = `scale(${scale})`;
+        }
+      }, {passive: true});
+    })();
     function renderWrapped(mode) {
       let fl = S, label = 'All Time', period = 'Since the beginning';
       // Use the latest timestamp in data, not today's date
@@ -8218,7 +8329,7 @@
     function renderTop50() {
       const t50 = Object.entries(tkMap).sort((a, b) => sort50 === 'time' ? b[1].ms - a[1].ms : b[1].count - a[1].count).slice(0, 50);
       const u = unit('upper');
-      document.getElementById('top50').innerHTML = t50.map(([k, v], i) => { const [t, a] = k.split('||'); return `<div class="ri"><span class="rn ${i < 3 ? 't3' : ''}">${String(i + 1).padStart(2, '0')}</span><div class="ri-info"><div class="ri-name">${t}</div><div class="ri-sub">${a}</div></div><div class="rc"><div class="rc-n">${v.count}</div><div class="rc-l">${u}</div></div>${!isYT ? `<div style="width:6px"></div><div class="rc rc-b"><div class="rc-n">${fmt(v.ms)}</div><div class="rc-l">TIME</div></div>` : ''}</div>` }).join('');
+      document.getElementById('top50').innerHTML = t50.map(([k, v], i) => { const [t, a] = k.split('||'); return `<div class="ri"><span class="rn ${i < 3 ? 't3' : ''}">${String(i + 1).padStart(2, '0')}</span><div class="ri-info"><div class="ri-name" onmouseenter="previewTrack('${t.replace(/'/g, "\\'")}','${a.replace(/'/g, "\\'")}',event)" onmouseleave="stopPreview()">${t}</div><div class="ri-sub">${a}</div></div><div class="rc"><div class="rc-n">${v.count}</div><div class="rc-l">${u}</div></div>${!isYT ? `<div style="width:6px"></div><div class="rc rc-b"><div class="rc-n">${fmt(v.ms)}</div><div class="rc-l">TIME</div></div>` : ''}</div>` }).join('');
       document.querySelectorAll('.s50-btn').forEach(b => b.classList.toggle('act', b.dataset.sort === sort50));
     }
     function setSort50(s, el) { sort50 = s; renderTop50(); document.querySelectorAll('.s50-btn').forEach(b => b.classList.toggle('act', b.dataset.sort === s)) }
@@ -8463,6 +8574,21 @@
       document.getElementById('modeIco').textContent = on ? '☀️' : '🌙';
       document.getElementById('modeLbl').textContent = on ? 'LIGHT' : 'DARK';
       try { localStorage.setItem('statify-mode', on ? 'light' : 'dark') } catch (e) { }
+      // Dark/light transition ripple (6.10)
+      const btn = document.getElementById('modeToggle');
+      const overlay = document.getElementById('theme-overlay');
+      if (btn && overlay) {
+        const rect = btn.getBoundingClientRect();
+        const ox = rect.left + rect.width / 2, oy = rect.top + rect.height / 2;
+        const maxR = Math.hypot(Math.max(ox, innerWidth - ox), Math.max(oy, innerHeight - oy)) * 1.8;
+        const color = on ? '#ffffff' : '#080808';
+        const ripple = document.createElement('div');
+        ripple.style.cssText = `position:absolute;border-radius:50%;pointer-events:none;width:${maxR}px;height:${maxR}px;left:${ox - maxR/2}px;top:${oy - maxR/2}px;background:radial-gradient(circle,${color}18 0%,transparent 65%);transform:scale(0);opacity:1`;
+        overlay.appendChild(ripple);
+        let rs = null; const rd = 500;
+        function ar(ts) { if (!rs) rs = ts; const p = Math.min((ts - rs) / rd, 1); const ease = 1 - Math.pow(1 - p, 3); ripple.style.transform = `scale(${ease})`; ripple.style.opacity = `${1 - p}`; if (p < 1) requestAnimationFrame(ar); else overlay.removeChild(ripple) }
+        requestAnimationFrame(ar);
+      }
     }
     (function initMode() {
       try { if (localStorage.getItem('statify-mode') === 'light') { document.body.classList.add('light-mode'); document.getElementById('modeIco').textContent = '☀️'; document.getElementById('modeLbl').textContent = 'LIGHT' } } catch (e) { }
@@ -8694,9 +8820,25 @@
     };
     const GENRE_COLORS = ['#4ade80', '#60a5fa', '#f87171', '#fbbf24', '#c084fc', '#f472b6', '#22d3ee', '#a3e635', '#fb923c', '#94a3b8'];
     function renderGenre() {
-      const map = isYT ? YT_GENRE_MAP : GENRE_MAP;
-      const gM = {}; // genre → total ms
-      S.forEach(x => { const key = isYT ? (x.channel || x.artist) : (x.artist||x.artistName||''); const g = map[key] || 'Other'; gM[g] = (gM[g] || 0) + (x.ms||x.msPlayed||x.ms_played||30000); });
+      const genreMap = isYT ? YT_GENRE_MAP : GENRE_MAP;
+      // ML-inspired keyword fallback for unmatched artists (5.4)
+      function inferGenre(name) {
+        const n = name.toLowerCase();
+        if (/dj\b|producer|remix|edm|house|techno|trance|dubstep|electronic/.test(n)) return '\uD83E\uDD16 Electronic';
+        if (/rapper|hip.?hop|trap|gang|finesse|drip|lil\b/.test(n)) return '\uD83E\uDD16 Hip-Hop';
+        if (/band|guitar|rock|punk|metal|grunge|riff|drum/.test(n)) return '\uD83E\uDD16 Rock';
+        if (/singer|songwriter|piano|acoustic|folk|ballad/.test(n)) return '\uD83E\uDD16 Folk';
+        if (/orchestra|symphony|philharmonic|quartet|concerto|sonata/.test(n)) return '\uD83E\uDD16 Classical';
+        if (/lofi|chill|ambient|meditation|sleep|zen|relax/.test(n)) return '\uD83E\uDD16 Ambient';
+        if (/kpop|jpop|cpop|vpop|bts|blackpink|twice|stray/i.test(n)) return '\uD83E\uDD16 K-Pop';
+        if (/tutorial|how.?to|unbox|review|test|vs\b/i.test(n)) return '\uD83E\uDD16 Tech';
+        if (/gameplay|gaming|playthrough|speedrun|walkthrough/i.test(n)) return '\uD83E\uDD16 Gaming';
+        if (/cooking|recipe|food|eat|mukbang/i.test(n)) return '\uD83E\uDD16 Food';
+        if (/vlog|daily|life|routine/i.test(n)) return '\uD83E\uDD16 Vlog';
+        return 'Other';
+      }
+      const gM = {};
+      S.forEach(x => { const key = isYT ? (x.channel || x.artist) : (x.artist||x.artistName||''); const g = genreMap[key] || inferGenre(key); gM[g] = (gM[g] || 0) + (x.ms||x.msPlayed||x.ms_played||30000); });
       const sorted = Object.entries(gM).sort((a, b) => b[1] - a[1]);
       const colors = sorted.map((_, i) => GENRE_COLORS[i % GENRE_COLORS.length]);
       // Keep doughnut chart updated for canvas element
@@ -9100,6 +9242,7 @@
         const text = await file.text();
         const data = JSON.parse(text);
         if (!data.version) throw new Error('Not a valid .statify.json file');
+        if (data.version < 2) showToast('This backup is from an older version. Some data may be incomplete.', 5000);
         if (data.shareable) { showToast('Shareable profiles for compare mode — coming in Phase 9'); return; }
         showLoader('IMPORTING SESSION...');
         if (data.type === 'spotify') {
@@ -9129,8 +9272,66 @@
       t.textContent = msg;
       t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--g);color:#000;font-family:var(--mono);font-size:.72rem;font-weight:700;padding:10px 20px;border-radius:20px;z-index:99999;pointer-events:none;opacity:0;transition:opacity .2s';
       document.body.appendChild(t);
-      requestAnimationFrame(() => { t.style.opacity = '1'; setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 2200); });
+      requestAnimationFrame(() => { t.style.opacity = '1'; setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, arguments[1] || 2200); });
     }
+
+    /* ── Audio preview on hover (6.1) ── */
+    let _previewAudio = null, _previewTimeout = null;
+    function previewTrack(track, artist, e) {
+      if (!SP.accessToken) return;
+      clearTimeout(_previewTimeout);
+      _previewTimeout = setTimeout(() => {
+        fetch(`https://api.spotify.com/v1/search?q=track:${encodeURIComponent(track)}%20artist:${encodeURIComponent(artist)}&type=track&limit=1`, {
+          headers: { 'Authorization': 'Bearer ' + SP.accessToken }
+        }).then(r => r.json()).then(d => {
+          const previewUrl = d.tracks?.items?.[0]?.preview_url;
+          if (previewUrl) {
+            if (_previewAudio) { _previewAudio.pause(); _previewAudio = null; }
+            _previewAudio = new Audio(previewUrl); _previewAudio.volume = 0.3; _previewAudio.play();
+            // Show waveform indicator near cursor
+            const indicator = document.createElement('div');
+            indicator.id = 'preview-indicator';
+            indicator.style.cssText = `position:fixed;left:${e.clientX+12}px;top:${e.clientY-30}px;background:var(--g);color:#000;font-size:.6rem;font-family:var(--mono);padding:3px 8px;border-radius:4px;z-index:99999;pointer-events:none`;
+            indicator.textContent = '▶ preview';
+            document.body.appendChild(indicator);
+          }
+        }).catch(()=>{}); }, 400);
+    }
+    function stopPreview() {
+      clearTimeout(_previewTimeout);
+      if (_previewAudio) { _previewAudio.pause(); _previewAudio = null; }
+      const ind = document.getElementById('preview-indicator'); if (ind) ind.remove();
+    }
+
+    /* ── Inline track editing (6.9) ── */
+    document.addEventListener('contextmenu', function(e) {
+      const el = e.target.closest('.ri-name');
+      if (!el) return;
+      e.preventDefault();
+      const orig = el.textContent.trim();
+      const input = document.createElement('input');
+      input.type = 'text'; input.value = orig;
+      input.style.cssText = `font:inherit;font-family:inherit;background:var(--s3);color:var(--text);border:1px solid var(--g);border-radius:3px;padding:2px 6px;width:${Math.max(orig.length*8,120)}px;position:absolute;z-index:999`;
+      el.replaceWith(input); input.focus(); input.select();
+      function save() {
+        const newVal = input.value.trim() || orig;
+        const div = document.createElement('div'); div.className = 'ri-name';
+        div.textContent = newVal; div.onmouseenter = el.onmouseenter; div.onmouseleave = el.onmouseleave;
+        input.replaceWith(div);
+        if (newVal !== orig) {
+          window._metadataOverrides = window._metadataOverrides || {};
+          const ri = div.closest('.ri');
+          if (ri) {
+            const sub = ri.querySelector('.ri-sub');
+            const key = (sub?.textContent || '') + '|||' + orig;
+            window._metadataOverrides[key] = { track: newVal };
+            showToast('Track name updated — refresh to apply to stats');
+          }
+        }
+      }
+      input.addEventListener('blur', save);
+      input.addEventListener('keydown', ev => { if (ev.key === 'Enter') save(); if (ev.key === 'Escape') { input.value = orig; save(); } });
+    });
 
     function exportDashboard() {
       if (!window.html2canvas) return alert('html2canvas not loaded');
@@ -9322,6 +9523,16 @@
         if (cfill) cfill.style.width = pct + '%';
         const ce = document.getElementById('npc-elapsed');
         if (ce) ce.textContent = msToMMSS(capped);
+        // Waveform sync animation (6.5)
+        const wbars = document.querySelectorAll('.wb');
+        if (wbars.length && SP.trackDuration) {
+          const beatPhase = (capped / SP.trackDuration) * wbars.length;
+          wbars.forEach((bar, i) => {
+            const dist = Math.abs(i - beatPhase);
+            const scale = Math.max(0.15, 1 - dist * 0.4);
+            bar.style.transform = `scaleY(${0.2 + scale * 0.8})`;
+          });
+        }
         SP.rafId = requestAnimationFrame(tick);
       }
       SP.rafId = requestAnimationFrame(tick);
@@ -12268,7 +12479,7 @@
       <div class="radar-name">${arch.name}</div>
       <div class="radar-desc">${arch.desc}</div>
       <div class="radar-axis-list">
-        ${axes.map(a=>`<div class="ral-row"><div class="ral-dot" style="background:${a.color}"></div><span class="ral-name">${a.name}</span><span class="ral-pct">${a.val}</span></div>`).join('')}
+        ${axes.map(a=>`<div class="ral-row" onclick="filterByAxis('${a.name}', event)" style="cursor:pointer" title="Click to filter dashboard by ${a.name}"><div class="ral-dot" style="background:${a.color}"></div><span class="ral-name">${a.name}</span><span class="ral-pct">${a.val}</span></div>`).join('')}
       </div>
     </div>
     ${radarSVG}
@@ -12392,6 +12603,22 @@
       if (m.reached) return `<div class="ms-card unlocked"><div class="ms-card-glow" style="background:${m.color}"></div><div class="ms-card-icon" style="background:${m.color}1a;color:${m.color}">${icons[m.icon]||icons.star}</div><div class="ms-card-val" style="color:${m.color}">${m.val}</div><div class="ms-card-label">${m.label}</div><div class="ms-card-date">${calSvg}${m.date||'—'}</div></div>`;
       return `<div class="ms-card locked"><div class="ms-card-icon" style="background:var(--s3);color:#333">${icons.lock}</div><div class="ms-card-val" style="color:var(--muted)">${m.val}</div><div class="ms-card-label">${m.label}</div><div class="ms-card-locked-lbl">not yet reached</div></div>`;
     }).join('')}</div>`;
+    // Confetti on milestones (6.8)
+    if (milestones.some(m => m.reached)) burstConfetti();
+  }
+
+  /* Simple confetti burst (6.8) */
+  function burstConfetti(count) {
+    count = count || 40;
+    const colors = ['#1DB954','#5b9cf6','#f5a623','#e05555','#a78bfa','#22d3ee','#4ade80','#fb923c'];
+    for (let i = 0; i < count; i++) {
+      const p = document.createElement('div');
+      const x = Math.random() * innerWidth, y = -10;
+      p.style.cssText = `position:fixed;left:${x}px;top:${y}px;width:${4+Math.random()*6}px;height:${6+Math.random()*10}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'2px'};z-index:99999;pointer-events:none;opacity:1;transform:rotate(${Math.random()*360}deg)`;
+      document.body.appendChild(p);
+      const dur = 800 + Math.random() * 1200;
+      gsap.to(p, { y: innerHeight + 40, x: x + (Math.random() - 0.5) * 200, rotation: Math.random() * 720, opacity: 0, duration: dur / 1000, ease: 'power2.in', onComplete: () => p.remove() });
+    }
   }
 
   /* ────────────────────────────────────────
@@ -13541,8 +13768,22 @@ ${top5Artists.map((a,i)=>`<div class="p6-wc-art-item"><div class="p6-wc-rank">#$
             <div>🎵 <b style="color:var(--text)">${totalStreams.toLocaleString()}</b> streams</div>
             <div>⏱ <b style="color:var(--text)">${totalHours.toLocaleString()}</b> hours</div>
             <div>🕐 Peak hour: <b style="color:var(--text)">${peakHour}:00</b></div>
-          </div>`;
-      }
+</div>`;
+  }
+
+  /* Radar click-to-filter (6.3) */
+  let _axisFilter = null;
+  function filterByAxis(axis, e) {
+    if (_axisFilter === axis) { _axisFilter = null; showToast('Filter cleared — showing all data'); }
+    else { _axisFilter = axis; showToast('Filtering by ' + axis + ' — click again to clear'); }
+    // Re-render only the filtered dashboard sections
+    if (typeof render === 'function') render(false);
+    document.querySelectorAll('.ral-row').forEach(r => r.style.background = '');
+    if (_axisFilter) {
+      const target = document.querySelector(`.ral-row[onclick*="${_axisFilter}"]`);
+      if (target) target.style.background = 'rgba(167,139,250,.1)';
+    }
+  }
     }
 
     el.innerHTML = `
@@ -15677,6 +15918,86 @@ self.addEventListener('fetch',e=>{
     });
     obs.observe(wrap, { attributes: true, attributeFilter: ['style'] });
   })();
+  </script>
+
+  <!-- Story mode overlay (6.6) -->
+  <div id="story-overlay" style="display:none;position:fixed;inset:0;z-index:2000;background:#080808;overflow-y:auto;overflow-x:hidden">
+    <button onclick="toggleStory()" style="position:fixed;top:16px;right:16px;z-index:2010;background:var(--s3);border:1px solid var(--border);color:var(--text);width:36px;height:36px;border-radius:50%;font-size:1rem;cursor:pointer">✕</button>
+    <div id="story-content"></div>
+  </div>
+
+  <script>
+    /* Story mode (6.6) */
+    let _storyActive = false;
+    function toggleStory() {
+      _storyActive = !_storyActive;
+      const overlay = document.getElementById('story-overlay');
+      overlay.style.display = _storyActive ? 'block' : 'none';
+      if (_storyActive) buildStory();
+      document.body.style.overflow = _storyActive ? 'hidden' : '';
+    }
+    function buildStory() {
+      const el = document.getElementById('story-content');
+      if (!S.length) { el.innerHTML = '<div style="height:100vh;display:flex;align-items:center;justify-content:center;font-family:var(--mono);color:var(--muted)">Upload your data first to see your story</div>'; return; }
+      const total = S.length;
+      const topA = Object.entries(S.reduce((m,x)=>{m[x.artist||'Unknown']=(m[x.artist||'Unknown']||0)+1;return m},{})).sort((a,b)=>b[1]-a[1]);
+      const peakH = S.reduce((m,x)=>{const h=new Date(x.ts).getHours();if(!isNaN(h))m[h]=(m[h]||0)+1;return m},{}); const peak = Object.entries(peakH).sort((a,b)=>b[1]-a[1])[0];
+      const firstD = S.map(x=>x.ts).filter(Boolean).sort()[0];
+      
+      const chapters = [
+        { title: 'Welcome', emoji: '🎵', text: `This is your personal listening story. ${fN(total)} streams, ${topA.length} artists, one journey.`, color: '#1DB954' },
+        { title: 'Your #1', emoji: '👑', text: `Say hi to <strong>${topA[0]?.[0]||'—'}</strong> — ${fN(topA[0]?.[1]||0)} streams. That\'s dedication.`, color: '#f5a623' },
+        { title: 'Peak Hour', emoji: '⏰', text: `You listen most at <strong>${peak?.[0]||'?'}:00</strong>. ${peak?.[1]||0} streams during that golden hour.`, color: '#5b9cf6' },
+        { title: 'Where It Began', emoji: '📅', text: `Your first recorded listen was on <strong>${firstD||'?'}</strong>. Every journey starts somewhere.`, color: '#a78bfa' },
+        { title: 'Continue', emoji: '✨', text: `Your story is still being written. Upload more data, explore deeper insights, and share with friends.`, color: '#4ade80' }
+      ];
+      
+      el.innerHTML = chapters.map((c, i) => 
+        `<div class="story-chapter" style="min-height:85vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;text-align:center;scroll-snap-align:start">
+          <div style="font-size:4rem;margin-bottom:16px">${c.emoji}</div>
+          <h2 style="font-size:2rem;font-weight:800;margin-bottom:12px;color:${c.color};font-family:'Plus Jakarta Sans',sans-serif">${c.title}</h2>
+          <p style="font-size:1.1rem;color:var(--text2);max-width:480px;line-height:1.7;font-family:'Plus Jakarta Sans',sans-serif">${c.text}</p>
+          ${i < chapters.length-1 ? '<div style="margin-top:40px;font-size:.7rem;color:var(--muted);font-family:var(--mono)">scroll ▼</div>' : ''}
+        </div>`
+      ).join('');
+    }
+
+    /* Period compare slider toggle (6.2) */
+    window._cmpSliderMode = false;
+    function toggleCmpSlider() {
+      window._cmpSliderMode = !window._cmpSliderMode;
+      const a = document.getElementById('cmpA'), b = document.getElementById('cmpB');
+      const sliderWrap = document.getElementById('cmp-slider-wrap');
+      if (sliderWrap) {
+        sliderWrap.style.display = window._cmpSliderMode ? 'flex' : 'none';
+        a.style.display = window._cmpSliderMode ? 'none' : '';
+        b.style.display = window._cmpSliderMode ? 'none' : '';
+      }
+      if (window._cmpSliderMode && typeof renderCompare === 'function') renderCompare();
+    }
+    function onCmpSliderChange() {
+      const a = parseInt(document.getElementById('cmp-range-a').value);
+      const b = parseInt(document.getElementById('cmp-range-b').value);
+      if (a >= b) { document.getElementById('cmp-range-b').value = Math.min(a + 1, 100); }
+      const months = [...new Set(S.filter(x => x.ts).map(x => x.ts.slice(0, 7)))].sort();
+      if (months.length) {
+        const iA = Math.floor(a / 100 * (months.length - 1));
+        const iB = Math.floor(b / 100 * (months.length - 1));
+        document.getElementById('cmpA').value = months[iA];
+        document.getElementById('cmpB').value = months[Math.min(iB + 1, months.length - 1)];
+        document.getElementById('cmp-slider-labels').textContent = `${months[iA]} → ${months[Math.min(iB + 1, months.length - 1)]}`;
+        if (typeof renderCompare === 'function') renderCompare();
+      }
+    }
+    // Show story button when dashboard opens
+    (function(){
+      const origRender = typeof render !== 'undefined' ? render : null;
+      if (origRender) {
+        const orig = origRender;
+        window._storyOrigRender = orig;
+        render = function(d) { orig(d); const btn = document.getElementById('storyBtn'); if (btn && S && S.length) btn.style.display = ''; };
+      }
+    })();
   </script>
 
 </body>
